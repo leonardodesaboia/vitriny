@@ -68,6 +68,25 @@ export default async function DashboardPage() {
           ) : null}
         </div>
 
+        <div className="mt-5 rounded-lg border border-stone-200 bg-paper p-5">
+          <h2 className="text-xl font-bold text-ink">Serviços</h2>
+          {profile ? (
+            <p className="mt-2 text-sm leading-6 text-stone-700">
+              Cadastre os serviços oferecidos pelo seu negócio.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm leading-6 text-stone-700">
+              Crie o perfil do prestador antes de cadastrar serviços.
+            </p>
+          )}
+          <Link
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+            href="/dashboard/servicos"
+          >
+            Gerenciar serviços
+          </Link>
+        </div>
+
         <LogoutButton className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf" />
       </section>
     </main>

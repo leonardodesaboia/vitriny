@@ -139,7 +139,7 @@ Para testar:
 - [x] 3. Auth.js / NextAuth
 - [x] 4. Dashboard protegido
 - [x] 5. Perfil do prestador
-- [ ] 6. Cadastro de serviços
+- [x] 6. Cadastro de serviços
 - [x] 7. Página pública do prestador
 - [ ] 8. Pedido público de orçamento
 - [ ] 9. Painel de pedidos recebidos
@@ -150,6 +150,6 @@ Para testar:
 
 ## Próximos passos
 
-1. Implementar cadastro de serviços.
-2. Implementar pedido público de orçamento.
-3. Implementar painel de pedidos recebidos.
+1. Implementar pedido público de orçamento.
+2. Implementar painel de pedidos recebidos.
+3. Implementar criação de proposta.
