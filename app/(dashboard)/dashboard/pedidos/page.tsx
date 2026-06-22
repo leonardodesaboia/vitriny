@@ -33,6 +33,13 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
       quoteRequests: {
         orderBy: {
           createdAt: "desc"
+        },
+        include: {
+          proposal: {
+            select: {
+              publicToken: true
+            }
+          }
         }
       }
     }

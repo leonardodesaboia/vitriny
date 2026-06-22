@@ -143,13 +143,13 @@ Para testar:
 - [x] 7. Página pública do prestador com serviços ativos
 - [x] 8. Pedido público de orçamento
 - [x] 9. Painel de pedidos recebidos
-- [ ] 10. Criação de proposta
+- [x] 10. Criação de proposta
 - [ ] 11. Página pública da proposta
 - [ ] 12. Aprovar ou recusar proposta
 - [ ] 13. Polimento visual, validações e deploy
 
 ## Próximos passos
 
-1. Implementar criação de proposta.
-2. Implementar página pública da proposta.
-3. Implementar aprovar ou recusar proposta.
+1. Implementar página pública da proposta.
+2. Implementar aprovar ou recusar proposta.
+3. Polimento visual, validações e deploy.

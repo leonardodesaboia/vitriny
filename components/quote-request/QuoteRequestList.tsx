@@ -1,9 +1,16 @@
+import Link from "next/link";
 import type { QuoteRequest } from "@prisma/client";
 
 import { updateQuoteRequestStatus } from "@/lib/actions/quote-request-status";
 
+type QuoteRequestWithProposal = QuoteRequest & {
+  proposal: {
+    publicToken: string;
+  } | null;
+};
+
 type QuoteRequestListProps = {
-  quoteRequests: QuoteRequest[];
+  quoteRequests: QuoteRequestWithProposal[];
 };
 
 const statusLabels: Record<string, string> = {
@@ -110,6 +117,25 @@ export function QuoteRequestList({ quoteRequests }: QuoteRequestListProps) {
                 {cleanDescription}
               </p>
             </div>
+
+            {quoteRequest.proposal ? (
+              <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
+                <p className="text-sm font-semibold text-ink">Proposta criada</p>
+                <p className="mt-2 text-sm text-stone-700">
+                  Link público futuro:
+                </p>
+                <p className="mt-2 break-all text-sm font-semibold text-leaf">
+                  /proposta/{quoteRequest.proposal.publicToken}
+                </p>
+              </div>
+            ) : (
+              <Link
+                className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
+              >
+                Criar proposta
+              </Link>
+            )}
 
             <form action={updateQuoteRequestStatus} className="mt-5 flex flex-col gap-3 md:flex-row md:items-end">
               <input name="requestId" type="hidden" value={quoteRequest.id} />
