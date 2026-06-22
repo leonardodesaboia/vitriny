@@ -138,7 +138,7 @@ Para testar:
 - [x] 2. PostgreSQL + Prisma
 - [x] 3. Auth.js / NextAuth
 - [x] 4. Dashboard protegido
-- [ ] 5. Perfil do prestador
+- [x] 5. Perfil do prestador
 - [ ] 6. Cadastro de serviços
 - [ ] 7. Página pública do prestador
 - [ ] 8. Pedido público de orçamento
@@ -150,6 +150,6 @@ Para testar:
 
 ## Próximos passos
 
-1. Implementar perfil do prestador.
-2. Implementar cadastro de serviços.
-3. Criar página pública do prestador.
+1. Implementar cadastro de serviços.
+2. Criar página pública do prestador.
+3. Implementar pedido público de orçamento.
