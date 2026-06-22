@@ -24,7 +24,21 @@ export default async function PublicProviderProfilePage({
       email: true,
       city: true,
       state: true,
-      isPublished: true
+      isPublished: true,
+      services: {
+        where: {
+          isActive: true
+        },
+        orderBy: {
+          createdAt: "desc"
+        },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          basePrice: true
+        }
+      }
     }
   });
 
@@ -76,6 +90,45 @@ export default async function PublicProviderProfilePage({
             </div>
           ) : null}
         </dl>
+
+        <section className="mt-10 border-t border-stone-200 pt-8">
+          <h2 className="text-2xl font-bold text-ink">Serviços</h2>
+          {profile.services.length > 0 ? (
+            <div className="mt-5 grid gap-4">
+              {profile.services.map((service) => (
+                <article
+                  className="rounded-lg border border-stone-200 bg-paper p-5"
+                  key={service.id}
+                >
+                  <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-ink">{service.name}</h3>
+                      {service.description ? (
+                        <p className="mt-2 text-sm leading-6 text-stone-700">
+                          {service.description}
+                        </p>
+                      ) : null}
+                      {service.basePrice ? (
+                        <p className="mt-3 text-sm font-semibold text-leaf">
+                          A partir de R$ {service.basePrice.toString()}
+                        </p>
+                      ) : null}
+                    </div>
+                    <span className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink">
+                      Pedir orçamento deste serviço
+                    </span>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 rounded-lg border border-stone-200 bg-paper p-5">
+              <p className="text-sm leading-6 text-stone-700">
+                Este prestador ainda não possui serviços ativos publicados.
+              </p>
+            </div>
+          )}
+        </section>
 
         <div className="mt-10 border-t border-stone-200 pt-6">
           <span className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white">

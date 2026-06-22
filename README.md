@@ -140,7 +140,7 @@ Para testar:
 - [x] 4. Dashboard protegido
 - [x] 5. Perfil do prestador
 - [x] 6. Cadastro de serviços
-- [x] 7. Página pública do prestador
+- [x] 7. Página pública do prestador com serviços ativos
 - [ ] 8. Pedido público de orçamento
 - [ ] 9. Painel de pedidos recebidos
 - [ ] 10. Criação de proposta
