@@ -31,7 +31,7 @@ Sempre seguir este ciclo:
 
 ## MVP
 
-O MVP deve conter:
+O MVP atual contém:
 
 1. Landing page
 2. Login
@@ -42,6 +42,21 @@ O MVP deve conter:
 7. Criação de proposta
 8. Página pública da proposta
 9. Botões de aprovar/recusar proposta
+
+## Documentação do projeto
+
+Além deste arquivo, consulte:
+
+- `README.md` — entrada principal, setup, deploy e checklist
+- `docs/PROJECT_OVERVIEW.md` — visão de produto
+- `docs/ARCHITECTURE.md` — arquitetura técnica
+- `docs/DATABASE.md` — schema e regras de banco
+- `docs/AUTH.md` — autenticação
+- `docs/MVP_FLOW.md` — teste manual completo
+- `docs/ROADMAP.md` — próximos passos
+- `docs/AI_HANDOFF.md` — handoff para IA/desenvolvedores
+
+Ao alterar rotas, schema, Auth, variáveis de ambiente ou fluxo do MVP, atualizar a documentação correspondente.
 
 ## Fora do MVP
 

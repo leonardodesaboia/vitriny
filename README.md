@@ -1,45 +1,68 @@
 # OrçaFácil
 
-OrçaFácil é um microSaaS para prestadores de serviço criarem um link público de orçamento, receberem pedidos organizados, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+OrçaFácil é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+
+## Visão geral
+
+O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O OrçaFácil centraliza esse fluxo em um painel simples.
+
+Público-alvo:
+
+- prestadores autônomos;
+- pequenos negócios de serviços;
+- profissionais que precisam enviar propostas simples por link.
 
 ## Stack
 
-- Next.js com App Router
+- Next.js 16 com App Router
 - TypeScript
 - Tailwind CSS
 - PostgreSQL
 - Prisma
-- Auth.js / NextAuth
+- Auth.js / NextAuth v5 beta
+- GitHub OAuth
+- Zod
 
-O MVP cobre o fluxo principal: prestador cria perfil, publica serviços, recebe pedidos, cria propostas e o cliente aprova ou recusa pelo link público.
+## Status atual do MVP
 
-## Scripts
+MVP funcional implementado:
 
-```bash
-npm run dev
-npm run build
-npm run lint
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:studio
-```
+- landing page;
+- login/logout;
+- dashboard protegido;
+- perfil do prestador;
+- cadastro de serviços;
+- página pública do prestador em `/u/[slug]`;
+- pedido público de orçamento em `/u/[slug]/orcamento`;
+- painel de pedidos recebidos;
+- criação de proposta;
+- página pública da proposta em `/proposta/[publicToken]`;
+- aprovação ou recusa pública da proposta.
+
+## Fora do MVP
+
+Não implementar ainda sem validação:
+
+- pagamento real;
+- Pix;
+- WhatsApp API;
+- assinatura digital;
+- PDF avançado;
+- IA para sugerir preço;
+- aplicativo mobile;
+- multiempresa complexo;
+- marketplace;
+- planos pagos.
 
 ## Como rodar localmente
 
-Instale as dependências e inicie o servidor de desenvolvimento:
+Instale dependências:
 
 ```bash
 npm install
-npm run dev
 ```
 
-A aplicação ficará disponível em `http://localhost:3000`.
-
-## Banco de dados
-
-O projeto usa PostgreSQL padrão com Prisma.
-
-Para desenvolvimento local, o jeito mais simples é subir um Postgres com Docker:
+Suba PostgreSQL com Docker:
 
 ```bash
 docker run --name orcafacil-postgres \
@@ -50,159 +73,144 @@ docker run --name orcafacil-postgres \
   -d postgres:16
 ```
 
-Crie um arquivo `.env` local a partir do exemplo:
+Crie o `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-Configure a variável `DATABASE_URL`:
-
-```env
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
-```
-
-Com o PostgreSQL rodando, gere o Prisma Client:
+Rode migrations e gere o Prisma Client:
 
 ```bash
+npm run prisma:migrate
 npm run prisma:generate
 ```
 
-Para criar a primeira migration local:
+Inicie o app:
 
 ```bash
-npm run prisma:migrate -- --name init
+npm run dev
 ```
 
-Para abrir o Prisma Studio:
+Acesse `http://localhost:3000`.
 
-```bash
-npm run prisma:studio
-```
-
-## Autenticação
-
-O projeto usa Auth.js/NextAuth com Prisma Adapter e GitHub OAuth.
-
-Adicione as variáveis de autenticação ao `.env`:
+## Variáveis de ambiente
 
 ```env
+DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
 AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
 AUTH_URL="http://localhost:3000"
 AUTH_GITHUB_ID="seu-github-client-id"
 AUTH_GITHUB_SECRET="seu-github-client-secret"
 ```
 
-Para gerar um segredo local:
+Para gerar `AUTH_SECRET`:
 
 ```bash
 openssl rand -base64 33
 ```
 
-No GitHub, crie um OAuth App e configure:
+Callback do GitHub OAuth em desenvolvimento:
 
 ```text
-Homepage URL: http://localhost:3000
-Authorization callback URL: http://localhost:3000/api/auth/callback/github
+http://localhost:3000/api/auth/callback/github
 ```
 
-Depois de configurar o `.env`, rode a migration de autenticação:
+## Comandos úteis
 
 ```bash
-npm run prisma:migrate -- --name add-auth
+npm run dev
+npm run build
+npm run lint
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:studio
 ```
 
-Para testar:
+## Prisma
 
-1. Rode `npm run dev`.
-2. Acesse `http://localhost:3000/login`.
-3. Clique em `Entrar com GitHub`.
-4. Após autenticar, você deve ser redirecionado para `/dashboard`.
-5. Use o botão `Sair` para encerrar a sessão.
+Schema principal: `prisma/schema.prisma`.
 
-## Escopo do MVP
+Migrations existentes:
 
-1. Landing page
-2. Login
-3. Perfil público do prestador
-4. Cadastro de serviços
-5. Formulário público de pedido de orçamento
-6. Painel de pedidos recebidos
-7. Criação de proposta
-8. Página pública da proposta
-9. Botões de aprovar/recusar proposta
+- `prisma/migrations/20260622204845_init/migration.sql`
+- `prisma/migrations/20260622205244_add_auth/migration.sql`
 
-## Roadmap do MVP
-
-- [x] 1. Base Next.js + TypeScript + Tailwind
-- [x] 2. PostgreSQL + Prisma
-- [x] 3. Auth.js / NextAuth
-- [x] 4. Dashboard protegido
-- [x] 5. Perfil do prestador
-- [x] 6. Cadastro de serviços
-- [x] 7. Página pública do prestador com serviços ativos
-- [x] 8. Pedido público de orçamento
-- [x] 9. Painel de pedidos recebidos
-- [x] 10. Criação de proposta
-- [x] 11. Página pública da proposta
-- [x] 12. Aprovar ou recusar proposta
-- [x] 13. Polimento visual, validações e deploy
-
-## Deploy
-
-Variáveis de ambiente necessárias:
-
-```env
-DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
-AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
-AUTH_URL="https://seu-dominio.com"
-AUTH_GITHUB_ID="seu-github-client-id"
-AUTH_GITHUB_SECRET="seu-github-client-secret"
-```
-
-Checklist antes de publicar:
-
-1. Configurar PostgreSQL de produção.
-2. Configurar OAuth App do GitHub com o domínio final.
-3. Definir `AUTH_URL` com a URL pública do deploy.
-4. Rodar migrations:
+Comandos:
 
 ```bash
 npm run prisma:migrate
-```
-
-5. Gerar Prisma Client:
-
-```bash
 npm run prisma:generate
+npm run prisma:studio
+npx prisma validate
 ```
 
-6. Validar build:
+## Teste manual do fluxo completo
+
+1. Usuário acessa `/`.
+2. Usuário faz login em `/login`.
+3. Usuário acessa `/dashboard`.
+4. Usuário cria ou edita perfil em `/dashboard/perfil`.
+5. Usuário marca o perfil como publicado.
+6. Usuário cadastra serviços em `/dashboard/servicos`.
+7. Cliente acessa `/u/[slug]`.
+8. Cliente envia pedido em `/u/[slug]/orcamento`.
+9. Prestador vê o pedido em `/dashboard/pedidos`.
+10. Prestador cria proposta em `/dashboard/propostas/nova?requestId=...`.
+11. Cliente acessa `/proposta/[publicToken]`.
+12. Cliente aprova ou recusa a proposta.
+13. Prestador confere status atualizado em `/dashboard/pedidos`.
+
+## Deploy
+
+Variáveis necessárias em produção:
+
+```env
+DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
+AUTH_SECRET="segredo-forte"
+AUTH_URL="https://seu-dominio.com"
+AUTH_GITHUB_ID="github-client-id"
+AUTH_GITHUB_SECRET="github-client-secret"
+```
+
+Antes do deploy:
 
 ```bash
 npm run lint
 npm run build
 npx prisma validate
+npx prisma migrate deploy
 ```
 
-## Checklist manual do MVP
+Configure o GitHub OAuth App com:
 
-1. Usuário acessa a landing page.
-2. Usuário faz login.
-3. Usuário acessa o dashboard.
-4. Usuário cria ou edita perfil do prestador.
-5. Usuário publica o perfil.
-6. Usuário cadastra serviços.
-7. Cliente acessa `/u/[slug]`.
-8. Cliente envia pedido de orçamento.
-9. Prestador vê pedido no painel.
-10. Prestador cria proposta.
-11. Cliente acessa `/proposta/[publicToken]`.
-12. Cliente aprova ou recusa proposta.
-13. Prestador vê status atualizado.
+```text
+Homepage URL: https://seu-dominio.com
+Authorization callback URL: https://seu-dominio.com/api/auth/callback/github
+```
 
-## Próximos passos
+## Roadmap resumido
 
-1. Fazer teste manual completo em ambiente de staging.
-2. Configurar deploy e banco de produção.
-3. Revisar domínio, OAuth e variáveis de ambiente finais.
+- [x] Base Next.js + TypeScript + Tailwind
+- [x] PostgreSQL + Prisma
+- [x] Auth.js / NextAuth
+- [x] Dashboard protegido
+- [x] Perfil do prestador
+- [x] Cadastro de serviços
+- [x] Página pública do prestador
+- [x] Pedido público de orçamento
+- [x] Painel de pedidos recebidos
+- [x] Criação de proposta
+- [x] Página pública da proposta
+- [x] Aprovar ou recusar proposta
+- [x] Polimento visual, validações e preparação para deploy
+
+## Documentação complementar
+
+- [Visão do projeto](docs/PROJECT_OVERVIEW.md)
+- [Arquitetura](docs/ARCHITECTURE.md)
+- [Banco de dados](docs/DATABASE.md)
+- [Autenticação](docs/AUTH.md)
+- [Fluxo do MVP](docs/MVP_FLOW.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Handoff para IA/desenvolvedores](docs/AI_HANDOFF.md)
