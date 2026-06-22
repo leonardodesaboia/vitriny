@@ -48,6 +48,24 @@ export default async function DashboardPage() {
           >
             {profile ? "Editar perfil" : "Criar perfil"}
           </Link>
+          {profile ? (
+            <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
+              <p className="text-sm font-semibold text-ink">Link público</p>
+              {profile.isPublished ? (
+                <Link
+                  className="mt-2 inline-flex text-sm font-semibold text-leaf"
+                  href={`/u/${profile.slug}`}
+                >
+                  /u/{profile.slug}
+                </Link>
+              ) : (
+                <p className="mt-2 text-sm leading-6 text-stone-700">
+                  O perfil ainda não está publicado. Ative a publicação na edição
+                  do perfil para liberar o link <strong>/u/{profile.slug}</strong>.
+                </p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         <LogoutButton className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf" />

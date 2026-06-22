@@ -140,7 +140,7 @@ Para testar:
 - [x] 4. Dashboard protegido
 - [x] 5. Perfil do prestador
 - [ ] 6. Cadastro de serviços
-- [ ] 7. Página pública do prestador
+- [x] 7. Página pública do prestador
 - [ ] 8. Pedido público de orçamento
 - [ ] 9. Painel de pedidos recebidos
 - [ ] 10. Criação de proposta
@@ -151,5 +151,5 @@ Para testar:
 ## Próximos passos
 
 1. Implementar cadastro de serviços.
-2. Criar página pública do prestador.
-3. Implementar pedido público de orçamento.
+2. Implementar pedido público de orçamento.
+3. Implementar painel de pedidos recebidos.
