@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { AuthButton } from "@/components/auth/AuthButton";
+
 export function SiteHeader() {
   return (
     <header className="border-b border-stone-200 bg-white">
@@ -15,6 +17,7 @@ export function SiteHeader() {
             Próximos passos
           </a>
         </nav>
+        <AuthButton />
       </div>
     </header>
   );

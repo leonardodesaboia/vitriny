@@ -11,7 +11,7 @@ OrçaFácil é um microSaaS para prestadores de serviço criarem um link públic
 - Prisma
 - Auth.js / NextAuth
 
-Nesta etapa, Next.js, TypeScript, Tailwind CSS e Prisma com PostgreSQL foram configurados. Autenticação, dashboard e fluxos de produto entram nas próximas etapas do MVP.
+Nesta etapa, Next.js, TypeScript, Tailwind CSS, Prisma com PostgreSQL, autenticação e dashboard protegido foram configurados. Os fluxos de produto entram nas próximas etapas do MVP.
 
 ## Scripts
 
@@ -80,6 +80,46 @@ Para abrir o Prisma Studio:
 npm run prisma:studio
 ```
 
+## Autenticação
+
+O projeto usa Auth.js/NextAuth com Prisma Adapter e GitHub OAuth.
+
+Adicione as variáveis de autenticação ao `.env`:
+
+```env
+AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
+AUTH_URL="http://localhost:3000"
+AUTH_GITHUB_ID="seu-github-client-id"
+AUTH_GITHUB_SECRET="seu-github-client-secret"
+```
+
+Para gerar um segredo local:
+
+```bash
+openssl rand -base64 33
+```
+
+No GitHub, crie um OAuth App e configure:
+
+```text
+Homepage URL: http://localhost:3000
+Authorization callback URL: http://localhost:3000/api/auth/callback/github
+```
+
+Depois de configurar o `.env`, rode a migration de autenticação:
+
+```bash
+npm run prisma:migrate -- --name add-auth
+```
+
+Para testar:
+
+1. Rode `npm run dev`.
+2. Acesse `http://localhost:3000/login`.
+3. Clique em `Entrar com GitHub`.
+4. Após autenticar, você deve ser redirecionado para `/dashboard`.
+5. Use o botão `Sair` para encerrar a sessão.
+
 ## Escopo do MVP
 
 1. Landing page
@@ -92,9 +132,24 @@ npm run prisma:studio
 8. Página pública da proposta
 9. Botões de aprovar/recusar proposta
 
+## Roadmap do MVP
+
+- [x] 1. Base Next.js + TypeScript + Tailwind
+- [x] 2. PostgreSQL + Prisma
+- [x] 3. Auth.js / NextAuth
+- [x] 4. Dashboard protegido
+- [ ] 5. Perfil do prestador
+- [ ] 6. Cadastro de serviços
+- [ ] 7. Página pública do prestador
+- [ ] 8. Pedido público de orçamento
+- [ ] 9. Painel de pedidos recebidos
+- [ ] 10. Criação de proposta
+- [ ] 11. Página pública da proposta
+- [ ] 12. Aprovar ou recusar proposta
+- [ ] 13. Polimento visual, validações e deploy
+
 ## Próximos passos
 
-1. Criar a primeira migration local quando o PostgreSQL estiver configurado.
-2. Configurar Auth.js / NextAuth.
-3. Criar dashboard autenticado mínimo.
-4. Implementar perfil público do prestador.
+1. Implementar perfil do prestador.
+2. Implementar cadastro de serviços.
+3. Criar página pública do prestador.
