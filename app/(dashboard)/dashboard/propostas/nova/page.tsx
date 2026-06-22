@@ -81,11 +81,14 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
             <h2 className="text-xl font-bold text-ink">Proposta já criada</h2>
             <p className="mt-2 text-sm leading-6 text-stone-700">
-              Este pedido já possui uma proposta. Link público futuro:
+              Este pedido já possui uma proposta. Link público:
             </p>
-            <p className="mt-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-leaf">
+            <Link
+              className="mt-3 inline-flex rounded-md bg-white px-3 py-2 text-sm font-semibold text-leaf"
+              href={`/proposta/${quoteRequest.proposal.publicToken}`}
+            >
               /proposta/{quoteRequest.proposal.publicToken}
-            </p>
+            </Link>
           </div>
         ) : (
           <ProposalForm requestId={quoteRequest.id} />

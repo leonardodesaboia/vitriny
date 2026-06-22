@@ -121,12 +121,13 @@ export function QuoteRequestList({ quoteRequests }: QuoteRequestListProps) {
             {quoteRequest.proposal ? (
               <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
                 <p className="text-sm font-semibold text-ink">Proposta criada</p>
-                <p className="mt-2 text-sm text-stone-700">
-                  Link público futuro:
-                </p>
-                <p className="mt-2 break-all text-sm font-semibold text-leaf">
+                <p className="mt-2 text-sm text-stone-700">Link público:</p>
+                <Link
+                  className="mt-2 inline-flex break-all text-sm font-semibold text-leaf"
+                  href={`/proposta/${quoteRequest.proposal.publicToken}`}
+                >
                   /proposta/{quoteRequest.proposal.publicToken}
-                </p>
+                </Link>
               </div>
             ) : (
               <Link
