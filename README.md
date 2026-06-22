@@ -145,10 +145,9 @@ Para testar:
 - [x] 9. Painel de pedidos recebidos
 - [x] 10. Criação de proposta
 - [x] 11. Página pública da proposta
-- [ ] 12. Aprovar ou recusar proposta
+- [x] 12. Aprovar ou recusar proposta
 - [ ] 13. Polimento visual, validações e deploy
 
 ## Próximos passos
 
-1. Implementar aprovar ou recusar proposta.
-2. Polimento visual, validações e deploy.
+1. Polimento visual, validações e deploy.

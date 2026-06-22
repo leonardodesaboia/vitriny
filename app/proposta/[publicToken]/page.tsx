@@ -1,10 +1,15 @@
 import { notFound } from "next/navigation";
 
+import { respondToProposal } from "@/lib/actions/proposal-response";
 import { prisma } from "@/lib/prisma";
 
 type PublicProposalPageProps = {
   params: Promise<{
     publicToken: string;
+  }>;
+  searchParams: Promise<{
+    error?: string;
+    response?: string;
   }>;
 };
 
@@ -14,6 +19,17 @@ const statusLabels: Record<string, string> = {
   APPROVED: "Aprovada",
   REJECTED: "Recusada",
   EXPIRED: "Expirada"
+};
+
+const responseMessages: Record<string, string> = {
+  approved: "Proposta aprovada com sucesso.",
+  rejected: "Proposta recusada com sucesso."
+};
+
+const errorMessages: Record<string, string> = {
+  answered: "Esta proposta já foi respondida.",
+  expired: "Esta proposta está expirada e não pode mais ser respondida.",
+  "not-found": "Proposta não encontrada."
 };
 
 function formatMoney(value: { toString: () => string }) {
@@ -30,9 +46,11 @@ function formatDate(date: Date) {
 }
 
 export default async function PublicProposalPage({
-  params
+  params,
+  searchParams
 }: PublicProposalPageProps) {
   const { publicToken } = await params;
+  const query = await searchParams;
 
   const proposal = await prisma.proposal.findUnique({
     where: {
@@ -56,6 +74,8 @@ export default async function PublicProposalPage({
   const isExpired = proposal.validUntil
     ? proposal.validUntil < new Date()
     : false;
+  const isAnswered =
+    proposal.status === "APPROVED" || proposal.status === "REJECTED";
 
   const providerLocation = [proposal.provider.city, proposal.provider.state]
     .filter(Boolean)
@@ -87,6 +107,18 @@ export default async function PublicProposalPage({
         {isExpired ? (
           <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
             Esta proposta passou da data de validade.
+          </div>
+        ) : null}
+
+        {query.response ? (
+          <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+            {responseMessages[query.response] ?? "Resposta registrada."}
+          </div>
+        ) : null}
+
+        {query.error ? (
+          <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+            {errorMessages[query.error] ?? "Não foi possível responder."}
           </div>
         ) : null}
 
@@ -210,14 +242,53 @@ export default async function PublicProposalPage({
           </dl>
         </div>
 
-        <div className="mt-8 flex flex-col gap-3 border-t border-stone-200 pt-6 sm:flex-row">
-          <span className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white">
-            Aprovar proposta
-          </span>
-          <span className="inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink">
-            Recusar proposta
-          </span>
-        </div>
+        {isAnswered ? (
+          <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
+            <p className="text-sm font-semibold text-ink">
+              Esta proposta já foi respondida como {statusLabels[proposal.status]}.
+            </p>
+            {proposal.respondedAt ? (
+              <p className="mt-2 text-sm text-stone-600">
+                Respondida em {formatDate(proposal.respondedAt)}.
+              </p>
+            ) : null}
+          </div>
+        ) : isExpired ? (
+          <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
+            <p className="text-sm font-semibold text-ink">
+              Esta proposta não pode mais ser respondida porque está expirada.
+            </p>
+          </div>
+        ) : (
+          <div className="mt-8 flex flex-col gap-3 border-t border-stone-200 pt-6 sm:flex-row">
+            <form
+              action={async () => {
+                "use server";
+                await respondToProposal(publicToken, "APPROVED");
+              }}
+            >
+              <button
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
+                type="submit"
+              >
+                Aprovar proposta
+              </button>
+            </form>
+            <form
+              action={async () => {
+                "use server";
+                await respondToProposal(publicToken, "REJECTED");
+              }}
+            >
+              <button
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                type="submit"
+              >
+                Recusar proposta
+              </button>
+            </form>
+          </div>
+        )}
       </section>
     </main>
   );
