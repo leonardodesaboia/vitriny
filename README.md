@@ -11,7 +11,7 @@ OrçaFácil é um microSaaS para prestadores de serviço criarem um link públic
 - Prisma
 - Auth.js / NextAuth
 
-Nesta etapa inicial, somente Next.js, TypeScript e Tailwind CSS foram configurados. Banco de dados, Prisma e autenticação entram nas próximas etapas do MVP.
+Nesta etapa, Next.js, TypeScript, Tailwind CSS e Prisma com PostgreSQL foram configurados. Autenticação, dashboard e fluxos de produto entram nas próximas etapas do MVP.
 
 ## Scripts
 
@@ -19,6 +19,9 @@ Nesta etapa inicial, somente Next.js, TypeScript e Tailwind CSS foram configurad
 npm run dev
 npm run build
 npm run lint
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:studio
 ```
 
 ## Como rodar localmente
@@ -31,6 +34,51 @@ npm run dev
 ```
 
 A aplicação ficará disponível em `http://localhost:3000`.
+
+## Banco de dados
+
+O projeto usa PostgreSQL padrão com Prisma.
+
+Para desenvolvimento local, o jeito mais simples é subir um Postgres com Docker:
+
+```bash
+docker run --name orcafacil-postgres \
+  -e POSTGRES_USER=orcafacil \
+  -e POSTGRES_PASSWORD=orcafacil \
+  -e POSTGRES_DB=orcafacil \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+Crie um arquivo `.env` local a partir do exemplo:
+
+```bash
+cp .env.example .env
+```
+
+Configure a variável `DATABASE_URL`:
+
+```env
+DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
+```
+
+Com o PostgreSQL rodando, gere o Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+Para criar a primeira migration local:
+
+```bash
+npm run prisma:migrate -- --name init
+```
+
+Para abrir o Prisma Studio:
+
+```bash
+npm run prisma:studio
+```
 
 ## Escopo do MVP
 
@@ -46,7 +94,7 @@ A aplicação ficará disponível em `http://localhost:3000`.
 
 ## Próximos passos
 
-1. Configurar Prisma e PostgreSQL.
+1. Criar a primeira migration local quando o PostgreSQL estiver configurado.
 2. Configurar Auth.js / NextAuth.
 3. Criar dashboard autenticado mínimo.
 4. Implementar perfil público do prestador.
