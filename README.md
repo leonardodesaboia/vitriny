@@ -141,7 +141,7 @@ Para testar:
 - [x] 5. Perfil do prestador
 - [x] 6. Cadastro de serviços
 - [x] 7. Página pública do prestador com serviços ativos
-- [ ] 8. Pedido público de orçamento
+- [x] 8. Pedido público de orçamento
 - [ ] 9. Painel de pedidos recebidos
 - [ ] 10. Criação de proposta
 - [ ] 11. Página pública da proposta
@@ -150,6 +150,6 @@ Para testar:
 
 ## Próximos passos
 
-1. Implementar pedido público de orçamento.
-2. Implementar painel de pedidos recebidos.
-3. Implementar criação de proposta.
+1. Implementar painel de pedidos recebidos.
+2. Implementar criação de proposta.
+3. Implementar página pública da proposta.

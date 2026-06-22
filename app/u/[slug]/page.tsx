@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
@@ -114,9 +115,12 @@ export default async function PublicProviderProfilePage({
                         </p>
                       ) : null}
                     </div>
-                    <span className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink">
+                    <Link
+                      className="inline-flex min-h-10 shrink-0 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                      href={`/u/${slug}/orcamento?serviceId=${service.id}`}
+                    >
                       Pedir orçamento deste serviço
-                    </span>
+                    </Link>
                   </div>
                 </article>
               ))}
@@ -131,11 +135,14 @@ export default async function PublicProviderProfilePage({
         </section>
 
         <div className="mt-10 border-t border-stone-200 pt-6">
-          <span className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white">
+          <Link
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
+            href={`/u/${slug}/orcamento`}
+          >
             Pedir orçamento
-          </span>
+          </Link>
           <p className="mt-3 text-sm text-stone-600">
-            O formulário de pedido será habilitado em uma próxima etapa.
+            Envie as informações iniciais para o prestador avaliar seu pedido.
           </p>
         </div>
       </section>
