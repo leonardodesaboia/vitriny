@@ -26,8 +26,8 @@ export default async function DashboardPage() {
         </p>
         <h1 className="mt-3 text-3xl font-bold">Olá, {session.user.name}</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Esta é a área autenticada inicial. Comece criando seu perfil de
-          prestador.
+          Gerencie seu perfil, serviços, pedidos recebidos e propostas em um
+          único painel.
         </p>
 
         <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
@@ -39,7 +39,7 @@ export default async function DashboardPage() {
           ) : (
             <p className="mt-2 text-sm leading-6 text-stone-700">
               Você ainda não criou seu perfil. Ele será usado depois na página
-              pública do prestador.
+              pública do prestador e nos pedidos de orçamento.
             </p>
           )}
           <Link
@@ -91,7 +91,7 @@ export default async function DashboardPage() {
           <h2 className="text-xl font-bold text-ink">Pedidos</h2>
           {profile ? (
             <p className="mt-2 text-sm leading-6 text-stone-700">
-              Veja os pedidos de orçamento recebidos pelo seu perfil público.
+              Veja os pedidos de orçamento recebidos e acompanhe o status.
             </p>
           ) : (
             <p className="mt-2 text-sm leading-6 text-stone-700">

@@ -76,6 +76,7 @@ export default async function PublicProposalPage({
     : false;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
+  const canRespond = !isAnswered && !isExpired;
 
   const providerLocation = [proposal.provider.city, proposal.provider.state]
     .filter(Boolean)
@@ -113,6 +114,18 @@ export default async function PublicProposalPage({
         {query.response ? (
           <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
             {responseMessages[query.response] ?? "Resposta registrada."}
+          </div>
+        ) : null}
+
+        {proposal.status === "APPROVED" ? (
+          <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
+            Esta proposta foi aprovada.
+          </div>
+        ) : null}
+
+        {proposal.status === "REJECTED" ? (
+          <div className="mt-6 rounded-md border border-stone-300 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-700">
+            Esta proposta foi recusada.
           </div>
         ) : null}
 
@@ -253,7 +266,7 @@ export default async function PublicProposalPage({
               </p>
             ) : null}
           </div>
-        ) : isExpired ? (
+        ) : !canRespond ? (
           <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
             <p className="text-sm font-semibold text-ink">
               Esta proposta não pode mais ser respondida porque está expirada.

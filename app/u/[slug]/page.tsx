@@ -9,6 +9,13 @@ type PublicProviderProfilePageProps = {
   }>;
 };
 
+function formatMoney(value: { toString: () => string }) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(Number(value.toString()));
+}
+
 export default async function PublicProviderProfilePage({
   params
 }: PublicProviderProfilePageProps) {
@@ -111,7 +118,7 @@ export default async function PublicProviderProfilePage({
                       ) : null}
                       {service.basePrice ? (
                         <p className="mt-3 text-sm font-semibold text-leaf">
-                          A partir de R$ {service.basePrice.toString()}
+                          A partir de {formatMoney(service.basePrice)}
                         </p>
                       ) : null}
                     </div>

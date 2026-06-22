@@ -11,7 +11,7 @@ OrçaFácil é um microSaaS para prestadores de serviço criarem um link públic
 - Prisma
 - Auth.js / NextAuth
 
-Nesta etapa, Next.js, TypeScript, Tailwind CSS, Prisma com PostgreSQL, autenticação e dashboard protegido foram configurados. Os fluxos de produto entram nas próximas etapas do MVP.
+O MVP cobre o fluxo principal: prestador cria perfil, publica serviços, recebe pedidos, cria propostas e o cliente aprova ou recusa pelo link público.
 
 ## Scripts
 
@@ -146,8 +146,63 @@ Para testar:
 - [x] 10. Criação de proposta
 - [x] 11. Página pública da proposta
 - [x] 12. Aprovar ou recusar proposta
-- [ ] 13. Polimento visual, validações e deploy
+- [x] 13. Polimento visual, validações e deploy
+
+## Deploy
+
+Variáveis de ambiente necessárias:
+
+```env
+DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
+AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
+AUTH_URL="https://seu-dominio.com"
+AUTH_GITHUB_ID="seu-github-client-id"
+AUTH_GITHUB_SECRET="seu-github-client-secret"
+```
+
+Checklist antes de publicar:
+
+1. Configurar PostgreSQL de produção.
+2. Configurar OAuth App do GitHub com o domínio final.
+3. Definir `AUTH_URL` com a URL pública do deploy.
+4. Rodar migrations:
+
+```bash
+npm run prisma:migrate
+```
+
+5. Gerar Prisma Client:
+
+```bash
+npm run prisma:generate
+```
+
+6. Validar build:
+
+```bash
+npm run lint
+npm run build
+npx prisma validate
+```
+
+## Checklist manual do MVP
+
+1. Usuário acessa a landing page.
+2. Usuário faz login.
+3. Usuário acessa o dashboard.
+4. Usuário cria ou edita perfil do prestador.
+5. Usuário publica o perfil.
+6. Usuário cadastra serviços.
+7. Cliente acessa `/u/[slug]`.
+8. Cliente envia pedido de orçamento.
+9. Prestador vê pedido no painel.
+10. Prestador cria proposta.
+11. Cliente acessa `/proposta/[publicToken]`.
+12. Cliente aprova ou recusa proposta.
+13. Prestador vê status atualizado.
 
 ## Próximos passos
 
-1. Polimento visual, validações e deploy.
+1. Fazer teste manual completo em ambiente de staging.
+2. Configurar deploy e banco de produção.
+3. Revisar domínio, OAuth e variáveis de ambiente finais.

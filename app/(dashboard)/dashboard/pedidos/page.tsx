@@ -41,6 +41,12 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             }
           }
         }
+      },
+      services: {
+        select: {
+          id: true,
+          name: true
+        }
       }
     }
   });
@@ -81,7 +87,10 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           </div>
         ) : (
           <div className="mt-8">
-            <QuoteRequestList quoteRequests={profile.quoteRequests} />
+            <QuoteRequestList
+              quoteRequests={profile.quoteRequests}
+              services={profile.services}
+            />
           </div>
         )}
       </section>

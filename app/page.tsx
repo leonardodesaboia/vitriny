@@ -2,10 +2,10 @@ import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
 
 const mvpSteps = [
-  "Crie um perfil público com seus dados profissionais.",
-  "Receba pedidos de orçamento por um formulário simples.",
-  "Organize solicitações e envie propostas por link.",
-  "Permita que o cliente aprove ou recuse a proposta online."
+  "Publique seu perfil e seus serviços.",
+  "Receba pedidos de orçamento por link público.",
+  "Acompanhe pedidos no painel do prestador.",
+  "Envie propostas para aprovação ou recusa online."
 ];
 
 export default function Home() {
@@ -22,9 +22,8 @@ export default function Home() {
             Receba pedidos, envie propostas e feche serviços por link.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-stone-700">
-            O OrçaFácil ajuda prestadores a criarem um perfil público,
-            centralizarem pedidos de orçamento e compartilharem propostas claras
-            com clientes.
+            O OrçaFácil reúne perfil público, serviços, pedidos recebidos e
+            propostas em um fluxo simples para prestadores de serviço.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <a
@@ -92,8 +91,8 @@ export default function Home() {
       <section id="proximos-passos" className="mx-auto max-w-6xl px-6 py-14">
         <h2 className="text-2xl font-bold text-ink">Próxima etapa</h2>
         <p className="mt-4 max-w-2xl text-base leading-7 text-stone-700">
-          A próxima implementação deve adicionar a configuração inicial de banco
-          e autenticação, mantendo o escopo do MVP controlado.
+          O MVP já cobre o fluxo principal. A próxima etapa é validar o caminho
+          completo em ambiente real e preparar o deploy.
         </p>
       </section>
 

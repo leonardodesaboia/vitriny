@@ -11,6 +11,10 @@ type QuoteRequestWithProposal = QuoteRequest & {
 
 type QuoteRequestListProps = {
   quoteRequests: QuoteRequestWithProposal[];
+  services: Array<{
+    id: string;
+    name: string;
+  }>;
 };
 
 const statusLabels: Record<string, string> = {
@@ -27,7 +31,10 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function splitServiceFromDescription(description: string) {
+function splitServiceFromDescription(
+  description: string,
+  serviceNamesById: Record<string, string>
+) {
   const prefix = "Serviço selecionado: ";
 
   if (!description.startsWith(prefix)) {
@@ -39,13 +46,19 @@ function splitServiceFromDescription(description: string) {
 
   const [firstLine, ...rest] = description.split("\n");
 
+  const serviceId = firstLine.replace(prefix, "").trim();
+
   return {
-    serviceLabel: firstLine.replace(prefix, "").trim(),
+    serviceLabel: serviceNamesById[serviceId] ?? serviceId,
     cleanDescription: rest.join("\n").trim()
   };
 }
 
-export function QuoteRequestList({ quoteRequests }: QuoteRequestListProps) {
+export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListProps) {
+  const serviceNamesById = Object.fromEntries(
+    services.map((service) => [service.id, service.name])
+  );
+
   if (quoteRequests.length === 0) {
     return (
       <div className="rounded-lg border border-stone-200 bg-paper p-5">
@@ -60,7 +73,8 @@ export function QuoteRequestList({ quoteRequests }: QuoteRequestListProps) {
     <div className="grid gap-5">
       {quoteRequests.map((quoteRequest) => {
         const { serviceLabel, cleanDescription } = splitServiceFromDescription(
-          quoteRequest.description
+          quoteRequest.description,
+          serviceNamesById
         );
 
         return (
