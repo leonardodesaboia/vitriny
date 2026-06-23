@@ -109,7 +109,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
               <label
                 className="text-sm font-semibold text-ink"
                 htmlFor={`itemQuantity-${row.key}`}
@@ -117,7 +117,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
                 Qtd.
               </label>
               <input
-                className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                className="min-h-11 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
                 id={`itemQuantity-${row.key}`}
                 min="1"
                 name="itemQuantity"
@@ -130,7 +130,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
               />
             </div>
 
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
               <label
                 className="text-sm font-semibold text-ink"
                 htmlFor={`itemUnitPrice-${row.key}`}
@@ -138,7 +138,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
                 Valor unitario
               </label>
               <input
-                className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                className="min-h-11 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
                 id={`itemUnitPrice-${row.key}`}
                 min="0"
                 name="itemUnitPrice"

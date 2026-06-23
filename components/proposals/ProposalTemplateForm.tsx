@@ -117,7 +117,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid min-w-0 gap-2">
                 <label
                   className="text-xs font-semibold text-ink-muted"
                   htmlFor={`itemQuantity-${template?.id ?? "new"}-${index}`}
@@ -125,7 +125,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
                   Qtd.
                 </label>
                 <input
-                  className="min-h-10 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                  className="min-h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
                   defaultValue={item.quantity ?? 1}
                   id={`itemQuantity-${template?.id ?? "new"}-${index}`}
                   min="1"
@@ -135,7 +135,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
                 />
               </div>
 
-              <div className="grid gap-2">
+              <div className="grid min-w-0 gap-2">
                 <label
                   className="text-xs font-semibold text-ink-muted"
                   htmlFor={`itemUnitPrice-${template?.id ?? "new"}-${index}`}
@@ -143,7 +143,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
                   Valor unitario
                 </label>
                 <input
-                  className="min-h-10 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                  className="min-h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
                   defaultValue={formatPrice(item.unitPrice)}
                   id={`itemUnitPrice-${template?.id ?? "new"}-${index}`}
                   min="0"
