@@ -17,10 +17,25 @@ async function getClientSecretFromInvoice(invoiceId: string): Promise<string | n
   const { payment } = defaultPayment;
   if (payment.type !== "payment_intent") return null;
 
-  const pi = payment.payment_intent as Stripe.PaymentIntent | string | undefined;
-  if (typeof pi !== "object" || pi === null) return null;
+  const raw = payment.payment_intent as Stripe.PaymentIntent | string | undefined;
+  if (!raw) return null;
 
-  return pi.client_secret ?? null;
+  const piObj =
+    typeof raw === "object" ? raw : await stripe.paymentIntents.retrieve(raw as string);
+
+  // If the PaymentIntent was created before pix was added, update it now
+  if (piObj.payment_method_types && !piObj.payment_method_types.includes("pix")) {
+    try {
+      const updated = await stripe.paymentIntents.update(piObj.id, {
+        payment_method_types: [...piObj.payment_method_types, "pix"]
+      });
+      return updated.client_secret ?? null;
+    } catch {
+      // PI might use automatic_payment_methods — pix will show if enabled in Dashboard
+    }
+  }
+
+  return piObj.client_secret ?? null;
 }
 
 export async function createSubscriptionIntent(): Promise<
