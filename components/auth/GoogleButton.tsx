@@ -1,19 +1,19 @@
 import { signIn } from "@/auth";
 
-type LoginButtonProps = {
+type GoogleButtonProps = {
   className?: string;
 };
 
-export function LoginButton({ className }: LoginButtonProps) {
+export function GoogleButton({ className }: GoogleButtonProps) {
   return (
     <form
       action={async () => {
         "use server";
-        await signIn("github", { redirectTo: "/dashboard" });
+        await signIn("google", { redirectTo: "/dashboard" });
       }}
     >
       <button className={className} type="submit">
-        Entrar com GitHub
+        Entrar com Google
       </button>
     </form>
   );
