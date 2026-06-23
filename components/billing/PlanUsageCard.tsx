@@ -33,10 +33,17 @@ export function PlanUsageCard({ plan, usage }: PlanUsageCardProps) {
           </h2>
         </div>
         {plan === "FREE" ? (
-          <p className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink-muted">
-            Preparado para upgrade futuro
-          </p>
-        ) : null}
+          <a
+            href="/dashboard/billing"
+            className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+          >
+            Assinar PRO
+          </a>
+        ) : (
+          <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
+            Plano PRO ativo
+          </span>
+        )}
       </div>
 
       <div className="mt-5 grid gap-3 md:grid-cols-4">
