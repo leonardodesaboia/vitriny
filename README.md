@@ -41,7 +41,8 @@ MVP funcional implementado:
 - histórico de status do pedido no painel;
 - histórico de status da proposta na página pública;
 - notas internas do pedido no painel;
-- templates de proposta no dashboard.
+- templates de proposta no dashboard;
+- planos e limites de uso sem checkout real.
 
 ## Fora do MVP
 
@@ -56,7 +57,27 @@ Não implementar ainda sem validação:
 - aplicativo mobile;
 - multiempresa complexo;
 - marketplace;
-- planos pagos.
+- checkout, cobrança recorrente e planos pagos reais.
+
+## Planos e limites de uso
+
+O produto já possui estrutura de plano no código para preparar monetização futura, sem pagamento real.
+
+Planos:
+
+- `FREE`
+- `PRO`
+
+Limites do plano `FREE`:
+
+- até 3 serviços ativos;
+- até 10 pedidos de orçamento por mês;
+- até 5 propostas por mês;
+- até 1 template de proposta.
+
+O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizadas em `lib/plan-limits.ts`.
+
+Importante: checkout, Pix, gateways de pagamento e cobrança recorrente ainda não foram implementados. A migration `add_provider_plan` ainda deve ser criada antes de usar o campo `ProviderProfile.plan` em um banco real.
 
 ## Como rodar localmente
 
@@ -149,6 +170,7 @@ Migrations existentes:
 
 Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service` e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
 Históricos de status, notas internas e templates de proposta já aparecem no front nas áreas correspondentes.
+O schema possui `PlanTier` e `ProviderProfile.plan`, mas a migration `add_provider_plan` ainda não foi criada nesta etapa.
 
 Comandos:
 
@@ -222,6 +244,7 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] Histórico de status da proposta
 - [x] Notas internas do pedido
 - [x] Templates de proposta
+- [x] Planos e limites de uso sem checkout real
 - [x] Polimento visual, validações e preparação para deploy
 
 ## Documentação complementar

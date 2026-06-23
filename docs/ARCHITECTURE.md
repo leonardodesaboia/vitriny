@@ -40,6 +40,10 @@ docs/
 Rotas públicas:
 
 - `app/page.tsx`
+- `app/(auth)/login/page.tsx`
+- `app/(auth)/cadastro/page.tsx`
+- `app/(auth)/esqueci-senha/page.tsx`
+- `app/(auth)/redefinir-senha/[token]/page.tsx`
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
 - `app/proposta/[publicToken]/page.tsx`
@@ -81,6 +85,7 @@ Server Actions ficam em `lib/actions/`:
 - `proposals.ts`
 - `proposal-templates.ts`
 - `proposal-response.ts`
+- `auth.ts` (`registerUser`, `loginWithCredentials`, `requestPasswordReset`, `resetPassword`)
 
 Elas validam sessão quando necessário e aplicam regras de ownership.
 
@@ -96,9 +101,14 @@ Configuração central:
 
 - `auth.ts`
 
-Provider:
+Providers:
 
-- GitHub OAuth.
+- Google OAuth.
+- Credentials (e-mail/senha), com `bcrypt` para hash/verificação de senha.
+
+Sessão:
+
+- Estratégia `jwt` (exigência do Credentials provider; antes era `database`).
 
 Adapter:
 
@@ -131,6 +141,25 @@ Schemas ficam em `lib/validations/`:
 - `quote-request-status.ts`
 - `proposal.ts`
 - `proposal-template.ts`
+- `auth.ts` (`registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`)
+
+## Planos e limites
+
+As regras de limites ficam centralizadas em `lib/plan-limits.ts`.
+
+O plano é armazenado em `ProviderProfile.plan`, usando `PlanTier`:
+
+- `FREE`
+- `PRO`
+
+Limites `FREE`:
+
+- 3 serviços ativos;
+- 10 pedidos de orçamento por mês;
+- 5 propostas por mês;
+- 1 template de proposta.
+
+`PRO` usa `null` nos limites para representar uso sem limite prático no MVP. Não há checkout, Pix, gateway ou cobrança real.
 
 ## Segurança adotada
 
@@ -144,12 +173,17 @@ Schemas ficam em `lib/validations/`:
 - Mudanças de status de pedidos são registradas em `QuoteRequestStatusHistory`.
 - Mudanças de status de propostas são registradas em `ProposalStatusHistory`.
 - Notas internas de pedidos e templates de proposta são autenticados e filtrados por ownership do prestador.
+- Senha de usuário sempre hash bcrypt, nunca texto puro.
+- E-mail duplicado entre Google e e-mail/senha é bloqueado, nunca vinculado automaticamente.
+- "Esqueci minha senha" nunca revela se um e-mail existe no sistema (mesma resposta em todos os casos).
 
 ## Riscos técnicos conhecidos
 
-- `QuoteRequest` possui `serviceId` opcional. A UI de pedidos ainda usa parsing legado da `description` para evitar conflito com alterações visuais em andamento.
+- `QuoteRequest` possui `serviceId` opcional. Pedidos novos salvam a descrição limpa; a UI de pedidos ainda usa parsing legado da `description` apenas para pedidos antigos sem `serviceId`.
 - Auth.js v5 está em beta (`next-auth@5.0.0-beta.31`).
-- O fluxo de proposta ainda usa campos fixos para itens; o editor dinâmico de itens continua sendo a próxima melhoria.
+- Sessão `jwt` não é invalidável manualmente antes de expirar.
+- Remetente do Resend (`onboarding@resend.dev`) é sandbox; trocar por domínio verificado antes de produção real.
+- O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Não há testes automatizados ainda.
 - Não há rate limit em formulários públicos.

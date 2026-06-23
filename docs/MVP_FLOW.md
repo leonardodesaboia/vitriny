@@ -5,24 +5,33 @@
 1. Usuário acessa landing page.
 2. Usuário faz login.
 3. Usuário acessa dashboard.
-4. Usuário cria/edita perfil.
-5. Usuário publica perfil.
-6. Usuário cadastra serviços.
-7. Cliente acessa `/u/[slug]`.
-8. Cliente envia pedido de orçamento.
-9. Prestador vê pedido.
-10. Prestador cria proposta.
-11. Cliente acessa `/proposta/[publicToken]`.
-12. Cliente aprova ou recusa.
-13. Prestador vê status atualizado.
+4. Usuário confere plano atual e uso dos limites.
+5. Usuário cria/edita perfil.
+6. Usuário publica perfil.
+7. Usuário cadastra serviços.
+8. Cliente acessa `/u/[slug]`.
+9. Cliente envia pedido de orçamento.
+10. Prestador vê pedido.
+11. Prestador cria proposta.
+12. Cliente acessa `/proposta/[publicToken]`.
+13. Cliente aprova ou recusa.
+14. Prestador vê status atualizado.
 
 ## Passo a passo manual
 
 ### 1. Login
 
 - Acesse `/login`.
-- Entre com GitHub.
+- Entre com Google, ou clique em "Cadastre-se" para criar conta com e-mail/senha em `/cadastro`.
 - Esperado: redirecionamento para `/dashboard`.
+
+### 1a. Recuperação de senha (apenas contas com senha)
+
+- Acesse `/esqueci-senha`, informe o e-mail.
+- Esperado: mensagem de sucesso genérica, sempre a mesma (mesmo se o e-mail não existir).
+- Se o e-mail tiver senha cadastrada, chega um link de redefinição (via Resend).
+- Acesse `/redefinir-senha/[token]`, defina nova senha.
+- Esperado: redirecionamento para `/login?reset=1`, login funciona com a nova senha.
 
 ### 2. Perfil
 
@@ -95,9 +104,18 @@ Verificar:
 
 - `AUTH_URL`
 - `AUTH_SECRET`
-- `AUTH_GITHUB_ID`
-- `AUTH_GITHUB_SECRET`
-- callback do GitHub OAuth
+- `AUTH_GOOGLE_ID`
+- `AUTH_GOOGLE_SECRET`
+- callback do Google OAuth
+- se for login por senha: e-mail/senha corretos, e se a conta não foi criada via Google (`password` nulo)
+
+### E-mail de redefinição de senha não chega
+
+Verificar:
+
+- `RESEND_API_KEY` configurada
+- remetente `onboarding@resend.dev` só entrega para o e-mail da própria conta Resend (sandbox)
+- se o e-mail informado tem senha cadastrada (contas só-Google não recebem e-mail de reset)
 
 ### Perfil público retorna 404
 

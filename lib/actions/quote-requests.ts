@@ -2,6 +2,12 @@
 
 import { redirect } from "next/navigation";
 
+import {
+  getCurrentMonthRange,
+  getPlanLimit,
+  hasReachedLimit,
+  PLAN_LIMIT_ERROR_CODES
+} from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { quoteRequestSchema } from "@/lib/validations/quote-request";
 
@@ -24,6 +30,7 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     },
     select: {
       id: true,
+      plan: true,
       isPublished: true
     }
   });
@@ -49,26 +56,50 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     }
   }
 
-  await prisma.quoteRequest.create({
-    data: {
-      providerId: profile.id,
-      serviceId: parsed.data.serviceId,
-      customerName: parsed.data.customerName,
-      customerEmail: parsed.data.customerEmail,
-      customerPhone: parsed.data.customerPhone,
-      description: parsed.data.serviceId
-        ? `Serviço selecionado: ${parsed.data.serviceId}\n\n${parsed.data.description}`
-        : parsed.data.description,
-      status: "NEW",
-      statusHistory: {
-        create: {
-          toStatus: "NEW",
-          actor: "CUSTOMER",
-          note: "Pedido criado pelo formulario publico."
+  const monthRange = getCurrentMonthRange();
+  const created = await prisma.$transaction(async (tx) => {
+    const monthlyRequestsCount = await tx.quoteRequest.count({
+      where: {
+        providerId: profile.id,
+        createdAt: {
+          gte: monthRange.start,
+          lt: monthRange.end
         }
       }
+    });
+    const limit = getPlanLimit(profile.plan, "monthlyQuoteRequests");
+
+    if (hasReachedLimit(monthlyRequestsCount, limit)) {
+      return false;
     }
+
+    await tx.quoteRequest.create({
+      data: {
+        providerId: profile.id,
+        serviceId: parsed.data.serviceId,
+        customerName: parsed.data.customerName,
+        customerEmail: parsed.data.customerEmail,
+        customerPhone: parsed.data.customerPhone,
+        description: parsed.data.description,
+        status: "NEW",
+        statusHistory: {
+          create: {
+            toStatus: "NEW",
+            actor: "CUSTOMER",
+            note: "Pedido criado pelo formulario publico."
+          }
+        }
+      }
+    });
+
+    return true;
   });
+
+  if (!created) {
+    redirect(
+      `/u/${slug}/orcamento?error=${PLAN_LIMIT_ERROR_CODES.monthlyQuoteRequests}`
+    );
+  }
 
   redirect(`/u/${slug}/orcamento?success=1`);
 }

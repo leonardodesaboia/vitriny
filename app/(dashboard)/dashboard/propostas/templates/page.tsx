@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ProposalTemplateForm } from "@/components/proposals/ProposalTemplateForm";
 import { deleteProposalTemplate } from "@/lib/actions/proposal-templates";
+import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type ProposalTemplatesPageProps = {
@@ -13,7 +14,9 @@ type ProposalTemplatesPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do modelo.",
   profile: "Crie o perfil do prestador antes de criar modelos.",
-  "not-found": "Modelo nao encontrado."
+  "not-found": "Modelo nao encontrado.",
+  "limit-proposal-templates":
+    LIMIT_ERROR_MESSAGES["limit-proposal-templates"]
 };
 
 export default async function ProposalTemplatesPage({

@@ -2,8 +2,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Card } from "@/components/ui/Card";
+import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -12,11 +14,14 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const monthRange = getCurrentMonthRange();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     include: {
-      quoteRequests: { select: { id: true, status: true } },
-      proposals: { select: { id: true, status: true } }
+      quoteRequests: { select: { id: true, status: true, createdAt: true } },
+      proposals: { select: { id: true, status: true, createdAt: true } },
+      proposalTemplates: { select: { id: true } },
+      services: { select: { id: true, isActive: true } }
     }
   });
 
@@ -27,6 +32,17 @@ export default async function DashboardPage() {
     profile?.proposals.filter((p) => p.status === "SENT").length ?? 0;
   const propostasAprovadas =
     profile?.proposals.filter((p) => p.status === "APPROVED").length ?? 0;
+  const limits = profile ? getPlanLimits(profile.plan) : null;
+  const monthlyQuoteRequests =
+    profile?.quoteRequests.filter(
+      (request) =>
+        request.createdAt >= monthRange.start && request.createdAt < monthRange.end
+    ).length ?? 0;
+  const monthlyProposals =
+    profile?.proposals.filter(
+      (proposal) =>
+        proposal.createdAt >= monthRange.start && proposal.createdAt < monthRange.end
+    ).length ?? 0;
 
   const metrics = [
     { label: "Pedidos totais", value: totalPedidos },
@@ -64,6 +80,34 @@ export default async function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {profile && limits ? (
+        <PlanUsageCard
+          plan={profile.plan}
+          usage={[
+            {
+              current: profile.services.filter((service) => service.isActive).length,
+              limit: limits.activeServices,
+              resource: "activeServices"
+            },
+            {
+              current: monthlyQuoteRequests,
+              limit: limits.monthlyQuoteRequests,
+              resource: "monthlyQuoteRequests"
+            },
+            {
+              current: monthlyProposals,
+              limit: limits.monthlyProposals,
+              resource: "monthlyProposals"
+            },
+            {
+              current: profile.proposalTemplates.length,
+              limit: limits.proposalTemplates,
+              resource: "proposalTemplates"
+            }
+          ]}
+        />
+      ) : null}
 
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <Card hoverable className="p-6">

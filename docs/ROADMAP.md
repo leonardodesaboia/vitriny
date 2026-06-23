@@ -19,6 +19,10 @@
 - Histórico de status da proposta
 - Notas internas do pedido
 - Templates de proposta
+- Editor dinâmico de itens da proposta
+- Planos e limites de uso sem checkout real
+- Login com Google OAuth e cadastro/login por e-mail e senha (substituindo GitHub OAuth)
+- Recuperação de senha por e-mail (Resend)
 - Polimento visual, validações e preparação para deploy
 
 ## Próximos passos recomendados
@@ -31,11 +35,13 @@
 
 ## Melhorias de curto prazo
 
-- Melhorar formulário de proposta com itens dinâmicos.
 - Criar página de detalhe do pedido.
 - Melhorar mensagens de erro por campo.
 - Adicionar página de configurações do prestador.
 - Criar página de detalhe da proposta.
+- Verificação de e-mail no cadastro por senha (não implementado nesta etapa).
+- Vínculo de contas entre Google e e-mail/senha quando o e-mail coincide (hoje bloqueado deliberadamente, sem auto-merge).
+- Trocar remetente do Resend de `onboarding@resend.dev` (sandbox) para domínio verificado.
 
 ## Melhorias de médio prazo
 
@@ -48,6 +54,7 @@
 
 - Pix.
 - Pagamento real.
+- Checkout de upgrade.
 - WhatsApp API.
 - PDF avançado.
 - Assinatura digital.

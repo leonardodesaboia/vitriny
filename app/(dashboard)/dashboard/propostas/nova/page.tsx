@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { ProposalForm } from "@/components/proposals/ProposalForm";
+import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type NewProposalPageProps = {
@@ -15,7 +16,9 @@ type NewProposalPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados da proposta.",
-  exists: "Este pedido já possui uma proposta."
+  exists: "Este pedido já possui uma proposta.",
+  "limit-monthly-proposals":
+    LIMIT_ERROR_MESSAGES["limit-monthly-proposals"]
 };
 
 export default async function NewProposalPage({ searchParams }: NewProposalPageProps) {

@@ -40,16 +40,30 @@ export async function respondToProposal(
     redirect(`/proposta/${publicToken}?error=expired`);
   }
 
-  await prisma.$transaction(async (tx) => {
-    await tx.proposal.update({
+  const answeredAt = new Date();
+
+  const answered = await prisma.$transaction(async (tx) => {
+    const updateResult = await tx.proposal.updateMany({
       where: {
-        id: proposal.id
+        id: proposal.id,
+        status: {
+          notIn: ["APPROVED", "REJECTED"]
+        },
+        validUntil: proposal.validUntil
+          ? {
+              gte: answeredAt
+            }
+          : undefined
       },
       data: {
         status: response,
-        respondedAt: new Date()
+        respondedAt: answeredAt
       }
     });
+
+    if (updateResult.count === 0) {
+      return false;
+    }
 
     await tx.proposalStatusHistory.create({
       data: {
@@ -87,7 +101,13 @@ export async function respondToProposal(
         }
       });
     }
+
+    return true;
   });
+
+  if (!answered) {
+    redirect(`/proposta/${publicToken}?error=answered`);
+  }
 
   revalidatePath(`/proposta/${publicToken}`);
   redirect(`/proposta/${publicToken}?response=${response.toLowerCase()}`);

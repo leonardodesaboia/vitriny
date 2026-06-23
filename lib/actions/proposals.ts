@@ -6,6 +6,12 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
+import {
+  getCurrentMonthRange,
+  getPlanLimit,
+  hasReachedLimit,
+  PLAN_LIMIT_ERROR_CODES
+} from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { proposalSchema } from "@/lib/validations/proposal";
 
@@ -59,7 +65,8 @@ export async function createProposal(formData: FormData) {
       userId: session.user.id
     },
     select: {
-      id: true
+      id: true,
+      plan: true
     }
   });
 
@@ -106,7 +113,23 @@ export async function createProposal(formData: FormData) {
     new Prisma.Decimal(0)
   );
 
-  await prisma.$transaction(async (tx) => {
+  const monthRange = getCurrentMonthRange();
+  const created = await prisma.$transaction(async (tx) => {
+    const monthlyProposalsCount = await tx.proposal.count({
+      where: {
+        providerId: profile.id,
+        createdAt: {
+          gte: monthRange.start,
+          lt: monthRange.end
+        }
+      }
+    });
+    const limit = getPlanLimit(profile.plan, "monthlyProposals");
+
+    if (hasReachedLimit(monthlyProposalsCount, limit)) {
+      return false;
+    }
+
     await tx.proposal.create({
       data: {
         providerId: profile.id,
@@ -152,7 +175,15 @@ export async function createProposal(formData: FormData) {
         }
       });
     }
+
+    return true;
   });
+
+  if (!created) {
+    redirect(
+      `/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=${PLAN_LIMIT_ERROR_CODES.monthlyProposals}`
+    );
+  }
 
   revalidatePath("/dashboard/pedidos");
   redirect("/dashboard/pedidos");

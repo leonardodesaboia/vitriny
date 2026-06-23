@@ -16,18 +16,18 @@ O banco agora possui relação opcional entre `QuoteRequest` e `Service`:
 - `QuoteRequest.service`
 - `Service.quoteRequests`
 
-Pedidos novos já salvam `serviceId` em `lib/actions/quote-requests.ts`.
+Pedidos novos já salvam `serviceId` em `lib/actions/quote-requests.ts` e mantêm `description` sem prefixo técnico.
 
 Compatibilidade mantida:
 
 - pedidos antigos ainda podem ter o serviço escolhido prefixado em `QuoteRequest.description`;
 - `components/quote-request/QuoteRequestList.tsx` ainda usa esse prefixo apenas quando `quoteRequest.service` não existe.
 
-### Arquivos a alterar depois
+### Arquivos alterados
 
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `components/quote-request/QuoteRequestList.tsx`
-- opcionalmente `lib/actions/quote-requests.ts`, apenas depois que a UI não depender mais do prefixo legado.
+- `lib/actions/quote-requests.ts`
 
 ### Alteração em `app/(dashboard)/dashboard/pedidos/page.tsx`
 
@@ -96,20 +96,12 @@ Há duas opções:
 
 Recomendação: usar fallback temporário no front, porque é menos arriscado e não exige interpretar dados antigos no banco automaticamente.
 
-### Alteração posterior em `lib/actions/quote-requests.ts`
+### Gravação em `lib/actions/quote-requests.ts`
 
-Somente depois que a UI usar `quoteRequest.service`, remover o prefixo legado da descrição:
+Pedidos novos gravam somente a descrição enviada pelo cliente:
 
 ```ts
 description: parsed.data.description
-```
-
-Em vez de:
-
-```ts
-description: parsed.data.serviceId
-  ? `Serviço selecionado: ${parsed.data.serviceId}\n\n${parsed.data.description}`
-  : parsed.data.description
 ```
 
 ### Critérios de aceite
@@ -126,12 +118,6 @@ description: parsed.data.serviceId
 ```bash
 npm.cmd run lint
 npm.cmd run build
-```
-
-Se a action for alterada para remover o prefixo legado:
-
-```bash
-npm.cmd run prisma:generate
 npx.cmd prisma validate
 ```
 
@@ -452,23 +438,22 @@ O uso do template nao deve criar relacao obrigatoria entre `Proposal` e `Proposa
 
 ## 6. Editor dinamico de itens da proposta
 
-Status: pendente.
+Status: implementado.
 
-O formulario atual ainda trabalha com slots fixos de itens. O proximo passo e permitir adicionar e remover linhas sem depender de uma quantidade predefinida.
+O formulario de proposta usa `ProposalItemsFields` para adicionar e remover linhas sem depender de uma quantidade predefinida.
 
 ### Contexto
 
-Hoje o formulario de proposta ja recebe pre-preenchimento de templates, mas a experiencia ainda limita a estrutura dos itens ao layout atual do form.
+O formulario de proposta recebe pre-preenchimento de templates e renderiza esses itens como linhas editaveis no editor dinamico.
 
-### Arquivos provaveis a alterar depois
+### Arquivos alterados
 
 - `components/proposals/ProposalForm.tsx`
 - `components/proposals/ProposalItemsFields.tsx`
-- `app/(dashboard)/dashboard/propostas/nova/page.tsx`
 
 ### Criterios de aceite
 
-- Prestador consegue adicionar mais itens alem do limite atual.
+- Prestador consegue adicionar mais itens alem do limite anterior.
 - Prestador consegue remover linhas de item antes de enviar.
 - Template continua preenchendo os campos iniciais da proposta.
 - A precificacao continua usando `Decimal` e mantendo o total calculado no servidor.

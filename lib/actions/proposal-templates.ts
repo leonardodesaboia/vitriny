@@ -5,8 +5,11 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { getPlanLimit, hasReachedLimit, PLAN_LIMIT_ERROR_CODES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { proposalTemplateSchema } from "@/lib/validations/proposal-template";
+
+const templatesPath = "/dashboard/propostas/templates";
 
 async function getCurrentProviderProfile() {
   const session = await auth();
@@ -20,7 +23,8 @@ async function getCurrentProviderProfile() {
       userId: session.user.id
     },
     select: {
-      id: true
+      id: true,
+      plan: true
     }
   });
 }
@@ -70,13 +74,24 @@ export async function createProposalTemplate(formData: FormData) {
   const profile = await getCurrentProviderProfile();
 
   if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
+    redirect(`${templatesPath}?error=profile`);
   }
 
   const parsed = parseTemplateForm(formData);
 
   if (!parsed.success) {
-    redirect("/dashboard/pedidos?error=invalid");
+    redirect(`${templatesPath}?error=invalid`);
+  }
+
+  const templatesCount = await prisma.proposalTemplate.count({
+    where: {
+      providerId: profile.id
+    }
+  });
+  const limit = getPlanLimit(profile.plan, "proposalTemplates");
+
+  if (hasReachedLimit(templatesCount, limit)) {
+    redirect(`${templatesPath}?error=${PLAN_LIMIT_ERROR_CODES.proposalTemplates}`);
   }
 
   await prisma.proposalTemplate.create({
@@ -91,8 +106,8 @@ export async function createProposalTemplate(formData: FormData) {
     }
   });
 
-  revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  revalidatePath(templatesPath);
+  redirect(templatesPath);
 }
 
 export async function updateProposalTemplate(formData: FormData) {
@@ -100,11 +115,11 @@ export async function updateProposalTemplate(formData: FormData) {
   const parsed = parseTemplateForm(formData);
 
   if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
+    redirect(`${templatesPath}?error=profile`);
   }
 
   if (!parsed.success || !parsed.data.templateId) {
-    redirect("/dashboard/pedidos?error=invalid");
+    redirect(`${templatesPath}?error=invalid`);
   }
 
   const template = await prisma.proposalTemplate.findFirst({
@@ -118,7 +133,7 @@ export async function updateProposalTemplate(formData: FormData) {
   });
 
   if (!template) {
-    redirect("/dashboard/pedidos?error=not-found");
+    redirect(`${templatesPath}?error=not-found`);
   }
 
   await prisma.$transaction(async (tx) => {
@@ -147,8 +162,8 @@ export async function updateProposalTemplate(formData: FormData) {
     });
   });
 
-  revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  revalidatePath(templatesPath);
+  redirect(templatesPath);
 }
 
 export async function deleteProposalTemplate(formData: FormData) {
@@ -156,11 +171,11 @@ export async function deleteProposalTemplate(formData: FormData) {
   const templateId = String(formData.get("templateId") ?? "");
 
   if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
+    redirect(`${templatesPath}?error=profile`);
   }
 
   if (!templateId) {
-    redirect("/dashboard/pedidos?error=invalid");
+    redirect(`${templatesPath}?error=invalid`);
   }
 
   const template = await prisma.proposalTemplate.findFirst({
@@ -174,7 +189,7 @@ export async function deleteProposalTemplate(formData: FormData) {
   });
 
   if (!template) {
-    redirect("/dashboard/pedidos?error=not-found");
+    redirect(`${templatesPath}?error=not-found`);
   }
 
   await prisma.proposalTemplate.delete({
@@ -183,6 +198,6 @@ export async function deleteProposalTemplate(formData: FormData) {
     }
   });
 
-  revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  revalidatePath(templatesPath);
+  redirect(templatesPath);
 }

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
+import { getPlanLimit, hasReachedLimit, PLAN_LIMIT_ERROR_CODES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { serviceSchema } from "@/lib/validations/service";
 
@@ -20,7 +21,8 @@ async function getCurrentProviderProfile() {
       userId: session.user.id
     },
     select: {
-      id: true
+      id: true,
+      plan: true
     }
   });
 }
@@ -49,6 +51,22 @@ export async function createService(formData: FormData) {
 
   if (!parsed.success) {
     redirect("/dashboard/servicos?error=invalid");
+  }
+
+  if (parsed.data.isActive) {
+    const activeServicesCount = await prisma.service.count({
+      where: {
+        providerId: profile.id,
+        isActive: true
+      }
+    });
+    const limit = getPlanLimit(profile.plan, "activeServices");
+
+    if (hasReachedLimit(activeServicesCount, limit)) {
+      redirect(
+        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
+      );
+    }
   }
 
   await prisma.service.create({
@@ -89,12 +107,29 @@ export async function updateService(formData: FormData) {
       providerId: profile.id
     },
     select: {
-      id: true
+      id: true,
+      isActive: true
     }
   });
 
   if (!service) {
     redirect("/dashboard/servicos?error=not-found");
+  }
+
+  if (!service.isActive && parsed.data.isActive) {
+    const activeServicesCount = await prisma.service.count({
+      where: {
+        providerId: profile.id,
+        isActive: true
+      }
+    });
+    const limit = getPlanLimit(profile.plan, "activeServices");
+
+    if (hasReachedLimit(activeServicesCount, limit)) {
+      redirect(
+        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
+      );
+    }
   }
 
   await prisma.service.update({
@@ -128,12 +163,29 @@ export async function toggleServiceStatus(formData: FormData) {
       providerId: profile.id
     },
     select: {
-      id: true
+      id: true,
+      isActive: true
     }
   });
 
   if (!service) {
     redirect("/dashboard/servicos?error=not-found");
+  }
+
+  if (!service.isActive && nextStatus) {
+    const activeServicesCount = await prisma.service.count({
+      where: {
+        providerId: profile.id,
+        isActive: true
+      }
+    });
+    const limit = getPlanLimit(profile.plan, "activeServices");
+
+    if (hasReachedLimit(activeServicesCount, limit)) {
+      redirect(
+        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
+      );
+    }
   }
 
   await prisma.service.update({

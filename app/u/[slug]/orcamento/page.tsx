@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { QuoteRequestForm } from "@/components/quote-request/QuoteRequestForm";
+import { PUBLIC_LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type PublicQuoteRequestPageProps = {
@@ -18,7 +19,9 @@ type PublicQuoteRequestPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   service: "O serviço selecionado não está disponível.",
-  unavailable: "Este perfil não está disponível para pedidos."
+  unavailable: "Este perfil não está disponível para pedidos.",
+  "limit-monthly-quote-requests":
+    PUBLIC_LIMIT_ERROR_MESSAGES["limit-monthly-quote-requests"]
 };
 
 export default async function PublicQuoteRequestPage({

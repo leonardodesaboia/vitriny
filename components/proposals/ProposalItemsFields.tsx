@@ -5,7 +5,7 @@ import { useState } from "react";
 type ProposalItemRow = {
   key: string;
   description: string;
-  quantity: number;
+  quantity: string;
   unitPrice: string;
 };
 
@@ -21,7 +21,7 @@ function createEmptyRow(index: number): ProposalItemRow {
   return {
     key: `item-${Date.now()}-${index}`,
     description: "",
-    quantity: 1,
+    quantity: "1",
     unitPrice: ""
   };
 }
@@ -32,7 +32,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
       ? initialItems.map((item, index) => ({
           key: `initial-${index}`,
           description: item.description,
-          quantity: item.quantity,
+          quantity: String(item.quantity),
           unitPrice: item.unitPrice
         }))
       : [createEmptyRow(0)]
@@ -48,7 +48,7 @@ export function ProposalItemsFields({ initialItems }: ProposalItemsFieldsProps) 
         row.key === key
           ? {
               ...row,
-              [field]: field === "quantity" ? Number(value) : value
+              [field]: value
             }
           : row
       )

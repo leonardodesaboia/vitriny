@@ -10,7 +10,7 @@ O MVP principal está implementado.
 
 Funciona hoje:
 
-- login GitHub;
+- login com Google OAuth e e-mail/senha (cadastro, login, recuperação de senha);
 - dashboard protegido;
 - perfil do prestador;
 - serviços;
@@ -22,7 +22,9 @@ Funciona hoje:
 - aprovação/recusa;
 - histórico de status de pedido e proposta;
 - notas internas do pedido;
-- templates de proposta.
+- templates de proposta;
+- editor dinâmico de itens da proposta;
+- planos e limites de uso sem checkout real.
 
 ## Stack
 
@@ -31,8 +33,21 @@ Funciona hoje:
 - Tailwind CSS
 - PostgreSQL
 - Prisma
-- Auth.js / NextAuth v5 beta
+- Auth.js / NextAuth v5 beta (Google OAuth + Credentials e-mail/senha, sessão `jwt`)
 - Zod
+- bcryptjs (hash de senha)
+- Resend (e-mail de redefinição de senha)
+
+## Planos e limites
+
+O plano fica em `ProviderProfile.plan` com enum `PlanTier`.
+
+Limites centralizados em `lib/plan-limits.ts`:
+
+- `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
+- `PRO`: limites `null`, sem limite prático no MVP.
+
+Não há checkout, Pix, gateway ou cobrança real. A migration `add_provider_plan` ainda não foi criada nesta etapa.
 
 ## Comandos principais
 
@@ -70,10 +85,9 @@ Priorize:
 
 1. Validar fluxo em staging.
 2. Adicionar testes E2E do caminho principal.
-3. Melhorar o editor de itens da proposta para permitir inserir/remover linhas de forma dinâmica.
-4. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
-5. Adicionar notificações por e-mail.
-6. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição quando não houver mais dependência dele.
+3. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
+4. Adicionar notificações por e-mail.
+5. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição.
 
 ## Padrões de código existentes
 
@@ -92,6 +106,11 @@ Priorize:
 - Usar `publicToken` para proposta pública.
 - Usar `slug` para perfil público.
 - Cliente público não precisa de login.
+- Login é só Google OAuth + e-mail/senha. GitHub foi removido; não reintroduzir sem pedido explícito.
+- Sessão é `jwt`, não `database` — necessário para o Credentials provider.
+- Senha sempre hash bcrypt, nunca texto puro.
+- Não vincular contas automaticamente entre Google e e-mail/senha com o mesmo e-mail.
+- "Esqueci minha senha" nunca deve revelar se um e-mail existe no sistema.
 
 ## Arquivos para ler primeiro
 
@@ -117,12 +136,13 @@ Priorize:
 - Templates de proposta: sempre filtrar pelo prestador dono do modelo.
 - Proposal response: bloquear se já aprovada/recusada ou expirada.
 - Dinheiro: manter `Decimal`, não usar `Float`.
+- Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
 
 ## Pendências de front documentadas
 
-- A relação `QuoteRequest.serviceId` existe no banco e já é consumida no front, com fallback legado apenas para pedidos antigos.
+- A relação `QuoteRequest.serviceId` existe no banco e já é consumida no front. Pedidos novos salvam a descrição limpa; o fallback legado existe apenas para pedidos antigos.
 - `QuoteRequestStatusHistory`, `ProposalStatusHistory`, `QuoteRequestInternalNote`, `ProposalTemplate` e `ProposalTemplateItem` já têm UI nas áreas correspondentes.
-- O formulário de proposta ainda usa slots fixos de itens; o próximo passo é o editor dinâmico de itens.
+- O formulário de proposta usa editor dinâmico para adicionar/remover itens sem limite fixo de linhas.
 - Detalhes de implementação futura ficam em `docs/FRONTEND_PENDING.md`.
 
 ## Validação obrigatória após mudanças

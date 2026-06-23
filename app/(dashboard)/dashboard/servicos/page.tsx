@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { ServiceForm } from "@/components/services/ServiceForm";
 import { ServiceList } from "@/components/services/ServiceList";
+import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type ServicesPageProps = {
@@ -15,7 +16,8 @@ type ServicesPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do serviço.",
   profile: "Crie o perfil do prestador antes de cadastrar serviços.",
-  "not-found": "Serviço não encontrado."
+  "not-found": "Serviço não encontrado.",
+  "limit-active-services": LIMIT_ERROR_MESSAGES["limit-active-services"]
 };
 
 export default async function ServicesPage({ searchParams }: ServicesPageProps) {
