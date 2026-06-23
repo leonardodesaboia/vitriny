@@ -21,9 +21,17 @@ const statusLabels: Record<string, string> = {
   EXPIRED: "Expirada"
 };
 
+const statusColors: Record<string, string> = {
+  DRAFT: "bg-paper-soft text-ink-muted",
+  SENT: "bg-amber-soft text-amber",
+  APPROVED: "bg-mint text-leaf",
+  REJECTED: "bg-red-50 text-red-700",
+  EXPIRED: "bg-paper-soft text-ink-muted"
+};
+
 const responseMessages: Record<string, string> = {
   approved: "Proposta aprovada com sucesso.",
-  rejected: "Proposta recusada com sucesso."
+  rejected: "Proposta recusada."
 };
 
 const errorMessages: Record<string, string> = {
@@ -40,9 +48,7 @@ function formatMoney(value: { toString: () => string }) {
 }
 
 function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("pt-BR", {
-    dateStyle: "short"
-  }).format(date);
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(date);
 }
 
 export default async function PublicProposalPage({
@@ -53,27 +59,17 @@ export default async function PublicProposalPage({
   const query = await searchParams;
 
   const proposal = await prisma.proposal.findUnique({
-    where: {
-      publicToken
-    },
+    where: { publicToken },
     include: {
       provider: true,
       quoteRequest: true,
-      items: {
-        orderBy: {
-          createdAt: "asc"
-        }
-      }
+      items: { orderBy: { createdAt: "asc" } }
     }
   });
 
-  if (!proposal) {
-    notFound();
-  }
+  if (!proposal) notFound();
 
-  const isExpired = proposal.validUntil
-    ? proposal.validUntil < new Date()
-    : false;
+  const isExpired = proposal.validUntil ? proposal.validUntil < new Date() : false;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
   const canRespond = !isAnswered && !isExpired;
@@ -82,227 +78,247 @@ export default async function PublicProposalPage({
     .filter(Boolean)
     .join(", ");
 
+  const displayStatus = isExpired ? "EXPIRED" : proposal.status;
+
   return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink">
-      <section className="mx-auto max-w-5xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-leaf">
-              Proposta
-            </p>
-            <h1 className="mt-3 text-4xl font-bold">{proposal.title}</h1>
+    <main className="min-h-screen bg-paper px-4 py-12 text-ink sm:px-6">
+      <div className="mx-auto max-w-3xl">
+        {/* Document header */}
+        <div className="rounded-2xl border border-paper-soft bg-white shadow-card">
+          {/* Top bar */}
+          <div className="grain flex items-center justify-between rounded-t-2xl bg-leaf px-8 py-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+                Proposta comercial
+              </p>
+              <h1 className="mt-1 font-fraunces text-3xl font-bold text-white md:text-4xl">
+                {proposal.title}
+              </h1>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[displayStatus] ?? "bg-paper-soft text-ink-muted"}`}
+            >
+              {isExpired ? "Expirada" : statusLabels[proposal.status]}
+            </span>
+          </div>
+
+          <div className="p-8">
             {proposal.description ? (
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
+              <p className="max-w-2xl text-sm leading-7 text-ink-muted">
                 {proposal.description}
               </p>
             ) : null}
-          </div>
-          <div className="rounded-lg border border-stone-200 bg-paper p-4">
-            <p className="text-sm font-semibold text-stone-500">Status</p>
-            <p className="mt-1 text-lg font-bold text-leaf">
-              {isExpired ? "Expirada" : statusLabels[proposal.status]}
-            </p>
-          </div>
-        </div>
 
-        {isExpired ? (
-          <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-            Esta proposta passou da data de validade.
-          </div>
-        ) : null}
-
-        {query.response ? (
-          <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
-            {responseMessages[query.response] ?? "Resposta registrada."}
-          </div>
-        ) : null}
-
-        {proposal.status === "APPROVED" ? (
-          <div className="mt-6 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700">
-            Esta proposta foi aprovada.
-          </div>
-        ) : null}
-
-        {proposal.status === "REJECTED" ? (
-          <div className="mt-6 rounded-md border border-stone-300 bg-stone-50 px-4 py-3 text-sm font-semibold text-stone-700">
-            Esta proposta foi recusada.
-          </div>
-        ) : null}
-
-        {query.error ? (
-          <div className="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-            {errorMessages[query.error] ?? "Não foi possível responder."}
-          </div>
-        ) : null}
-
-        <div className="mt-8 grid gap-5 md:grid-cols-2">
-          <div className="rounded-lg border border-stone-200 bg-paper p-5">
-            <h2 className="text-xl font-bold text-ink">Prestador</h2>
-            <dl className="mt-4 grid gap-3 text-sm">
-              <div>
-                <dt className="font-semibold text-stone-500">Negócio</dt>
-                <dd className="mt-1 text-ink">{proposal.provider.businessName}</dd>
+            {/* Alerts */}
+            {isExpired ? (
+              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                Esta proposta passou da data de validade.
               </div>
-              {proposal.provider.email ? (
-                <div>
-                  <dt className="font-semibold text-stone-500">E-mail</dt>
-                  <dd className="mt-1 text-ink">{proposal.provider.email}</dd>
-                </div>
-              ) : null}
-              {proposal.provider.phone ? (
-                <div>
-                  <dt className="font-semibold text-stone-500">Telefone</dt>
-                  <dd className="mt-1 text-ink">{proposal.provider.phone}</dd>
-                </div>
-              ) : null}
-              {providerLocation ? (
-                <div>
-                  <dt className="font-semibold text-stone-500">Localização</dt>
-                  <dd className="mt-1 text-ink">{providerLocation}</dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-
-          <div className="rounded-lg border border-stone-200 bg-paper p-5">
-            <h2 className="text-xl font-bold text-ink">Cliente</h2>
-            <dl className="mt-4 grid gap-3 text-sm">
-              <div>
-                <dt className="font-semibold text-stone-500">Nome</dt>
-                <dd className="mt-1 text-ink">
-                  {proposal.quoteRequest.customerName}
-                </dd>
-              </div>
-              {proposal.quoteRequest.customerEmail ? (
-                <div>
-                  <dt className="font-semibold text-stone-500">E-mail</dt>
-                  <dd className="mt-1 text-ink">
-                    {proposal.quoteRequest.customerEmail}
-                  </dd>
-                </div>
-              ) : null}
-              {proposal.quoteRequest.customerPhone ? (
-                <div>
-                  <dt className="font-semibold text-stone-500">Telefone</dt>
-                  <dd className="mt-1 text-ink">
-                    {proposal.quoteRequest.customerPhone}
-                  </dd>
-                </div>
-              ) : null}
-            </dl>
-          </div>
-        </div>
-
-        <section className="mt-8">
-          <h2 className="text-2xl font-bold text-ink">Itens</h2>
-          <div className="mt-5 grid gap-4">
-            {proposal.items.map((item) => (
-              <article
-                className="rounded-lg border border-stone-200 bg-paper p-5"
-                key={item.id}
-              >
-                <div className="grid gap-4 md:grid-cols-[1fr_120px_160px_160px]">
-                  <div>
-                    <p className="text-sm font-semibold text-stone-500">
-                      Descrição
-                    </p>
-                    <p className="mt-1 text-sm text-ink">{item.description}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-500">Qtd.</p>
-                    <p className="mt-1 text-sm text-ink">{item.quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-500">
-                      Valor unitário
-                    </p>
-                    <p className="mt-1 text-sm text-ink">
-                      {formatMoney(item.unitPrice)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-stone-500">Total</p>
-                    <p className="mt-1 text-sm font-bold text-ink">
-                      {formatMoney(item.totalPrice)}
-                    </p>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
-          <dl className="grid gap-4 md:grid-cols-3">
-            <div>
-              <dt className="text-sm font-semibold text-stone-500">Total</dt>
-              <dd className="mt-1 text-2xl font-bold text-ink">
-                {formatMoney(proposal.totalAmount)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-semibold text-stone-500">Validade</dt>
-              <dd className="mt-1 text-base font-semibold text-ink">
-                {proposal.validUntil ? formatDate(proposal.validUntil) : "Sem data"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-sm font-semibold text-stone-500">Status</dt>
-              <dd className="mt-1 text-base font-semibold text-ink">
-                {isExpired ? "Expirada" : statusLabels[proposal.status]}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        {isAnswered ? (
-          <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
-            <p className="text-sm font-semibold text-ink">
-              Esta proposta já foi respondida como {statusLabels[proposal.status]}.
-            </p>
-            {proposal.respondedAt ? (
-              <p className="mt-2 text-sm text-stone-600">
-                Respondida em {formatDate(proposal.respondedAt)}.
-              </p>
             ) : null}
+            {query.response ? (
+              <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3 text-sm font-semibold text-leaf">
+                {responseMessages[query.response] ?? "Resposta registrada."}
+              </div>
+            ) : null}
+            {proposal.status === "APPROVED" && !query.response ? (
+              <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3 text-sm font-semibold text-leaf">
+                Esta proposta foi aprovada.
+              </div>
+            ) : null}
+            {proposal.status === "REJECTED" && !query.response ? (
+              <div className="mt-6 rounded-lg border border-paper-soft bg-paper-soft px-4 py-3 text-sm font-semibold text-ink-muted">
+                Esta proposta foi recusada.
+              </div>
+            ) : null}
+            {query.error ? (
+              <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {errorMessages[query.error] ?? "Não foi possível responder."}
+              </div>
+            ) : null}
+
+            {/* Provider + Client */}
+            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl border border-paper-soft bg-paper p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+                  Prestador
+                </p>
+                <p className="mt-2 font-fraunces text-lg font-bold text-ink">
+                  {proposal.provider.businessName}
+                </p>
+                <dl className="mt-3 grid gap-1.5 text-sm">
+                  {proposal.provider.email ? (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-ink-muted">E-mail</dt>
+                      <dd className="font-medium text-ink">
+                        {proposal.provider.email}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {proposal.provider.phone ? (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-ink-muted">Telefone</dt>
+                      <dd className="font-medium text-ink">
+                        {proposal.provider.phone}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {providerLocation ? (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-ink-muted">Local</dt>
+                      <dd className="font-medium text-ink">{providerLocation}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+
+              <div className="rounded-xl border border-paper-soft bg-paper p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Cliente
+                </p>
+                <p className="mt-2 font-fraunces text-lg font-bold text-ink">
+                  {proposal.quoteRequest.customerName}
+                </p>
+                <dl className="mt-3 grid gap-1.5 text-sm">
+                  {proposal.quoteRequest.customerEmail ? (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-ink-muted">E-mail</dt>
+                      <dd className="font-medium text-ink">
+                        {proposal.quoteRequest.customerEmail}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {proposal.quoteRequest.customerPhone ? (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-ink-muted">Telefone</dt>
+                      <dd className="font-medium text-ink">
+                        {proposal.quoteRequest.customerPhone}
+                      </dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+            </div>
+
+            {/* Items table */}
+            <div className="mt-8">
+              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Itens da proposta
+              </p>
+              <div className="mt-3 overflow-hidden rounded-xl border border-paper-soft">
+                {/* Table header */}
+                <div className="grid grid-cols-[1fr_60px_120px_120px] gap-4 bg-paper-soft px-5 py-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  <span>Descrição</span>
+                  <span className="text-right">Qtd</span>
+                  <span className="text-right">Unit.</span>
+                  <span className="text-right">Total</span>
+                </div>
+                {proposal.items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className={`grid grid-cols-[1fr_60px_120px_120px] gap-4 px-5 py-4 text-sm ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
+                  >
+                    <span className="font-medium text-ink">{item.description}</span>
+                    <span className="text-right text-ink-muted">{item.quantity}</span>
+                    <span className="text-right text-ink-muted">
+                      {formatMoney(item.unitPrice)}
+                    </span>
+                    <span className="text-right font-semibold text-ink">
+                      {formatMoney(item.totalPrice)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Totals + validity */}
+            <div className="mt-4 flex flex-col items-end gap-4 rounded-xl border border-paper-soft bg-paper p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex gap-6 text-sm text-ink-muted">
+                {proposal.validUntil ? (
+                  <div>
+                    <span>Válido até </span>
+                    <span className="font-semibold text-ink">
+                      {formatDate(proposal.validUntil)}
+                    </span>
+                  </div>
+                ) : null}
+                {proposal.respondedAt ? (
+                  <div>
+                    <span>Respondida em </span>
+                    <span className="font-semibold text-ink">
+                      {formatDate(proposal.respondedAt)}
+                    </span>
+                  </div>
+                ) : null}
+              </div>
+              <div className="text-right">
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Total
+                </p>
+                <p className="font-fraunces text-4xl font-bold text-ink">
+                  {formatMoney(proposal.totalAmount)}
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            {isAnswered ? (
+              <div className="mt-6 rounded-xl border border-paper-soft bg-paper p-5 text-center">
+                <p className="text-sm font-semibold text-ink">
+                  Esta proposta já foi respondida como{" "}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs ${statusColors[proposal.status]}`}
+                  >
+                    {statusLabels[proposal.status]}
+                  </span>
+                </p>
+              </div>
+            ) : !canRespond ? (
+              <div className="mt-6 rounded-xl border border-paper-soft bg-paper p-5 text-center">
+                <p className="text-sm text-ink-muted">
+                  Esta proposta está expirada e não pode mais ser respondida.
+                </p>
+              </div>
+            ) : (
+              <div className="mt-8 flex flex-col gap-3 border-t border-paper-soft pt-6 sm:flex-row">
+                <form
+                  action={async () => {
+                    "use server";
+                    await respondToProposal(publicToken, "APPROVED");
+                  }}
+                  className="flex-1"
+                >
+                  <button
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    type="submit"
+                  >
+                    Aprovar proposta
+                  </button>
+                </form>
+                <form
+                  action={async () => {
+                    "use server";
+                    await respondToProposal(publicToken, "REJECTED");
+                  }}
+                  className="flex-1"
+                >
+                  <button
+                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-sm font-semibold text-ink transition hover:border-red-300 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    type="submit"
+                  >
+                    Recusar proposta
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
-        ) : !canRespond ? (
-          <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
-            <p className="text-sm font-semibold text-ink">
-              Esta proposta não pode mais ser respondida porque está expirada.
-            </p>
-          </div>
-        ) : (
-          <div className="mt-8 flex flex-col gap-3 border-t border-stone-200 pt-6 sm:flex-row">
-            <form
-              action={async () => {
-                "use server";
-                await respondToProposal(publicToken, "APPROVED");
-              }}
-            >
-              <button
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
-                type="submit"
-              >
-                Aprovar proposta
-              </button>
-            </form>
-            <form
-              action={async () => {
-                "use server";
-                await respondToProposal(publicToken, "REJECTED");
-              }}
-            >
-              <button
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-                type="submit"
-              >
-                Recusar proposta
-              </button>
-            </form>
-          </div>
-        )}
-      </section>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-6 text-center text-xs text-ink-muted">
+          Proposta gerada via{" "}
+          <span className="font-fraunces font-semibold text-leaf">OrçaFácil</span>
+        </p>
+      </div>
     </main>
   );
 }

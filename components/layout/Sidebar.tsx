@@ -51,6 +51,7 @@ export function Sidebar() {
 
   useEffect(() => {
     const stored = localStorage.getItem("sidebar-expanded");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (stored !== null) setExpanded(stored === "true");
   }, []);
 

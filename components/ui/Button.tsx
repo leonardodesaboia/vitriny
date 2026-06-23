@@ -30,7 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <motion.button
         ref={ref}
         whileTap={{ scale: 0.97 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+        transition={{ type: "spring" as const, stiffness: 400, damping: 25 }}
         disabled={disabled || loading}
         className={[
           "inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5",

@@ -1,113 +1,129 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
+import { Card } from "@/components/ui/Card";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const session = await auth();
-
   if (!session?.user?.id) {
     redirect("/login");
   }
 
   const profile = await prisma.providerProfile.findUnique({
-    where: {
-      userId: session.user.id
+    where: { userId: session.user.id },
+    include: {
+      quoteRequests: { select: { id: true, status: true } },
+      proposals: { select: { id: true, status: true } }
     }
   });
 
-  return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink">
-      <section className="mx-auto max-w-4xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-wide text-leaf">
-          Dashboard
-        </p>
-        <h1 className="mt-3 text-3xl font-bold">Olá, {session.user.name}</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Gerencie seu perfil, serviços, pedidos recebidos e propostas em um
-          único painel.
-        </p>
+  const totalPedidos = profile?.quoteRequests.length ?? 0;
+  const novosPedidos =
+    profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
+  const propostasEnviadas =
+    profile?.proposals.filter((p) => p.status === "SENT").length ?? 0;
+  const propostasAprovadas =
+    profile?.proposals.filter((p) => p.status === "APPROVED").length ?? 0;
 
-        <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
-          <h2 className="text-xl font-bold text-ink">Perfil do prestador</h2>
-          {profile ? (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Perfil criado para <strong>{profile.businessName}</strong>.
+  const metrics = [
+    { label: "Pedidos totais", value: totalPedidos },
+    { label: "Pedidos novos", value: novosPedidos },
+    { label: "Propostas enviadas", value: propostasEnviadas },
+    { label: "Propostas aprovadas", value: propostasAprovadas }
+  ];
+
+  return (
+    <div className="p-8">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+            Dashboard
+          </p>
+          <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
+            Olá, {session.user.name?.split(" ")[0]}
+          </h1>
+          <p className="mt-2 text-sm text-ink-muted">
+            Gerencie seu perfil, serviços e pedidos em um único painel.
+          </p>
+        </div>
+        <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf" />
+      </div>
+
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {metrics.map((m) => (
+          <Card key={m.label} className="p-5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+              {m.label}
             </p>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Você ainda não criou seu perfil. Ele será usado depois na página
-              pública do prestador e nos pedidos de orçamento.
+            <p className="mt-2 font-fraunces text-4xl font-bold text-ink">
+              <AnimatedCounter value={m.value} />
             </p>
-          )}
+          </Card>
+        ))}
+      </div>
+
+      <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <Card hoverable className="p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+            Perfil
+          </p>
+          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
+            {profile ? profile.businessName : "Criar perfil"}
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            {profile
+              ? profile.isPublished
+                ? `Publicado em /u/${profile.slug}`
+                : "Perfil criado, mas não publicado"
+              : "Você ainda não criou seu perfil público."}
+          </p>
           <Link
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
+            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
             {profile ? "Editar perfil" : "Criar perfil"}
           </Link>
-          {profile ? (
-            <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
-              <p className="text-sm font-semibold text-ink">Link público</p>
-              {profile.isPublished ? (
-                <Link
-                  className="mt-2 inline-flex text-sm font-semibold text-leaf"
-                  href={`/u/${profile.slug}`}
-                >
-                  /u/{profile.slug}
-                </Link>
-              ) : (
-                <p className="mt-2 text-sm leading-6 text-stone-700">
-                  O perfil ainda não está publicado. Ative a publicação na edição
-                  do perfil para liberar o link <strong>/u/{profile.slug}</strong>.
-                </p>
-              )}
-            </div>
-          ) : null}
-        </div>
+        </Card>
 
-        <div className="mt-5 rounded-lg border border-stone-200 bg-paper p-5">
-          <h2 className="text-xl font-bold text-ink">Serviços</h2>
-          {profile ? (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Cadastre os serviços oferecidos pelo seu negócio.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Crie o perfil do prestador antes de cadastrar serviços.
-            </p>
-          )}
+        <Card hoverable className="p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+            Serviços
+          </p>
+          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
+            Seus serviços
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            Cadastre os serviços que você oferece para exibir no perfil público.
+          </p>
           <Link
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
             href="/dashboard/servicos"
           >
             Gerenciar serviços
           </Link>
-        </div>
+        </Card>
 
-        <div className="mt-5 rounded-lg border border-stone-200 bg-paper p-5">
-          <h2 className="text-xl font-bold text-ink">Pedidos</h2>
-          {profile ? (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Veja os pedidos de orçamento recebidos e acompanhe o status.
-            </p>
-          ) : (
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Crie o perfil do prestador antes de receber pedidos.
-            </p>
-          )}
+        <Card hoverable className="p-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+            Pedidos
+          </p>
+          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
+            Pedidos recebidos
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            Veja os pedidos enviados pelo formulário público e crie propostas.
+          </p>
           <Link
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
             href="/dashboard/pedidos"
           >
             Ver pedidos
           </Link>
-        </div>
-
-        <LogoutButton className="mt-8 inline-flex min-h-11 items-center justify-center rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf" />
-      </section>
-    </main>
+        </Card>
+      </div>
+    </div>
   );
 }
