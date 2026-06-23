@@ -24,6 +24,7 @@
 - Login com Google OAuth e cadastro/login por e-mail e senha (substituindo GitHub OAuth)
 - Recuperação de senha por e-mail (Resend)
 - Polimento visual, validações e preparação para deploy
+- Assinatura mensal PRO via Stripe Checkout (sem checkout próprio, sem coleta de cartão)
 
 ## Próximos passos recomendados
 

@@ -24,7 +24,10 @@ Funciona hoje:
 - notas internas do pedido;
 - templates de proposta;
 - editor dinâmico de itens da proposta;
-- planos e limites de uso sem checkout real.
+- planos e limites de uso sem checkout real;
+- assinatura mensal PRO via Stripe Checkout;
+- webhook Stripe em `/api/stripe/webhook` com validação de assinatura;
+- upgrade e downgrade de plano via webhook (nunca via redirect ou front).
 
 ## Stack
 
@@ -37,6 +40,7 @@ Funciona hoje:
 - Zod
 - bcryptjs (hash de senha)
 - Resend (e-mail de redefinição de senha)
+- Stripe (assinatura mensal PRO via Checkout mode subscription, webhook assinado)
 
 ## Planos e limites
 
@@ -165,6 +169,32 @@ Em produção, usar:
 ```bash
 npx prisma migrate deploy
 ```
+
+## Billing / Stripe
+
+- `lib/stripe.ts` — singleton lazy do Stripe SDK (evita erro de build com chave ausente).
+- `lib/actions/billing.ts` — `createCheckoutSession`: cria/reutiliza stripeCustomerId, cria Checkout Session mode subscription, redireciona para Stripe.
+- `app/api/stripe/webhook/route.ts` — valida assinatura, processa eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+- `app/(dashboard)/dashboard/billing/page.tsx` — página de billing.
+- `components/billing/BillingCard.tsx` — card com plano, status, renovação, botão "Assinar PRO".
+
+Variáveis de ambiente obrigatórias:
+- `STRIPE_SECRET_KEY` — chave secreta da Stripe (`sk_test_...` em dev, `sk_live_...` em prod).
+- `STRIPE_WEBHOOK_SECRET` — segredo do endpoint do webhook (`whsec_...`).
+- `STRIPE_PRO_PRICE_ID` — ID do preço mensal PRO (`price_...`). Diferente entre test e live.
+- `NEXT_PUBLIC_APP_URL` — URL base para success_url e cancel_url do Checkout.
+
+Regras críticas:
+- `plan` só vai para PRO via webhook (nunca via redirect de success_url ou front).
+- `stripeCustomerId` é criado uma única vez e reutilizado em checkouts futuros.
+- Webhook valida assinatura com `STRIPE_WEBHOOK_SECRET` em toda requisição.
+- Para testar localmente: `stripe listen --forward-to localhost:3000/api/stripe/webhook`.
+- Em produção: configurar endpoint no Stripe Dashboard → Developers → Webhooks.
+
+Lógica de plan por status Stripe:
+- `active`, `trialing` → PRO
+- `canceled`, `unpaid`, `incomplete_expired`, `paused` → FREE (downgrade)
+- `past_due`, `incomplete` → plan mantido (Stripe ainda tentará cobrar)
 
 ## Documentação
 
