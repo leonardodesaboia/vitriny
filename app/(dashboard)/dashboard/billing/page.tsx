@@ -8,7 +8,7 @@ import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 export default async function BillingPage({
   searchParams
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -18,6 +18,7 @@ export default async function BillingPage({
   const params = await searchParams;
   const success = params.success === "1";
   const canceled = params.canceled === "1";
+  const fromCheckoutRedirect = !!params.session_id;
 
   const monthRange = getCurrentMonthRange();
 
@@ -55,7 +56,7 @@ export default async function BillingPage({
         Gerencie seu plano e visualize o uso atual.
       </p>
 
-      {success ? (
+      {success || fromCheckoutRedirect ? (
         <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm font-semibold text-green-800">
             Assinatura realizada com sucesso! Seu plano será atualizado em instantes.

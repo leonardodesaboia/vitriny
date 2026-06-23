@@ -36,6 +36,19 @@ export async function POST(request: Request) {
 
 async function handleStripeEvent(event: Stripe.Event) {
   switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const customerId = session.customer as string | null;
+      const subscriptionId = session.subscription as string | null;
+      if (customerId && subscriptionId) {
+        await prisma.providerProfile.updateMany({
+          where: { stripeCustomerId: customerId },
+          data: { stripeSubscriptionId: subscriptionId }
+        });
+      }
+      break;
+    }
+
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;

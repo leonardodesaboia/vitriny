@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
-import { createSubscriptionIntent } from "@/lib/actions/billing";
+import { createCheckoutSession } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { SubscriptionModal } from "@/components/billing/SubscriptionModal";
 
@@ -38,7 +38,7 @@ export function BillingCard({
   function handleSubscribe() {
     setError(null);
     startTransition(async () => {
-      const result = await createSubscriptionIntent();
+      const result = await createCheckoutSession();
       if ("error" in result) {
         setError(result.error);
         return;
