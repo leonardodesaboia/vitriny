@@ -47,8 +47,9 @@ async function handleStripeEvent(event: Stripe.Event) {
       const plan = resolvePlan(subscription.status);
       const status = mapStripeStatus(subscription.status);
 
+      // plan may be null for incomplete/past_due — only update when resolved
       const firstItem = subscription.items.data[0];
-      await prisma.providerProfile.update({
+      await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
         data: {
           stripeSubscriptionId: subscriptionId,
@@ -70,7 +71,7 @@ async function handleStripeEvent(event: Stripe.Event) {
       const status = mapStripeStatus(subscription.status);
 
       const firstItem = subscription.items.data[0];
-      await prisma.providerProfile.update({
+      await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
         data: {
           stripeSubscriptionId: subscription.id,
