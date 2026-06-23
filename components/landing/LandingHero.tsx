@@ -93,7 +93,7 @@ export function LandingHero() {
             animate="show"
             className="mt-5 text-xs text-ink-muted"
           >
-            Login via GitHub · Gratuito durante o beta
+            Login via Google · Gratuito durante o beta
           </motion.p>
         </div>
 

@@ -20,7 +20,7 @@ export function LandingCta() {
           Seu próximo orçamento a um link de distância.
         </h2>
         <p className="mt-5 text-base leading-7 text-white/75">
-          Cadastre-se gratuitamente com sua conta do GitHub e publique
+          Cadastre-se gratuitamente com Google ou e-mail e publique
           seu perfil em minutos.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

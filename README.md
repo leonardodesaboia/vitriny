@@ -20,7 +20,7 @@ Público-alvo:
 - PostgreSQL
 - Prisma
 - Auth.js / NextAuth v5 beta
-- GitHub OAuth
+- Google OAuth + e-mail/senha
 - Zod
 
 ## Status atual do MVP
