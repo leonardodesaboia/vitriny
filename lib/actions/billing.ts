@@ -61,8 +61,10 @@ export async function createSubscriptionIntent(): Promise<
     data: { stripeSubscriptionId: subscription.id }
   });
 
-  const invoice = subscription.latest_invoice as Stripe.Invoice;
-  const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+  const invoice = subscription.latest_invoice as Stripe.Invoice & {
+    payment_intent: Stripe.PaymentIntent;
+  };
+  const paymentIntent = invoice.payment_intent;
 
   if (!paymentIntent?.client_secret) {
     return { error: "Erro ao criar intenção de pagamento. Tente novamente." };
