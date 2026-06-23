@@ -18,10 +18,10 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   providerProfile     ProviderProfile?
-  accounts             Account[]
-  sessions             Session[]
-  internalNotes        QuoteRequestInternalNote[]
-  passwordResetTokens  PasswordResetToken[]
+  accounts            Account[]
+  sessions            Session[]
+  internalNotes       QuoteRequestInternalNote[]
+  passwordResetTokens PasswordResetToken[]
 }
 
 model Account {
@@ -70,6 +70,8 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model ProviderProfile {
@@ -86,10 +88,10 @@ model ProviderProfile {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  services      Service[]
-  quoteRequests QuoteRequest[]
-  proposals     Proposal[]
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services          Service[]
+  quoteRequests     QuoteRequest[]
+  proposals         Proposal[]
   proposalTemplates ProposalTemplate[]
 }
 
@@ -119,9 +121,9 @@ model QuoteRequest {
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 
-  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  service  Service?        @relation(fields: [serviceId], references: [id], onDelete: SetNull)
-  proposal Proposal?
+  provider      ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  service       Service?                    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  proposal      Proposal?
   statusHistory QuoteRequestStatusHistory[]
   internalNotes QuoteRequestInternalNote[]
 
@@ -144,13 +146,13 @@ model QuoteRequestInternalNote {
 }
 
 model QuoteRequestStatusHistory {
-  id             String              @id @default(cuid())
+  id             String                  @id @default(cuid())
   quoteRequestId String
   fromStatus     QuoteRequestStatus?
   toStatus       QuoteRequestStatus
   actor          QuoteRequestStatusActor
   note           String?
-  createdAt      DateTime            @default(now())
+  createdAt      DateTime                @default(now())
 
   quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
 
@@ -172,9 +174,9 @@ model Proposal {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
-  provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  quoteRequest QuoteRequest    @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
-  items        ProposalItem[]
+  provider      ProviderProfile         @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  quoteRequest  QuoteRequest            @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  items         ProposalItem[]
   statusHistory ProposalStatusHistory[]
 }
 
