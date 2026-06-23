@@ -101,6 +101,7 @@ AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
 AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="seu-google-client-id"
 AUTH_GOOGLE_SECRET="seu-google-client-secret"
+RESEND_API_KEY="re_sua_api_key"
 ```
 
 Para gerar `AUTH_SECRET`:
@@ -184,6 +185,7 @@ AUTH_SECRET="segredo-forte"
 AUTH_URL="https://seu-dominio.com"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
+RESEND_API_KEY="re_sua_api_key"
 ```
 
 Antes do deploy:
