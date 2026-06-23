@@ -2,9 +2,34 @@ import { createProposal } from "@/lib/actions/proposals";
 
 type ProposalFormProps = {
   requestId: string;
+  initialValues?: {
+    title?: string;
+    description?: string | null;
+    items?: Array<{
+      description: string;
+      quantity: number;
+      unitPrice: { toString: () => string };
+    }>;
+  };
 };
 
-export function ProposalForm({ requestId }: ProposalFormProps) {
+function getRows(initialValues: ProposalFormProps["initialValues"]) {
+  const items = initialValues?.items ?? [];
+  const emptyRows = Array.from({ length: Math.max(3 - items.length, 1) });
+
+  return [
+    ...items,
+    ...emptyRows.map(() => ({
+      description: "",
+      quantity: 1,
+      unitPrice: { toString: () => "" }
+    }))
+  ];
+}
+
+export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
+  const rows = getRows(initialValues);
+
   return (
     <form action={createProposal} className="mt-8 grid gap-5">
       <input name="requestId" type="hidden" value={requestId} />
@@ -15,6 +40,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
         </label>
         <input
           className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+          defaultValue={initialValues?.title ?? ""}
           id="title"
           name="title"
           required
@@ -28,6 +54,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
         </label>
         <textarea
           className="min-h-28 rounded-md border border-stone-300 bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
+          defaultValue={initialValues?.description ?? ""}
           id="description"
           name="description"
         />
@@ -48,7 +75,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
       <section className="rounded-lg border border-stone-200 bg-paper p-5">
         <h2 className="text-xl font-bold text-ink">Itens da proposta</h2>
         <div className="mt-4 grid gap-4">
-          {[0, 1, 2].map((index) => (
+          {rows.map((item, index) => (
             <div className="grid gap-4 rounded-md bg-white p-4 md:grid-cols-[1fr_120px_160px]" key={index}>
               <div className="grid gap-2">
                 <label
@@ -59,6 +86,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
                 </label>
                 <input
                   className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                  defaultValue={item.description}
                   id={`itemDescription-${index}`}
                   name="itemDescription"
                   required={index === 0}
@@ -74,7 +102,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
                 </label>
                 <input
                   className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
-                  defaultValue="1"
+                  defaultValue={item.quantity}
                   id={`itemQuantity-${index}`}
                   min="1"
                   name="itemQuantity"
@@ -91,6 +119,7 @@ export function ProposalForm({ requestId }: ProposalFormProps) {
                 </label>
                 <input
                   className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+                  defaultValue={item.unitPrice.toString()}
                   id={`itemUnitPrice-${index}`}
                   min="0"
                   name="itemUnitPrice"

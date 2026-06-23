@@ -27,7 +27,40 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
     include: {
       quoteRequests: {
         orderBy: { createdAt: "desc" },
-        include: { proposal: { select: { publicToken: true } } }
+        include: {
+          service: {
+            select: {
+              id: true,
+              name: true
+            }
+          },
+          proposal: { select: { publicToken: true } },
+          statusHistory: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              fromStatus: true,
+              toStatus: true,
+              actor: true,
+              note: true,
+              createdAt: true
+            }
+          },
+          internalNotes: {
+            orderBy: { createdAt: "desc" },
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              author: {
+                select: {
+                  name: true,
+                  email: true
+                }
+              }
+            }
+          }
+        }
       },
       services: { select: { id: true, name: true } }
     }

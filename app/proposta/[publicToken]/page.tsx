@@ -29,6 +29,12 @@ const statusColors: Record<string, string> = {
   EXPIRED: "bg-paper-soft text-ink-muted"
 };
 
+const actorLabels: Record<string, string> = {
+  CUSTOMER: "Cliente",
+  PROVIDER: "Prestador",
+  SYSTEM: "Sistema"
+};
+
 const responseMessages: Record<string, string> = {
   approved: "Proposta aprovada com sucesso.",
   rejected: "Proposta recusada."
@@ -63,7 +69,18 @@ export default async function PublicProposalPage({
     include: {
       provider: true,
       quoteRequest: true,
-      items: { orderBy: { createdAt: "asc" } }
+      items: { orderBy: { createdAt: "asc" } },
+      statusHistory: {
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          fromStatus: true,
+          toStatus: true,
+          actor: true,
+          note: true,
+          createdAt: true
+        }
+      }
     }
   });
 
@@ -259,6 +276,35 @@ export default async function PublicProposalPage({
                 </p>
               </div>
             </div>
+
+            {proposal.statusHistory.length > 0 ? (
+              <div className="mt-6 rounded-xl border border-paper-soft bg-white p-5">
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Historico da proposta
+                </p>
+                <ol className="mt-4 grid gap-3">
+                  {proposal.statusHistory.map((history) => (
+                    <li
+                      className="border-l-2 border-paper-soft pl-3 text-sm text-ink-muted"
+                      key={history.id}
+                    >
+                      <p className="font-semibold text-ink">
+                        {history.fromStatus
+                          ? `${statusLabels[history.fromStatus]} -> ${statusLabels[history.toStatus]}`
+                          : statusLabels[history.toStatus]}
+                      </p>
+                      <p className="mt-1">
+                        {actorLabels[history.actor]} em{" "}
+                        {formatDate(history.createdAt)}
+                      </p>
+                      {history.note ? (
+                        <p className="mt-1">{history.note}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
 
             {/* Actions */}
             {isAnswered ? (

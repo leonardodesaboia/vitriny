@@ -9,6 +9,7 @@ type NewProposalPageProps = {
   searchParams: Promise<{
     error?: string;
     requestId?: string;
+    templateId?: string;
   }>;
 };
 
@@ -33,8 +34,15 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
     where: {
       userId: session.user.id
     },
-    select: {
-      id: true
+    include: {
+      proposalTemplates: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          items: {
+            orderBy: { createdAt: "asc" }
+          }
+        }
+      }
     }
   });
 
@@ -55,6 +63,10 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
   if (!quoteRequest) {
     redirect("/dashboard/pedidos?error=not-found");
   }
+
+  const selectedTemplate = params.templateId
+    ? profile.proposalTemplates.find((template) => template.id === params.templateId)
+    : null;
 
   return (
     <main className="min-h-screen bg-paper px-6 py-12 text-ink">
@@ -91,7 +103,48 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
             </Link>
           </div>
         ) : (
-          <ProposalForm requestId={quoteRequest.id} />
+          <>
+            {profile.proposalTemplates.length > 0 ? (
+              <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
+                <h2 className="text-xl font-bold text-ink">Usar modelo</h2>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {profile.proposalTemplates.map((template) => (
+                    <Link
+                      className={`inline-flex min-h-9 items-center justify-center rounded-md border px-4 text-sm font-semibold transition ${
+                        selectedTemplate?.id === template.id
+                          ? "border-leaf bg-mint text-leaf"
+                          : "border-stone-300 bg-white text-ink hover:border-leaf hover:text-leaf"
+                      }`}
+                      href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}&templateId=${template.id}`}
+                      key={template.id}
+                    >
+                      {template.name}
+                    </Link>
+                  ))}
+                  {selectedTemplate ? (
+                    <Link
+                      className="inline-flex min-h-9 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                      href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
+                    >
+                      Limpar modelo
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            <ProposalForm
+              initialValues={
+                selectedTemplate
+                  ? {
+                      title: selectedTemplate.title,
+                      description: selectedTemplate.description,
+                      items: selectedTemplate.items
+                    }
+                  : undefined
+              }
+              requestId={quoteRequest.id}
+            />
+          </>
         )}
       </section>
     </main>

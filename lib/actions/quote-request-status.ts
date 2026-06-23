@@ -40,7 +40,8 @@ export async function updateQuoteRequestStatus(formData: FormData) {
       providerId: profile.id
     },
     select: {
-      id: true
+      id: true,
+      status: true
     }
   });
 
@@ -48,14 +49,28 @@ export async function updateQuoteRequestStatus(formData: FormData) {
     redirect("/dashboard/pedidos?error=not-found");
   }
 
-  await prisma.quoteRequest.update({
-    where: {
-      id: quoteRequest.id
-    },
-    data: {
-      status: parsed.data
-    }
-  });
+  if (quoteRequest.status !== parsed.data) {
+    await prisma.$transaction(async (tx) => {
+      await tx.quoteRequest.update({
+        where: {
+          id: quoteRequest.id
+        },
+        data: {
+          status: parsed.data
+        }
+      });
+
+      await tx.quoteRequestStatusHistory.create({
+        data: {
+          quoteRequestId: quoteRequest.id,
+          fromStatus: quoteRequest.status,
+          toStatus: parsed.data,
+          actor: "PROVIDER",
+          note: "Status atualizado manualmente pelo prestador."
+        }
+      });
+    });
+  }
 
   revalidatePath("/dashboard/pedidos");
   redirect("/dashboard/pedidos");

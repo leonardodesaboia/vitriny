@@ -19,7 +19,12 @@ export async function respondToProposal(
       id: true,
       quoteRequestId: true,
       status: true,
-      validUntil: true
+      validUntil: true,
+      quoteRequest: {
+        select: {
+          status: true
+        }
+      }
     }
   });
 
@@ -46,6 +51,19 @@ export async function respondToProposal(
       }
     });
 
+    await tx.proposalStatusHistory.create({
+      data: {
+        proposalId: proposal.id,
+        fromStatus: proposal.status,
+        toStatus: response,
+        actor: "CUSTOMER",
+        note:
+          response === "APPROVED"
+            ? "Cliente aprovou a proposta publica."
+            : "Cliente recusou a proposta publica."
+      }
+    });
+
     await tx.quoteRequest.update({
       where: {
         id: proposal.quoteRequestId
@@ -54,6 +72,21 @@ export async function respondToProposal(
         status: "CLOSED"
       }
     });
+
+    if (proposal.quoteRequest.status !== "CLOSED") {
+      await tx.quoteRequestStatusHistory.create({
+        data: {
+          quoteRequestId: proposal.quoteRequestId,
+          fromStatus: proposal.quoteRequest.status,
+          toStatus: "CLOSED",
+          actor: "CUSTOMER",
+          note:
+            response === "APPROVED"
+              ? "Cliente aprovou a proposta publica."
+              : "Cliente recusou a proposta publica."
+        }
+      });
+    }
   });
 
   revalidatePath(`/proposta/${publicToken}`);

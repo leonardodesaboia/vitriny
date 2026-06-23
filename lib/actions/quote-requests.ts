@@ -52,13 +52,21 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
   await prisma.quoteRequest.create({
     data: {
       providerId: profile.id,
+      serviceId: parsed.data.serviceId,
       customerName: parsed.data.customerName,
       customerEmail: parsed.data.customerEmail,
       customerPhone: parsed.data.customerPhone,
       description: parsed.data.serviceId
         ? `Serviço selecionado: ${parsed.data.serviceId}\n\n${parsed.data.description}`
         : parsed.data.description,
-      status: "NEW"
+      status: "NEW",
+      statusHistory: {
+        create: {
+          toStatus: "NEW",
+          actor: "CUSTOMER",
+          note: "Pedido criado pelo formulario publico."
+        }
+      }
     }
   });
 

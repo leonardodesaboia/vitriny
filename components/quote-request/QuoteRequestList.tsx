@@ -1,12 +1,41 @@
 import Link from "next/link";
-import type { QuoteRequest } from "@prisma/client";
+import type {
+  QuoteRequest,
+  QuoteRequestStatus,
+  QuoteRequestStatusActor
+} from "@prisma/client";
 
 import { updateQuoteRequestStatus } from "@/lib/actions/quote-request-status";
+import {
+  createQuoteRequestNote,
+  deleteQuoteRequestNote
+} from "@/lib/actions/quote-request-notes";
 
 type QuoteRequestWithProposal = QuoteRequest & {
+  service: {
+    id: string;
+    name: string;
+  } | null;
   proposal: {
     publicToken: string;
   } | null;
+  statusHistory: Array<{
+    id: string;
+    fromStatus: QuoteRequestStatus | null;
+    toStatus: QuoteRequestStatus;
+    actor: QuoteRequestStatusActor;
+    note: string | null;
+    createdAt: Date;
+  }>;
+  internalNotes: Array<{
+    id: string;
+    content: string;
+    createdAt: Date;
+    author: {
+      name: string | null;
+      email: string | null;
+    };
+  }>;
 };
 
 type QuoteRequestListProps = {
@@ -22,6 +51,12 @@ const statusLabels: Record<string, string> = {
   REVIEWING: "Em análise",
   PROPOSAL_SENT: "Proposta enviada",
   CLOSED: "Fechado"
+};
+
+const actorLabels: Record<QuoteRequestStatusActor, string> = {
+  CUSTOMER: "Cliente",
+  PROVIDER: "Prestador",
+  SYSTEM: "Sistema"
 };
 
 function formatDate(date: Date) {
@@ -72,10 +107,14 @@ export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListPr
   return (
     <div className="grid gap-5">
       {quoteRequests.map((quoteRequest) => {
-        const { serviceLabel, cleanDescription } = splitServiceFromDescription(
+        const legacyService = splitServiceFromDescription(
           quoteRequest.description,
           serviceNamesById
         );
+        const serviceLabel = quoteRequest.service?.name ?? legacyService.serviceLabel;
+        const cleanDescription = quoteRequest.service
+          ? quoteRequest.description
+          : legacyService.cleanDescription;
 
         return (
           <article
@@ -179,6 +218,95 @@ export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListPr
                 Salvar status
               </button>
             </form>
+
+            {quoteRequest.statusHistory.length > 0 ? (
+              <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
+                <p className="text-sm font-semibold text-ink">
+                  Historico de status
+                </p>
+                <ol className="mt-3 grid gap-3">
+                  {quoteRequest.statusHistory.map((history) => (
+                    <li
+                      className="border-l-2 border-stone-200 pl-3 text-sm text-stone-700"
+                      key={history.id}
+                    >
+                      <p className="font-semibold text-ink">
+                        {history.fromStatus
+                          ? `${statusLabels[history.fromStatus]} -> ${statusLabels[history.toStatus]}`
+                          : statusLabels[history.toStatus]}
+                      </p>
+                      <p className="mt-1">
+                        {actorLabels[history.actor]} em{" "}
+                        {formatDate(history.createdAt)}
+                      </p>
+                      {history.note ? (
+                        <p className="mt-1 text-stone-600">{history.note}</p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : null}
+
+            <div className="mt-5 rounded-md border border-stone-200 bg-white p-4">
+              <p className="text-sm font-semibold text-ink">Notas internas</p>
+              {quoteRequest.internalNotes.length > 0 ? (
+                <ul className="mt-3 grid gap-3">
+                  {quoteRequest.internalNotes.map((note) => (
+                    <li
+                      className="rounded-md border border-stone-200 bg-paper p-3"
+                      key={note.id}
+                    >
+                      <p className="whitespace-pre-line text-sm leading-6 text-stone-700">
+                        {note.content}
+                      </p>
+                      <div className="mt-2 flex flex-col gap-2 text-xs text-stone-500 sm:flex-row sm:items-center sm:justify-between">
+                        <span>
+                          {note.author.name ?? note.author.email ?? "Prestador"} em{" "}
+                          {formatDate(note.createdAt)}
+                        </span>
+                        <form action={deleteQuoteRequestNote}>
+                          <input name="noteId" type="hidden" value={note.id} />
+                          <button
+                            className="font-semibold text-red-600 transition hover:text-red-700"
+                            type="submit"
+                          >
+                            Excluir
+                          </button>
+                        </form>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-sm text-stone-600">
+                  Nenhuma nota interna registrada.
+                </p>
+              )}
+
+              <form action={createQuoteRequestNote} className="mt-4 grid gap-3">
+                <input name="requestId" type="hidden" value={quoteRequest.id} />
+                <label
+                  className="text-sm font-semibold text-ink"
+                  htmlFor={`note-${quoteRequest.id}`}
+                >
+                  Nova nota interna
+                </label>
+                <textarea
+                  className="min-h-24 rounded-md border border-stone-300 bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
+                  id={`note-${quoteRequest.id}`}
+                  maxLength={1000}
+                  name="content"
+                  required
+                />
+                <button
+                  className="inline-flex min-h-10 w-fit items-center justify-center rounded-md bg-leaf px-4 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
+                  type="submit"
+                >
+                  Salvar nota
+                </button>
+              </form>
+            </div>
           </article>
         );
       })}

@@ -121,6 +121,13 @@ export async function createProposal(formData: FormData) {
           : null,
         items: {
           create: items
+        },
+        statusHistory: {
+          create: {
+            toStatus: "SENT",
+            actor: "PROVIDER",
+            note: "Proposta criada e enviada."
+          }
         }
       }
     });
@@ -133,6 +140,18 @@ export async function createProposal(formData: FormData) {
         status: "PROPOSAL_SENT"
       }
     });
+
+    if (quoteRequest.status !== "PROPOSAL_SENT") {
+      await tx.quoteRequestStatusHistory.create({
+        data: {
+          quoteRequestId: quoteRequest.id,
+          fromStatus: quoteRequest.status,
+          toStatus: "PROPOSAL_SENT",
+          actor: "PROVIDER",
+          note: "Proposta criada para o pedido."
+        }
+      });
+    }
   });
 
   revalidatePath("/dashboard/pedidos");
