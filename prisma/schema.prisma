@@ -85,6 +85,11 @@ model ProviderProfile {
   city         String?
   state        String?
   plan         PlanTier @default(FREE)
+  stripeCustomerId     String?             @unique
+  stripeSubscriptionId String?             @unique
+  stripePriceId        String?
+  subscriptionStatus   SubscriptionStatus?
+  currentPeriodEnd     DateTime?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -262,4 +267,15 @@ enum ProposalStatus {
 enum PlanTier {
   FREE
   PRO
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  TRIALING
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
 }
