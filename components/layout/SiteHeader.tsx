@@ -24,6 +24,12 @@ export function SiteHeader() {
           >
             Funcionalidades
           </a>
+          <a
+            className="font-medium text-ink-muted transition-colors hover:text-leaf"
+            href="#precos"
+          >
+            Preços
+          </a>
         </nav>
         <AuthButton />
       </div>
