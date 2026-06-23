@@ -51,6 +51,7 @@ Rotas autenticadas:
 - `app/(dashboard)/dashboard/servicos/page.tsx`
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `app/(dashboard)/dashboard/propostas/nova/page.tsx`
+- `app/(dashboard)/dashboard/propostas/templates/page.tsx`
 
 Auth:
 
@@ -75,8 +76,10 @@ Server Actions ficam em `lib/actions/`:
 - `provider-profile.ts`
 - `services.ts`
 - `quote-requests.ts`
+- `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts`
+- `proposal-templates.ts`
 - `proposal-response.ts`
 
 Elas validam sessão quando necessário e aplicam regras de ownership.
@@ -124,8 +127,10 @@ Schemas ficam em `lib/validations/`:
 - `provider-profile.ts`
 - `service.ts`
 - `quote-request.ts`
+- `quote-request-note.ts`
 - `quote-request-status.ts`
 - `proposal.ts`
+- `proposal-template.ts`
 
 ## Segurança adotada
 
@@ -136,11 +141,15 @@ Schemas ficam em `lib/validations/`:
 - Serviços públicos só aparecem se `isActive=true`.
 - Proposta expirada não pode ser aprovada/recusada.
 - Proposta já aprovada/recusada não pode ser respondida novamente.
+- Mudanças de status de pedidos são registradas em `QuoteRequestStatusHistory`.
+- Mudanças de status de propostas são registradas em `ProposalStatusHistory`.
+- Notas internas de pedidos e templates de proposta são autenticados e filtrados por ownership do prestador.
 
 ## Riscos técnicos conhecidos
 
-- `QuoteRequest` não tem `serviceId`; o serviço escolhido é salvo como texto no início de `description`. Isso funciona no MVP, mas deve virar relacionamento se o produto evoluir.
+- `QuoteRequest` possui `serviceId` opcional. A UI de pedidos ainda usa parsing legado da `description` para evitar conflito com alterações visuais em andamento.
 - Auth.js v5 está em beta (`next-auth@5.0.0-beta.31`).
-- O fluxo de proposta não possui editor dinâmico de itens; há até 3 campos fixos no formulário atual.
+- O fluxo de proposta ainda usa campos fixos para itens; o editor dinâmico de itens continua sendo a próxima melhoria.
+- Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Não há testes automatizados ainda.
 - Não há rate limit em formulários públicos.

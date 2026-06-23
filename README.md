@@ -37,7 +37,11 @@ MVP funcional implementado:
 - painel de pedidos recebidos;
 - criação de proposta;
 - página pública da proposta em `/proposta/[publicToken]`;
-- aprovação ou recusa pública da proposta.
+- aprovação ou recusa pública da proposta;
+- histórico de status do pedido no painel;
+- histórico de status da proposta na página pública;
+- notas internas do pedido no painel;
+- templates de proposta no dashboard.
 
 ## Fora do MVP
 
@@ -62,15 +66,10 @@ Instale dependências:
 npm install
 ```
 
-Suba PostgreSQL com Docker:
+Suba PostgreSQL com Docker Compose:
 
 ```bash
-docker run --name orcafacil-postgres \
-  -e POSTGRES_USER=orcafacil \
-  -e POSTGRES_PASSWORD=orcafacil \
-  -e POSTGRES_DB=orcafacil \
-  -p 5432:5432 \
-  -d postgres:16
+docker compose up -d
 ```
 
 Crie o `.env`:
@@ -127,6 +126,12 @@ npm run prisma:migrate
 npm run prisma:studio
 ```
 
+Parar o banco local:
+
+```bash
+docker compose down
+```
+
 ## Prisma
 
 Schema principal: `prisma/schema.prisma`.
@@ -135,6 +140,14 @@ Migrations existentes:
 
 - `prisma/migrations/20260622204845_init/migration.sql`
 - `prisma/migrations/20260622205244_add_auth/migration.sql`
+- `prisma/migrations/20260623000000_add_quote_request_service_relation/migration.sql`
+- `prisma/migrations/20260623001000_add_quote_request_status_history/migration.sql`
+- `prisma/migrations/20260623002000_add_proposal_status_history/migration.sql`
+- `prisma/migrations/20260623003000_add_quote_request_internal_notes/migration.sql`
+- `prisma/migrations/20260623004000_add_proposal_templates/migration.sql`
+
+Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service` e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
+Históricos de status, notas internas e templates de proposta já aparecem no front nas áreas correspondentes.
 
 Comandos:
 
@@ -203,6 +216,11 @@ Authorization callback URL: https://seu-dominio.com/api/auth/callback/github
 - [x] Criação de proposta
 - [x] Página pública da proposta
 - [x] Aprovar ou recusar proposta
+- [x] Relação entre pedido e serviço
+- [x] Histórico de status do pedido
+- [x] Histórico de status da proposta
+- [x] Notas internas do pedido
+- [x] Templates de proposta
 - [x] Polimento visual, validações e preparação para deploy
 
 ## Documentação complementar

@@ -19,7 +19,10 @@ Funciona hoje:
 - painel de pedidos;
 - criação de proposta;
 - página pública `/proposta/[publicToken]`;
-- aprovação/recusa.
+- aprovação/recusa;
+- histórico de status de pedido e proposta;
+- notas internas do pedido;
+- templates de proposta.
 
 ## Stack
 
@@ -67,9 +70,10 @@ Priorize:
 
 1. Validar fluxo em staging.
 2. Adicionar testes E2E do caminho principal.
-3. Melhorar relação `QuoteRequest` -> `Service`.
-4. Melhorar formulário de proposta.
-5. Adicionar notificações.
+3. Melhorar o editor de itens da proposta para permitir inserir/remover linhas de forma dinâmica.
+4. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
+5. Adicionar notificações por e-mail.
+6. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição quando não houver mais dependência dele.
 
 ## Padrões de código existentes
 
@@ -106,8 +110,20 @@ Priorize:
 - Proposta pública: sempre buscar por `publicToken`.
 - Perfil público: só mostrar `isPublished=true`.
 - Serviços públicos: só mostrar `isActive=true`.
+- Pedido público: validar que `serviceId`, quando informado, pertence ao prestador e está ativo.
+- Status de pedido: registrar mudanças em `QuoteRequestStatusHistory`.
+- Status de proposta: registrar mudanças em `ProposalStatusHistory`.
+- Notas internas: nunca exibir em rotas públicas e sempre filtrar pelo prestador dono do pedido.
+- Templates de proposta: sempre filtrar pelo prestador dono do modelo.
 - Proposal response: bloquear se já aprovada/recusada ou expirada.
 - Dinheiro: manter `Decimal`, não usar `Float`.
+
+## Pendências de front documentadas
+
+- A relação `QuoteRequest.serviceId` existe no banco e já é consumida no front, com fallback legado apenas para pedidos antigos.
+- `QuoteRequestStatusHistory`, `ProposalStatusHistory`, `QuoteRequestInternalNote`, `ProposalTemplate` e `ProposalTemplateItem` já têm UI nas áreas correspondentes.
+- O formulário de proposta ainda usa slots fixos de itens; o próximo passo é o editor dinâmico de itens.
+- Detalhes de implementação futura ficam em `docs/FRONTEND_PENDING.md`.
 
 ## Validação obrigatória após mudanças
 

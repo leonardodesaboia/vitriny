@@ -14,6 +14,11 @@
 - Criação de proposta
 - Página pública da proposta
 - Aprovar ou recusar proposta
+- Relação entre pedido e serviço
+- Histórico de status do pedido
+- Histórico de status da proposta
+- Notas internas do pedido
+- Templates de proposta
 - Polimento visual, validações e preparação para deploy
 
 ## Próximos passos recomendados
@@ -26,19 +31,16 @@
 
 ## Melhorias de curto prazo
 
-- Adicionar relação explícita entre `QuoteRequest` e `Service`.
 - Melhorar formulário de proposta com itens dinâmicos.
 - Criar página de detalhe do pedido.
 - Melhorar mensagens de erro por campo.
 - Adicionar página de configurações do prestador.
-- Adicionar contador/resumo no dashboard.
+- Criar página de detalhe da proposta.
 
 ## Melhorias de médio prazo
 
 - Envio de e-mail para notificar pedido e proposta.
-- Templates de proposta.
 - Exportação simples de proposta.
-- Histórico de alterações de status.
 - Métricas básicas do prestador.
 - Testes E2E do fluxo principal.
 
