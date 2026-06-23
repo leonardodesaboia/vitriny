@@ -36,34 +36,6 @@ export async function POST(request: Request) {
 
 async function handleStripeEvent(event: Stripe.Event) {
   switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      if (session.mode !== "subscription") break;
-
-      const customerId = session.customer as string;
-      const subscriptionId = session.subscription as string;
-
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      const plan = resolvePlan(subscription.status);
-      const status = mapStripeStatus(subscription.status);
-
-      // plan may be null for incomplete/past_due — only update when resolved
-      const firstItem = subscription.items.data[0];
-      await prisma.providerProfile.updateMany({
-        where: { stripeCustomerId: customerId },
-        data: {
-          stripeSubscriptionId: subscriptionId,
-          stripePriceId: firstItem?.price.id ?? null,
-          subscriptionStatus: status,
-          currentPeriodEnd: firstItem?.current_period_end
-            ? new Date(firstItem.current_period_end * 1000)
-            : null,
-          ...(plan !== null ? { plan } : {})
-        }
-      });
-      break;
-    }
-
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;

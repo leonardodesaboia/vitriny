@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
 import { createSubscriptionIntent } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
@@ -28,6 +29,7 @@ export function BillingCard({
   subscriptionStatus,
   currentPeriodEnd
 }: BillingCardProps) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -52,6 +54,7 @@ export function BillingCard({
   function handleSuccess() {
     setClientSecret(null);
     setShowSuccess(true);
+    router.refresh();
   }
 
   return (

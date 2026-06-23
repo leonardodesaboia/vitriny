@@ -36,7 +36,9 @@ function PaymentForm({
 
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
-      confirmParams: {},
+      confirmParams: {
+        return_url: `${window.location.origin}/dashboard/billing`
+      },
       redirect: "if_required"
     });
 
@@ -83,9 +85,16 @@ export function SubscriptionModal({
 }: SubscriptionModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
-      <div className="w-full max-w-md rounded-xl border border-paper-soft bg-white p-6 shadow-card">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="subscription-modal-title"
+        tabIndex={-1}
+        onKeyDown={(e) => e.key === "Escape" && onClose()}
+        className="w-full max-w-md rounded-xl border border-paper-soft bg-white p-6 shadow-card"
+      >
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="font-fraunces text-xl font-bold text-ink">
+          <h2 id="subscription-modal-title" className="font-fraunces text-xl font-bold text-ink">
             Assinar plano PRO
           </h2>
           <button

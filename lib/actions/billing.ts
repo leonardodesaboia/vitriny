@@ -15,7 +15,7 @@ export async function createSubscriptionIntent(): Promise<
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, stripeCustomerId: true, plan: true }
+    select: { id: true, stripeCustomerId: true, plan: true, stripeSubscriptionId: true }
   });
 
   if (!profile) {
@@ -48,6 +48,22 @@ export async function createSubscriptionIntent(): Promise<
     });
   }
 
+  // Reuse existing incomplete subscription to avoid orphaned subscriptions on retry
+  if (profile.stripeSubscriptionId) {
+    const existing = await stripe.subscriptions.retrieve(
+      profile.stripeSubscriptionId,
+      { expand: ["latest_invoice.payment_intent"] }
+    );
+    if (existing.status === "incomplete") {
+      const inv = existing.latest_invoice as Stripe.Invoice & {
+        payment_intent: Stripe.PaymentIntent;
+      };
+      if (inv.payment_intent?.client_secret) {
+        return { clientSecret: inv.payment_intent.client_secret };
+      }
+    }
+  }
+
   const subscription = await stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: process.env.STRIPE_PRO_PRICE_ID! }],
@@ -56,7 +72,7 @@ export async function createSubscriptionIntent(): Promise<
     expand: ["latest_invoice.payment_intent"]
   });
 
-  await prisma.providerProfile.updateMany({
+  await prisma.providerProfile.update({
     where: { id: profile.id },
     data: { stripeSubscriptionId: subscription.id }
   });
