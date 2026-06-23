@@ -19,6 +19,7 @@ model User {
   providerProfile ProviderProfile?
   accounts        Account[]
   sessions        Session[]
+  internalNotes   QuoteRequestInternalNote[]
 }
 
 model Account {
@@ -77,6 +78,7 @@ model ProviderProfile {
   services      Service[]
   quoteRequests QuoteRequest[]
   proposals     Proposal[]
+  proposalTemplates ProposalTemplate[]
 }
 
 model Service {
@@ -89,12 +91,14 @@ model Service {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  quoteRequests QuoteRequest[]
 }
 
 model QuoteRequest {
   id            String             @id @default(cuid())
   providerId    String
+  serviceId     String?
   customerName  String
   customerEmail String?
   customerPhone String?
@@ -104,7 +108,42 @@ model QuoteRequest {
   updatedAt     DateTime           @updatedAt
 
   provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  service  Service?        @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   proposal Proposal?
+  statusHistory QuoteRequestStatusHistory[]
+  internalNotes QuoteRequestInternalNote[]
+
+  @@index([serviceId])
+}
+
+model QuoteRequestInternalNote {
+  id             String   @id @default(cuid())
+  quoteRequestId String
+  authorUserId   String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  author       User         @relation(fields: [authorUserId], references: [id], onDelete: Cascade)
+
+  @@index([quoteRequestId])
+  @@index([authorUserId])
+}
+
+model QuoteRequestStatusHistory {
+  id             String              @id @default(cuid())
+  quoteRequestId String
+  fromStatus     QuoteRequestStatus?
+  toStatus       QuoteRequestStatus
+  actor          QuoteRequestStatusActor
+  note           String?
+  createdAt      DateTime            @default(now())
+
+  quoteRequest QuoteRequest @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+
+  @@index([quoteRequestId])
+  @@index([createdAt])
 }
 
 model Proposal {
@@ -124,6 +163,51 @@ model Proposal {
   provider     ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   quoteRequest QuoteRequest    @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
   items        ProposalItem[]
+  statusHistory ProposalStatusHistory[]
+}
+
+model ProposalStatusHistory {
+  id         String                  @id @default(cuid())
+  proposalId String
+  fromStatus ProposalStatus?
+  toStatus   ProposalStatus
+  actor      QuoteRequestStatusActor
+  note       String?
+  createdAt  DateTime                @default(now())
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId])
+  @@index([createdAt])
+}
+
+model ProposalTemplate {
+  id          String   @id @default(cuid())
+  providerId  String
+  name        String
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  provider ProviderProfile        @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  items    ProposalTemplateItem[]
+
+  @@index([providerId])
+}
+
+model ProposalTemplateItem {
+  id          String   @id @default(cuid())
+  templateId  String
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  template ProposalTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
 }
 
 model ProposalItem {
@@ -144,6 +228,12 @@ enum QuoteRequestStatus {
   REVIEWING
   PROPOSAL_SENT
   CLOSED
+}
+
+enum QuoteRequestStatusActor {
+  CUSTOMER
+  PROVIDER
+  SYSTEM
 }
 
 enum ProposalStatus {
