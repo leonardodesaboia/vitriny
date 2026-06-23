@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { LogoutButton } from "@/components/auth/LogoutButton";
 import { ProfileForm } from "@/components/provider-profile/ProfileForm";
 import { prisma } from "@/lib/prisma";
 
@@ -35,9 +36,12 @@ export default async function ProviderProfilePage({
   return (
     <main className="min-h-screen bg-paper px-6 py-12 text-ink">
       <section className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <Link className="text-sm font-semibold text-leaf" href="/dashboard">
-          Voltar ao dashboard
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link className="text-sm font-semibold text-leaf" href="/dashboard">
+            Voltar ao dashboard
+          </Link>
+          <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft px-4 text-sm font-semibold text-ink-muted transition hover:border-red-300 hover:text-red-600" />
+        </div>
         <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-leaf">
           Perfil do prestador
         </p>

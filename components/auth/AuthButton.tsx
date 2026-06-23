@@ -17,5 +17,9 @@ export async function AuthButton() {
     );
   }
 
-  return <LogoutButton className={buttonClassName} />;
+  return (
+    <Link className={buttonClassName} href="/dashboard">
+      Ir para o painel
+    </Link>
+  );
 }
