@@ -99,8 +99,8 @@ Acesse `http://localhost:3000`.
 DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
 AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
 AUTH_URL="http://localhost:3000"
-AUTH_GITHUB_ID="seu-github-client-id"
-AUTH_GITHUB_SECRET="seu-github-client-secret"
+AUTH_GOOGLE_ID="seu-google-client-id"
+AUTH_GOOGLE_SECRET="seu-google-client-secret"
 ```
 
 Para gerar `AUTH_SECRET`:
@@ -109,10 +109,10 @@ Para gerar `AUTH_SECRET`:
 openssl rand -base64 33
 ```
 
-Callback do GitHub OAuth em desenvolvimento:
+Callback do Google OAuth em desenvolvimento:
 
 ```text
-http://localhost:3000/api/auth/callback/github
+http://localhost:3000/api/auth/callback/google
 ```
 
 ## Comandos úteis
@@ -182,8 +182,8 @@ Variáveis necessárias em produção:
 DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
 AUTH_SECRET="segredo-forte"
 AUTH_URL="https://seu-dominio.com"
-AUTH_GITHUB_ID="github-client-id"
-AUTH_GITHUB_SECRET="github-client-secret"
+AUTH_GOOGLE_ID="google-client-id"
+AUTH_GOOGLE_SECRET="google-client-secret"
 ```
 
 Antes do deploy:
@@ -195,11 +195,10 @@ npx prisma validate
 npx prisma migrate deploy
 ```
 
-Configure o GitHub OAuth App com:
+Configure o Google OAuth Client (Google Cloud Console > APIs & Services > Credentials):
 
 ```text
-Homepage URL: https://seu-dominio.com
-Authorization callback URL: https://seu-dominio.com/api/auth/callback/github
+Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 ```
 
 ## Roadmap resumido
