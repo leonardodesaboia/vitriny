@@ -26,6 +26,7 @@ function PaymentForm({
   const elements = useElements();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pixPending, setPixPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,7 +35,7 @@ function PaymentForm({
     setLoading(true);
     setError(null);
 
-    const { error: stripeError } = await stripe.confirmPayment({
+    const result = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${window.location.origin}/dashboard/billing`
@@ -42,9 +43,16 @@ function PaymentForm({
       redirect: "if_required"
     });
 
-    if (stripeError) {
-      setError(stripeError.message ?? "Erro ao processar pagamento.");
+    if (result.error) {
+      setError(result.error.message ?? "Erro ao processar pagamento.");
       setLoading(false);
+      return;
+    }
+
+    // Pix: QR code is shown inline inside PaymentElement, payment is async
+    if (result.paymentIntent?.status === "requires_action") {
+      setLoading(false);
+      setPixPending(true);
       return;
     }
 
@@ -57,23 +65,42 @@ function PaymentForm({
       {error ? (
         <p className="mt-3 text-xs font-semibold text-red-700">{error}</p>
       ) : null}
-      <div className="mt-6 flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={loading}
-          className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf disabled:opacity-60"
-        >
-          Cancelar
-        </button>
-        <button
-          type="submit"
-          disabled={loading || !stripe}
-          className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
-        >
-          {loading ? "Processando..." : "Confirmar assinatura"}
-        </button>
-      </div>
+      {pixPending ? (
+        <>
+          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm font-semibold text-amber-800">
+              Escaneie o QR code acima para pagar. O plano PRO será ativado automaticamente após a confirmação.
+            </p>
+          </div>
+          <div className="mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf"
+            >
+              Fechar
+            </button>
+          </div>
+        </>
+      ) : (
+        <div className="mt-6 flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={loading}
+            className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={loading || !stripe}
+            className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
+          >
+            {loading ? "Processando..." : "Confirmar assinatura"}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

@@ -5,6 +5,24 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
+async function getClientSecretFromInvoice(invoiceId: string): Promise<string | null> {
+  const payments = await stripe.invoicePayments.list({
+    invoice: invoiceId,
+    expand: ["data.payment.payment_intent"]
+  });
+
+  const defaultPayment = payments.data.find((p) => p.is_default) ?? payments.data[0];
+  if (!defaultPayment) return null;
+
+  const { payment } = defaultPayment;
+  if (payment.type !== "payment_intent") return null;
+
+  const pi = payment.payment_intent as Stripe.PaymentIntent | string | undefined;
+  if (typeof pi !== "object" || pi === null) return null;
+
+  return pi.client_secret ?? null;
+}
+
 export async function createSubscriptionIntent(): Promise<
   { clientSecret: string } | { error: string }
 > {
@@ -50,16 +68,18 @@ export async function createSubscriptionIntent(): Promise<
 
   // Reuse existing incomplete subscription to avoid orphaned subscriptions on retry
   if (profile.stripeSubscriptionId) {
-    const existing = await stripe.subscriptions.retrieve(
-      profile.stripeSubscriptionId,
-      { expand: ["latest_invoice.payment_intent"] }
-    );
+    const existing = await stripe.subscriptions.retrieve(profile.stripeSubscriptionId);
     if (existing.status === "incomplete") {
-      const inv = existing.latest_invoice as Stripe.Invoice & {
-        payment_intent: Stripe.PaymentIntent;
-      };
-      if (inv.payment_intent?.client_secret) {
-        return { clientSecret: inv.payment_intent.client_secret };
+      const existingInvoiceId =
+        typeof existing.latest_invoice === "string"
+          ? existing.latest_invoice
+          : (existing.latest_invoice as Stripe.Invoice | null)?.id;
+
+      if (existingInvoiceId) {
+        const existingSecret = await getClientSecretFromInvoice(existingInvoiceId);
+        if (existingSecret) {
+          return { clientSecret: existingSecret };
+        }
       }
     }
   }
@@ -68,8 +88,10 @@ export async function createSubscriptionIntent(): Promise<
     customer: customerId,
     items: [{ price: process.env.STRIPE_PRO_PRICE_ID! }],
     payment_behavior: "default_incomplete",
-    payment_settings: { save_default_payment_method: "on_subscription" },
-    expand: ["latest_invoice.payment_intent"]
+    payment_settings: {
+      save_default_payment_method: "on_subscription",
+      payment_method_types: ["card", "pix"]
+    }
   });
 
   await prisma.providerProfile.update({
@@ -77,14 +99,20 @@ export async function createSubscriptionIntent(): Promise<
     data: { stripeSubscriptionId: subscription.id }
   });
 
-  const invoice = subscription.latest_invoice as Stripe.Invoice & {
-    payment_intent: Stripe.PaymentIntent;
-  };
-  const paymentIntent = invoice.payment_intent;
+  const invoiceId =
+    typeof subscription.latest_invoice === "string"
+      ? subscription.latest_invoice
+      : (subscription.latest_invoice as Stripe.Invoice | null)?.id;
 
-  if (!paymentIntent?.client_secret) {
+  if (!invoiceId) {
     return { error: "Erro ao criar intenção de pagamento. Tente novamente." };
   }
 
-  return { clientSecret: paymentIntent.client_secret };
+  const clientSecret = await getClientSecretFromInvoice(invoiceId);
+
+  if (!clientSecret) {
+    return { error: "Erro ao criar intenção de pagamento. Tente novamente." };
+  }
+
+  return { clientSecret };
 }
