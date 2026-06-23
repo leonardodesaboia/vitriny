@@ -1,11 +1,13 @@
 "use server";
 
-import { redirect } from "next/navigation";
+import type { Stripe } from "stripe";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
-export async function createCheckoutSession(): Promise<{ error: string }> {
+export async function createSubscriptionIntent(): Promise<
+  { clientSecret: string } | { error: string }
+> {
   const session = await auth();
   if (!session?.user?.id) {
     return { error: "Não autenticado." };
@@ -46,24 +48,25 @@ export async function createCheckoutSession(): Promise<{ error: string }> {
     });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const subscription = await stripe.subscriptions.create({
     customer: customerId,
-    mode: "subscription",
-    line_items: [
-      {
-        price: process.env.STRIPE_PRO_PRICE_ID!,
-        quantity: 1
-      }
-    ],
-    success_url: `${appUrl}/dashboard/billing?success=1`,
-    cancel_url: `${appUrl}/dashboard/billing?canceled=1`
+    items: [{ price: process.env.STRIPE_PRO_PRICE_ID! }],
+    payment_behavior: "default_incomplete",
+    payment_settings: { save_default_payment_method: "on_subscription" },
+    expand: ["latest_invoice.payment_intent"]
   });
 
-  if (!checkoutSession.url) {
-    return { error: "Erro ao criar sessão de checkout. Tente novamente." };
+  await prisma.providerProfile.updateMany({
+    where: { id: profile.id },
+    data: { stripeSubscriptionId: subscription.id }
+  });
+
+  const invoice = subscription.latest_invoice as Stripe.Invoice;
+  const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+  if (!paymentIntent?.client_secret) {
+    return { error: "Erro ao criar intenção de pagamento. Tente novamente." };
   }
 
-  redirect(checkoutSession.url);
+  return { clientSecret: paymentIntent.client_secret };
 }
