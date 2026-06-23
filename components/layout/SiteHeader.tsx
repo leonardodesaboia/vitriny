@@ -1,19 +1,27 @@
 import Link from "next/link";
-
 import { AuthButton } from "@/components/auth/AuthButton";
 
 export function SiteHeader() {
   return (
-    <header className="border-b border-stone-200 bg-white">
+    <header className="sticky top-0 z-50 border-b border-paper-soft bg-white/80 backdrop-blur-sm">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between px-6">
-        <Link className="text-lg font-bold text-ink" href="/">
+        <Link
+          className="font-fraunces text-xl font-semibold tracking-tight text-ink transition-colors hover:text-leaf"
+          href="/"
+        >
           OrçaFácil
         </Link>
-        <nav aria-label="Principal" className="flex items-center gap-5 text-sm">
-          <a className="font-medium text-stone-700 hover:text-leaf" href="#como-funciona">
+        <nav aria-label="Principal" className="hidden items-center gap-6 text-sm md:flex">
+          <a
+            className="font-medium text-ink-muted transition-colors hover:text-leaf"
+            href="#como-funciona"
+          >
             Como funciona
           </a>
-          <a className="font-medium text-stone-700 hover:text-leaf" href="#proximos-passos">
+          <a
+            className="font-medium text-ink-muted transition-colors hover:text-leaf"
+            href="#proximos-passos"
+          >
             Próximos passos
           </a>
         </nav>
