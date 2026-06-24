@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    include: ["tests/unit/**/*.test.ts", "tests/actions/**/*.test.ts"],
     setupFiles: ["./tests/setup.ts"],
     coverage: {
       provider: "v8",
