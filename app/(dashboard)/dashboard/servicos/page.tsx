@@ -88,7 +88,15 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
             <section>
               <h2 className="text-xl font-bold text-ink">Serviços cadastrados</h2>
               <div className="mt-4">
-                <ServiceList services={profile.services} />
+                <ServiceList
+                  services={profile.services.map((s) => ({
+                    id: s.id,
+                    name: s.name,
+                    description: s.description,
+                    basePrice: s.basePrice?.toString() ?? null,
+                    isActive: s.isActive
+                  }))}
+                />
               </div>
             </section>
           </div>

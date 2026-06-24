@@ -1,10 +1,9 @@
-import type { Service } from "@prisma/client";
-
 import { toggleServiceStatus } from "@/lib/actions/services";
 import { ServiceForm } from "@/components/services/ServiceForm";
+import type { ServiceForClient } from "@/types/service";
 
 type ServiceListProps = {
-  services: Service[];
+  services: ServiceForClient[];
 };
 
 export function ServiceList({ services }: ServiceListProps) {

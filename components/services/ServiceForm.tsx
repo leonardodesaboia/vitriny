@@ -1,18 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
-import type { Service } from "@prisma/client";
 
 import { createService, updateService } from "@/lib/actions/services";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import type { ActionResult } from "@/types";
+import type { ServiceForClient } from "@/types/service";
 
 type ServiceFormProps = {
-  service?: Service;
+  service?: ServiceForClient;
 };
 
-function formatPrice(value: Service["basePrice"] | null | undefined) {
-  return value ? value.toString() : "";
-}
 
 export function ServiceForm({ service }: ServiceFormProps) {
   const action = service ? updateService : createService;
@@ -74,14 +72,11 @@ export function ServiceForm({ service }: ServiceFormProps) {
           >
             Preço base
           </label>
-          <input
+          <CurrencyInput
             className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
-            defaultValue={formatPrice(service?.basePrice)}
+            defaultValue={service?.basePrice ?? ""}
             id={`basePrice-${service?.id ?? "new"}`}
-            min="0"
             name="basePrice"
-            step="0.01"
-            type="number"
           />
         </div>
 
