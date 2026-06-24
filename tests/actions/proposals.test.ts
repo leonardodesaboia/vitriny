@@ -29,6 +29,7 @@ beforeEach(async () => {
 
 const validProposalForm = () =>
   makeFormData({
+    pricingMode: "ITEMIZED",
     requestId: validRequestId,
     title: "Proposta de Pintura",
     description: "",
@@ -65,8 +66,8 @@ describe("createProposal", () => {
 
   it("redireciona com ?error=invalid quando os dados são inválidos", async () => {
     const form = makeFormData({
-      requestId: validRequestId,
-      title: "",
+      pricingMode: "ITEMIZED",
+      requestId: "nao-e-um-cuid-valido",
       description: "",
       validUntil: "",
       itemDescription: ["Item"],

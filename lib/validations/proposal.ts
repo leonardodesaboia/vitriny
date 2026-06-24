@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-const optionalText = z
-  .string()
-  .trim()
-  .transform((value) => (value === "" ? null : value));
+const optionalText = z.preprocess(
+  (v) => (v == null ? "" : v),
+  z.string().trim().transform((value) => (value === "" ? null : value))
+);
 
 function normalizeMoney(v: string) {
   return v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v;
@@ -45,7 +45,12 @@ export const proposalItemSchema = z.object({
 
 const baseFields = {
   requestId: z.string().cuid(),
-  title: optionalText.pipe(z.string().max(120, "Use no máximo 120 caracteres.").nullable()),
+  title: optionalText.pipe(
+    z.union([
+      z.null(),
+      z.string().min(2, "O título deve ter pelo menos 2 caracteres.").max(120, "Use no máximo 120 caracteres.")
+    ])
+  ),
   description: optionalText.pipe(
     z.string().max(1000, "Use no máximo 1000 caracteres.").nullable()
   ),

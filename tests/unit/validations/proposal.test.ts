@@ -38,6 +38,7 @@ describe("proposalItemSchema", () => {
 
 describe("proposalSchema", () => {
   const valid = {
+    pricingMode: "ITEMIZED" as const,
     requestId: validRequestId,
     title: "Proposta de Pintura Residencial",
     description: "",
