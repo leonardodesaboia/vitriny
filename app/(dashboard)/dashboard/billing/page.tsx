@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { stripe } from "@/lib/stripe";
 import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
+import { InvoiceList, type InvoiceItem } from "@/components/billing/InvoiceList";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 
 export default async function BillingPage({
@@ -44,10 +46,26 @@ export default async function BillingPage({
     (p) => p.createdAt >= monthRange.start && p.createdAt < monthRange.end
   ).length;
 
+  let invoices: InvoiceItem[] = [];
+  if (profile.stripeCustomerId) {
+    const stripeInvoices = await stripe.invoices.list({
+      customer: profile.stripeCustomerId,
+      limit: 10
+    });
+    invoices = stripeInvoices.data.map((inv) => ({
+      id: inv.id,
+      created: inv.created,
+      amountPaid: inv.amount_paid,
+      currency: inv.currency,
+      status: inv.status ?? null,
+      hostedUrl: inv.hosted_invoice_url ?? null
+    }));
+  }
+
   return (
     <div className="p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-        Billing
+        Assinatura
       </p>
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
         Plano e assinatura
@@ -77,8 +95,11 @@ export default async function BillingPage({
           plan={profile.plan}
           subscriptionStatus={profile.subscriptionStatus}
           currentPeriodEnd={profile.currentPeriodEnd}
+          cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
         />
       </div>
+
+      {invoices.length > 0 ? <InvoiceList invoices={invoices} /> : null}
 
       <PlanUsageCard
         plan={profile.plan}

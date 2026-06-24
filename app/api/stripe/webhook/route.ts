@@ -65,6 +65,7 @@ async function handleStripeEvent(event: Stripe.Event) {
           currentPeriodEnd: firstItem?.current_period_end
             ? new Date(firstItem.current_period_end * 1000)
             : null,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
           ...(plan !== null ? { plan } : {})
         }
       });
@@ -82,6 +83,7 @@ async function handleStripeEvent(event: Stripe.Event) {
           stripePriceId: null,
           subscriptionStatus: "CANCELED",
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
           plan: "FREE"
         }
       });
