@@ -74,7 +74,10 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
   return (
     <main className="min-h-screen bg-paper px-6 py-12 text-ink">
       <section className="mx-auto max-w-4xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <Link className="text-sm font-semibold text-leaf" href="/dashboard/pedidos">
+        <Link className="inline-flex items-center gap-1.5 text-sm font-semibold text-leaf transition hover:text-leaf-hover" href="/dashboard/pedidos">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
           Voltar aos pedidos
         </Link>
         <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-leaf">
@@ -82,8 +85,7 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
         </p>
         <h1 className="mt-3 text-3xl font-bold">Criar proposta</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Pedido de {quoteRequest.customerName}. A proposta será criada como
-          enviada para simplificar o MVP.
+          Pedido de {quoteRequest.customerName}.
         </p>
 
         {params.error ? (
