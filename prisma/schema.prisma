@@ -90,6 +90,10 @@ model ProviderProfile {
   stripePriceId        String?
   subscriptionStatus   SubscriptionStatus?
   currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean             @default(false)
+  pixKey        String?
+  pixKeyType    String?
+  pixHolderName String?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -167,16 +171,19 @@ model QuoteRequestStatusHistory {
 }
 
 model Proposal {
-  id             String         @id @default(cuid())
+  id             String                @id @default(cuid())
   providerId     String
-  quoteRequestId String         @unique
-  publicToken    String         @unique @default(uuid())
-  title          String
+  quoteRequestId String                @unique
+  publicToken    String                @unique @default(uuid())
+  pricingMode    ProposalPricingMode   @default(SIMPLE)
+  title          String?
   description    String?
-  totalAmount    Decimal        @db.Decimal(10, 2)
-  status         ProposalStatus @default(DRAFT)
+  totalAmount    Decimal               @db.Decimal(10, 2)
+  status         ProposalStatus        @default(DRAFT)
   validUntil     DateTime?
   respondedAt    DateTime?
+  depositAmount  Decimal?       @db.Decimal(10, 2)
+  depositPaidAt  DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -262,6 +269,11 @@ enum ProposalStatus {
   APPROVED
   REJECTED
   EXPIRED
+}
+
+enum ProposalPricingMode {
+  SIMPLE
+  ITEMIZED
 }
 
 enum PlanTier {
