@@ -30,6 +30,22 @@ describe("providerProfileSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("normaliza telefone para o padrão brasileiro", () => {
+    const result = providerProfileSchema.safeParse({
+      ...valid,
+      phone: "+55 11 99999-9999"
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.phone).toBe("(11) 99999-9999");
+  });
+
+  it("rejeita telefone incompleto", () => {
+    expect(
+      providerProfileSchema.safeParse({ ...valid, phone: "9999" }).success
+    ).toBe(false);
+  });
+
   it("rejeita businessName com menos de 2 caracteres", () => {
     expect(providerProfileSchema.safeParse({ ...valid, businessName: "A" }).success).toBe(false);
   });

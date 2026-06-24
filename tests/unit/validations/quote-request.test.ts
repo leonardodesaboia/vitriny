@@ -30,6 +30,22 @@ describe("quoteRequestSchema", () => {
     expect(result.success).toBe(true);
   });
 
+  it("normaliza telefone do cliente para o padrão brasileiro", () => {
+    const result = quoteRequestSchema.safeParse({
+      ...valid,
+      customerPhone: "11999999999"
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.customerPhone).toBe("(11) 99999-9999");
+  });
+
+  it("rejeita telefone do cliente incompleto", () => {
+    expect(
+      quoteRequestSchema.safeParse({ ...valid, customerPhone: "11999" }).success
+    ).toBe(false);
+  });
+
   it("rejeita nome com menos de 2 caracteres", () => {
     expect(quoteRequestSchema.safeParse({ ...valid, customerName: "M" }).success).toBe(false);
   });

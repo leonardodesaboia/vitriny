@@ -112,6 +112,28 @@ describe("saveProviderProfile", () => {
     );
   });
 
+  it("salva telefone normalizado", async () => {
+    const form = makeFormData({
+      businessName: "Pinturas Silva",
+      slug: "pinturas-silva",
+      description: "",
+      phone: "11999999999",
+      email: "",
+      city: "",
+      state: ""
+    });
+
+    const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
+    await expect(saveProviderProfile(undefined, form)).rejects.toThrow("/dashboard");
+
+    expect(db.providerProfile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ phone: "(11) 99999-9999" }),
+        update: expect.objectContaining({ phone: "(11) 99999-9999" })
+      })
+    );
+  });
+
   it("isPublished é false quando o checkbox não está marcado", async () => {
     const form = makeFormData({
       businessName: "Pinturas Silva",
