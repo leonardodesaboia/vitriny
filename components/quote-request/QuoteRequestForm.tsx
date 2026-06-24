@@ -1,4 +1,5 @@
 import { createQuoteRequest } from "@/lib/actions/quote-requests";
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { ServiceSummary } from "@/types";
 
 type QuoteRequestFormProps = {
@@ -53,12 +54,10 @@ export function QuoteRequestForm({
           <label className={labelClass} htmlFor="customerPhone">
             Telefone
           </label>
-          <input
+          <PhoneInput
             className={inputClass}
             id="customerPhone"
             name="customerPhone"
-            placeholder="(11) 9 0000-0000"
-            type="text"
           />
         </div>
       </div>

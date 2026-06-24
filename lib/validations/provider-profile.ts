@@ -1,9 +1,20 @@
 import { z } from "zod";
 
+import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
+
 const optionalText = z
-  .string()
-  .trim()
+  .preprocess((value) => (value == null ? "" : value), z.string())
+  .transform((value) => value.trim())
   .transform((value) => (value === "" ? null : value));
+
+const optionalPhone = optionalText.pipe(
+  z
+    .string()
+    .max(30, "Use no máximo 30 caracteres.")
+    .nullable()
+    .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
+    .transform((value) => (value ? formatPhoneBR(value) : null))
+);
 
 export const providerProfileSchema = z.object({
   businessName: z
@@ -24,9 +35,7 @@ export const providerProfileSchema = z.object({
   description: optionalText.pipe(
     z.string().max(600, "Use no máximo 600 caracteres.").nullable()
   ),
-  phone: optionalText.pipe(
-    z.string().max(30, "Use no máximo 30 caracteres.").nullable()
-  ),
+  phone: optionalPhone,
   email: optionalText.pipe(
     z
       .string()
@@ -40,7 +49,14 @@ export const providerProfileSchema = z.object({
   state: optionalText.pipe(
     z.string().max(80, "Use no máximo 80 caracteres.").nullable()
   ),
-  isPublished: z.boolean()
+  isPublished: z.boolean(),
+  pixKey: optionalText.pipe(
+    z.string().max(140, "Use no máximo 140 caracteres.").nullable()
+  ),
+  pixKeyType: optionalText.pipe(z.string().max(30).nullable()),
+  pixHolderName: optionalText.pipe(
+    z.string().max(120, "Use no máximo 120 caracteres.").nullable()
+  )
 });
 
 export type ProviderProfileInput = z.infer<typeof providerProfileSchema>;

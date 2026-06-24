@@ -22,7 +22,10 @@ export async function saveProviderProfile(
     email: formData.get("email"),
     city: formData.get("city"),
     state: formData.get("state"),
-    isPublished: formData.get("isPublished") === "on"
+    isPublished: formData.get("isPublished") === "on",
+    pixKey: formData.get("pixKey"),
+    pixKeyType: formData.get("pixKeyType"),
+    pixHolderName: formData.get("pixHolderName")
   });
 
   if (!parsed.success) {
