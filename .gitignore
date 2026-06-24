@@ -17,3 +17,8 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 .worktrees
+
+# Playwright
+playwright-report/
+test-results/
+tests/e2e/.auth/user.json
