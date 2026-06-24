@@ -34,7 +34,9 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
               name: true
             }
           },
-          proposal: { select: { publicToken: true } },
+          proposal: {
+            select: { id: true, publicToken: true, status: true, depositAmount: true, depositPaidAt: true }
+          },
           statusHistory: {
             orderBy: { createdAt: "desc" },
             select: {
@@ -66,16 +68,28 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
     }
   });
 
+  const totalRequests = profile?.quoteRequests.length ?? 0;
+  const newRequests = profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
+
   return (
-    <div className="p-8">
+    <div className="p-6 md:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
         Pedidos
       </p>
-      <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-        Pedidos recebidos
-      </h1>
+      <div className="mt-2 flex flex-wrap items-end gap-3">
+        <h1 className="font-fraunces text-4xl font-bold text-ink">
+          Pedidos recebidos
+        </h1>
+        {newRequests > 0 ? (
+          <span className="mb-1 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+            {newRequests} novo{newRequests > 1 ? "s" : ""}
+          </span>
+        ) : null}
+      </div>
       <p className="mt-2 text-sm text-ink-muted">
-        Acompanhe os pedidos enviados pelo formulário público de orçamento.
+        {totalRequests > 0
+          ? `${totalRequests} pedido${totalRequests > 1 ? "s" : ""} recebido${totalRequests > 1 ? "s" : ""} no total.`
+          : "Acompanhe os pedidos enviados pelo formulário público de orçamento."}
       </p>
 
       {params.error ? (
