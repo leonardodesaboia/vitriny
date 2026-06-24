@@ -63,6 +63,13 @@ npx prisma validate
 npm run prisma:migrate
 npm run prisma:generate
 npm run prisma:studio
+
+# Testes
+npm test                   # unitários + actions (179 testes, sem banco real)
+npm run test:integration   # integração com banco real (24 testes, usa orcafacil_test)
+npm run test:e2e           # E2E Playwright (dev server deve estar rodando na porta 3000)
+npm run test:e2e:ui        # Playwright com interface interativa
+npm run playwright:install # instalar browsers do Playwright (primeira vez)
 ```
 
 ## Regras de trabalho
@@ -82,16 +89,14 @@ Priorize:
 1. Teste manual completo do MVP.
 2. Correção de bugs encontrados no fluxo.
 3. Deploy/staging.
-4. Testes automatizados.
-5. Melhorias pequenas validadas.
+4. Melhorias pequenas validadas.
 
 ## Ordem recomendada
 
 1. Validar fluxo em staging.
-2. Adicionar testes E2E do caminho principal.
-3. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
-4. Adicionar notificações por e-mail.
-5. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição.
+2. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
+3. Adicionar notificações por e-mail.
+4. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição.
 
 ## Padrões de código existentes
 
@@ -155,6 +160,7 @@ Priorize:
 npm run lint
 npm run build
 npx prisma validate
+npm test
 ```
 
 Se mudar banco:
@@ -162,6 +168,8 @@ Se mudar banco:
 ```bash
 npm run prisma:migrate -- --name nome-da-migration
 npm run prisma:generate
+# Replicar no banco de teste:
+DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil_test" npx prisma db push
 ```
 
 Em produção, usar:

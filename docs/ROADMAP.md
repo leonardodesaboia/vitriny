@@ -25,6 +25,7 @@
 - Recuperação de senha por e-mail (Resend)
 - Polimento visual, validações e preparação para deploy
 - Assinatura mensal PRO via Stripe Checkout (sem checkout próprio, sem coleta de cartão)
+- Testes automatizados: unitários (179), integração com banco real (24) e E2E com Playwright
 
 ## Próximos passos recomendados
 
@@ -32,7 +33,6 @@
 2. Configurar deploy.
 3. Configurar banco PostgreSQL de produção.
 4. Revisar OAuth em produção.
-5. Adicionar testes automatizados para regras críticas.
 
 ## Melhorias de curto prazo
 
@@ -49,7 +49,6 @@
 - Envio de e-mail para notificar pedido e proposta.
 - Exportação simples de proposta.
 - Métricas básicas do prestador.
-- Testes E2E do fluxo principal.
 
 ## Futuro, somente após validação
 

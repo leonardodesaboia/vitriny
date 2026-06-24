@@ -22,6 +22,8 @@ app/
 components/
 lib/
 prisma/
+tests/
+types/
 docs/
 ```
 
@@ -30,9 +32,13 @@ docs/
 - `app/`: rotas, páginas e route handlers.
 - `components/`: componentes reutilizáveis de UI/formulários.
 - `lib/actions/`: Server Actions.
+- `lib/actions/auth-guard.ts`: helpers `requireAuth` e `requireProviderProfile`.
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
+- `lib/plan-limits.ts`: regras de limites de plano centralizadas.
 - `prisma/schema.prisma`: modelo de dados.
+- `types/`: tipos compartilhados entre actions e componentes.
+- `tests/`: testes automatizados (unit, actions, integration, e2e).
 - `docs/`: documentação técnica e de produto.
 
 ## App Router
@@ -177,6 +183,47 @@ Limites `FREE`:
 - E-mail duplicado entre Google e e-mail/senha é bloqueado, nunca vinculado automaticamente.
 - "Esqueci minha senha" nunca revela se um e-mail existe no sistema (mesma resposta em todos os casos).
 
+## Testes
+
+### Camadas de teste
+
+| Camada | Localização | Runner | Banco |
+|--------|------------|--------|-------|
+| Unitários (validações + limites) | `tests/unit/` | Vitest | — |
+| Actions (Prisma mockado) | `tests/actions/` | Vitest | mock |
+| Integração | `tests/integration/` | Vitest | `orcafacil_test` |
+| E2E | `tests/e2e/` | Playwright | dev DB |
+
+### Comandos
+
+```bash
+npm test                   # unit + actions (179 testes, sem banco real)
+npm run test:integration   # integração com banco real (24 testes)
+npm run test:e2e           # E2E Playwright (exige dev server rodando)
+npm run test:e2e:ui        # Playwright com UI interativa
+npm run playwright:install # instalar browsers (primeira vez)
+```
+
+### Banco de testes
+
+A suite de integração usa um banco PostgreSQL separado (`orcafacil_test`) no mesmo container Docker.
+
+Criação e migração:
+```bash
+docker exec orcafacil-postgres psql -U orcafacil -c "CREATE DATABASE orcafacil_test;"
+DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil_test" npx prisma db push
+```
+
+### E2E
+
+O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
+
+- `tests/e2e/global-setup.ts`: cria usuário de teste no banco.
+- `tests/e2e/global-teardown.ts`: apaga o usuário de teste.
+- `tests/e2e/auth.setup.ts`: faz login e salva o `storageState` em `.auth/user.json`.
+- Testes públicos (`landing`, `public-profile`) rodam no projeto `chromium-public`.
+- Testes autenticados (`auth`) rodam no projeto `chromium` com estado de sessão salvo.
+
 ## Riscos técnicos conhecidos
 
 - `QuoteRequest` possui `serviceId` opcional. Pedidos novos salvam a descrição limpa; a UI de pedidos ainda usa parsing legado da `description` apenas para pedidos antigos sem `serviceId`.
@@ -185,5 +232,4 @@ Limites `FREE`:
 - Remetente do Resend (`onboarding@resend.dev`) é sandbox; trocar por domínio verificado antes de produção real.
 - O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
-- Não há testes automatizados ainda.
 - Não há rate limit em formulários públicos.
