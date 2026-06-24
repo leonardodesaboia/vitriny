@@ -1,13 +1,9 @@
 import { createQuoteRequest } from "@/lib/actions/quote-requests";
-
-type QuoteRequestService = {
-  id: string;
-  name: string;
-};
+import type { ServiceSummary } from "@/types";
 
 type QuoteRequestFormProps = {
   slug: string;
-  services: QuoteRequestService[];
+  services: ServiceSummary[];
   selectedServiceId?: string | null;
 };
 

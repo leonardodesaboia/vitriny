@@ -1,40 +1,28 @@
-import type { Prisma } from "@prisma/client";
+"use client";
+
+import { useActionState } from "react";
 
 import {
   createProposalTemplate,
   updateProposalTemplate
 } from "@/lib/actions/proposal-templates";
-
-type ProposalTemplateFormItem = {
-  id?: string;
-  description?: string;
-  quantity?: number;
-  unitPrice?: Prisma.Decimal | { toString: () => string };
-};
-
-type ProposalTemplateFormData = {
-  id: string;
-  name: string;
-  title: string;
-  description: string | null;
-  items: ProposalTemplateFormItem[];
-};
+import type { ProposalTemplateItem, ProposalTemplateData, ActionResult } from "@/types";
 
 type ProposalTemplateFormProps = {
-  template?: ProposalTemplateFormData;
+  template?: ProposalTemplateData;
 };
 
-function formatPrice(value: ProposalTemplateFormItem["unitPrice"]) {
+function formatPrice(value: ProposalTemplateItem["unitPrice"]) {
   return value ? value.toString() : "";
 }
 
-function getRows(template?: ProposalTemplateFormData) {
+function getRows(template?: ProposalTemplateData) {
   const existingItems = template?.items ?? [];
   const emptyRows = Array.from({ length: Math.max(3 - existingItems.length, 1) });
 
   return [
     ...existingItems,
-    ...emptyRows.map<ProposalTemplateFormItem>(() => ({
+    ...emptyRows.map<ProposalTemplateItem>(() => ({
       description: "",
       quantity: 1,
       unitPrice: undefined
@@ -44,15 +32,31 @@ function getRows(template?: ProposalTemplateFormData) {
 
 export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
   const action = template ? updateProposalTemplate : createProposalTemplate;
+  const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
+    action,
+    undefined
+  );
   const rows = getRows(template);
 
   return (
-    <form action={action} className="grid gap-4 rounded-xl border border-paper-soft bg-white p-5 shadow-card">
+    <form
+      action={formAction}
+      className="grid gap-4 rounded-xl border border-paper-soft bg-white p-5 shadow-card"
+    >
       {template ? <input name="templateId" type="hidden" value={template.id} /> : null}
+
+      {state?.error ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {state.error}
+        </p>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="grid gap-2">
-          <label className="text-sm font-semibold text-ink" htmlFor={`name-${template?.id ?? "new"}`}>
+          <label
+            className="text-sm font-semibold text-ink"
+            htmlFor={`name-${template?.id ?? "new"}`}
+          >
             Nome do modelo
           </label>
           <input
@@ -66,7 +70,10 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
         </div>
 
         <div className="grid gap-2">
-          <label className="text-sm font-semibold text-ink" htmlFor={`title-${template?.id ?? "new"}`}>
+          <label
+            className="text-sm font-semibold text-ink"
+            htmlFor={`title-${template?.id ?? "new"}`}
+          >
             Titulo da proposta
           </label>
           <input
@@ -81,7 +88,10 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
       </div>
 
       <div className="grid gap-2">
-        <label className="text-sm font-semibold text-ink" htmlFor={`description-${template?.id ?? "new"}`}>
+        <label
+          className="text-sm font-semibold text-ink"
+          htmlFor={`description-${template?.id ?? "new"}`}
+        >
           Descricao sugerida
         </label>
         <textarea
@@ -159,10 +169,11 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
       </section>
 
       <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover md:w-fit"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 md:w-fit"
+        disabled={isPending}
         type="submit"
       >
-        {template ? "Salvar modelo" : "Criar modelo"}
+        {isPending ? "Salvando..." : template ? "Salvar modelo" : "Criar modelo"}
       </button>
     </form>
   );

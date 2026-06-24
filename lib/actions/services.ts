@@ -4,28 +4,16 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
-import { auth } from "@/auth";
-import { getPlanLimit, hasReachedLimit, PLAN_LIMIT_ERROR_CODES } from "@/lib/plan-limits";
+import {
+  getPlanLimit,
+  hasReachedLimit,
+  PLAN_LIMIT_ERROR_CODES,
+  LIMIT_ERROR_MESSAGES
+} from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { serviceSchema } from "@/lib/validations/service";
-
-async function getCurrentProviderProfile() {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
-  return prisma.providerProfile.findUnique({
-    where: {
-      userId: session.user.id
-    },
-    select: {
-      id: true,
-      plan: true
-    }
-  });
-}
+import { requireProviderProfile } from "@/lib/actions/auth-guard";
+import type { ActionResult } from "@/types";
 
 function parseServiceForm(formData: FormData) {
   return serviceSchema.safeParse({
@@ -40,32 +28,28 @@ function toDecimal(value: string | null) {
   return value ? new Prisma.Decimal(value) : null;
 }
 
-export async function createService(formData: FormData) {
-  const profile = await getCurrentProviderProfile();
+export async function createService(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { profile } = await requireProviderProfile();
 
   if (!profile) {
     redirect("/dashboard/servicos?error=profile");
   }
 
   const parsed = parseServiceForm(formData);
-
   if (!parsed.success) {
-    redirect("/dashboard/servicos?error=invalid");
+    return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
   if (parsed.data.isActive) {
     const activeServicesCount = await prisma.service.count({
-      where: {
-        providerId: profile.id,
-        isActive: true
-      }
+      where: { providerId: profile.id, isActive: true }
     });
     const limit = getPlanLimit(profile.plan, "activeServices");
-
     if (hasReachedLimit(activeServicesCount, limit)) {
-      redirect(
-        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
-      );
+      return { error: LIMIT_ERROR_MESSAGES[PLAN_LIMIT_ERROR_CODES.activeServices] };
     }
   }
 
@@ -83,8 +67,11 @@ export async function createService(formData: FormData) {
   redirect("/dashboard/servicos");
 }
 
-export async function updateService(formData: FormData) {
-  const profile = await getCurrentProviderProfile();
+export async function updateService(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { profile } = await requireProviderProfile();
   const serviceId = String(formData.get("serviceId") ?? "");
 
   if (!profile) {
@@ -92,24 +79,17 @@ export async function updateService(formData: FormData) {
   }
 
   if (!serviceId) {
-    redirect("/dashboard/servicos?error=invalid");
+    return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
   const parsed = parseServiceForm(formData);
-
   if (!parsed.success) {
-    redirect("/dashboard/servicos?error=invalid");
+    return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
   const service = await prisma.service.findFirst({
-    where: {
-      id: serviceId,
-      providerId: profile.id
-    },
-    select: {
-      id: true,
-      isActive: true
-    }
+    where: { id: serviceId, providerId: profile.id },
+    select: { id: true, isActive: true }
   });
 
   if (!service) {
@@ -118,24 +98,16 @@ export async function updateService(formData: FormData) {
 
   if (!service.isActive && parsed.data.isActive) {
     const activeServicesCount = await prisma.service.count({
-      where: {
-        providerId: profile.id,
-        isActive: true
-      }
+      where: { providerId: profile.id, isActive: true }
     });
     const limit = getPlanLimit(profile.plan, "activeServices");
-
     if (hasReachedLimit(activeServicesCount, limit)) {
-      redirect(
-        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
-      );
+      return { error: LIMIT_ERROR_MESSAGES[PLAN_LIMIT_ERROR_CODES.activeServices] };
     }
   }
 
   await prisma.service.update({
-    where: {
-      id: service.id
-    },
+    where: { id: service.id },
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
@@ -149,7 +121,7 @@ export async function updateService(formData: FormData) {
 }
 
 export async function toggleServiceStatus(formData: FormData) {
-  const profile = await getCurrentProviderProfile();
+  const { profile } = await requireProviderProfile();
   const serviceId = String(formData.get("serviceId") ?? "");
   const nextStatus = formData.get("nextStatus") === "true";
 
@@ -158,14 +130,8 @@ export async function toggleServiceStatus(formData: FormData) {
   }
 
   const service = await prisma.service.findFirst({
-    where: {
-      id: serviceId,
-      providerId: profile.id
-    },
-    select: {
-      id: true,
-      isActive: true
-    }
+    where: { id: serviceId, providerId: profile.id },
+    select: { id: true, isActive: true }
   });
 
   if (!service) {
@@ -174,27 +140,17 @@ export async function toggleServiceStatus(formData: FormData) {
 
   if (!service.isActive && nextStatus) {
     const activeServicesCount = await prisma.service.count({
-      where: {
-        providerId: profile.id,
-        isActive: true
-      }
+      where: { providerId: profile.id, isActive: true }
     });
     const limit = getPlanLimit(profile.plan, "activeServices");
-
     if (hasReachedLimit(activeServicesCount, limit)) {
-      redirect(
-        `/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`
-      );
+      redirect(`/dashboard/servicos?error=${PLAN_LIMIT_ERROR_CODES.activeServices}`);
     }
   }
 
   await prisma.service.update({
-    where: {
-      id: service.id
-    },
-    data: {
-      isActive: nextStatus
-    }
+    where: { id: service.id },
+    data: { isActive: nextStatus }
   });
 
   revalidatePath("/dashboard/servicos");

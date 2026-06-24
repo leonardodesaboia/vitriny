@@ -1,49 +1,16 @@
 import Link from "next/link";
-import type {
-  QuoteRequest,
-  QuoteRequestStatus,
-  QuoteRequestStatusActor
-} from "@prisma/client";
+import type { QuoteRequestStatusActor } from "@prisma/client";
 
 import { updateQuoteRequestStatus } from "@/lib/actions/quote-request-status";
 import {
   createQuoteRequestNote,
   deleteQuoteRequestNote
 } from "@/lib/actions/quote-request-notes";
-
-type QuoteRequestWithProposal = QuoteRequest & {
-  service: {
-    id: string;
-    name: string;
-  } | null;
-  proposal: {
-    publicToken: string;
-  } | null;
-  statusHistory: Array<{
-    id: string;
-    fromStatus: QuoteRequestStatus | null;
-    toStatus: QuoteRequestStatus;
-    actor: QuoteRequestStatusActor;
-    note: string | null;
-    createdAt: Date;
-  }>;
-  internalNotes: Array<{
-    id: string;
-    content: string;
-    createdAt: Date;
-    author: {
-      name: string | null;
-      email: string | null;
-    };
-  }>;
-};
+import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
 
 type QuoteRequestListProps = {
-  quoteRequests: QuoteRequestWithProposal[];
-  services: Array<{
-    id: string;
-    name: string;
-  }>;
+  quoteRequests: QuoteRequestWithRelations[];
+  services: ServiceSummary[];
 };
 
 const statusLabels: Record<string, string> = {

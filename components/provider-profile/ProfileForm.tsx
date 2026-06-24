@@ -1,6 +1,10 @@
+"use client";
+
+import { useActionState } from "react";
 import type { ProviderProfile } from "@prisma/client";
 
 import { saveProviderProfile } from "@/lib/actions/provider-profile";
+import type { ActionResult } from "@/types";
 
 type ProfileFormProps = {
   profile: ProviderProfile | null;
@@ -8,8 +12,19 @@ type ProfileFormProps = {
 };
 
 export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
+  const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
+    saveProviderProfile,
+    undefined
+  );
+
   return (
-    <form action={saveProviderProfile} className="mt-8 grid gap-5">
+    <form action={formAction} className="mt-8 grid gap-5">
+      {state?.error ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {state.error}
+        </p>
+      ) : null}
+
       <div className="grid gap-2">
         <label className="text-sm font-semibold text-ink" htmlFor="businessName">
           Nome do negócio
@@ -118,10 +133,11 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
       </label>
 
       <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443] md:w-fit"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443] disabled:opacity-50 md:w-fit"
+        disabled={isPending}
         type="submit"
       >
-        Salvar perfil
+        {isPending ? "Salvando..." : "Salvar perfil"}
       </button>
     </form>
   );

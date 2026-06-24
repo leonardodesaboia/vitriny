@@ -3,17 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { quoteRequestStatusSchema } from "@/lib/validations/quote-request-status";
+import { requireProviderProfile } from "@/lib/actions/auth-guard";
 
 export async function updateQuoteRequestStatus(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
+  const { profile } = await requireProviderProfile();
   const requestId = String(formData.get("requestId") ?? "");
   const parsed = quoteRequestStatusSchema.safeParse(formData.get("status"));
 
@@ -21,14 +16,9 @@ export async function updateQuoteRequestStatus(formData: FormData) {
     redirect("/dashboard/pedidos?error=invalid");
   }
 
-  const profile = await prisma.providerProfile.findUnique({
-    where: {
-      userId: session.user.id
-    },
-    select: {
-      id: true
-    }
-  });
+  if (!profile) {
+    redirect("/dashboard/pedidos?error=profile");
+  }
 
   if (!profile) {
     redirect("/dashboard/pedidos?error=profile");

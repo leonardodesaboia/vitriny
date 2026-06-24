@@ -5,7 +5,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
-import { auth } from "@/auth";
 import {
   getCurrentMonthRange,
   getPlanLimit,
@@ -14,6 +13,7 @@ import {
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { proposalSchema } from "@/lib/validations/proposal";
+import { requireAuth } from "@/lib/actions/auth-guard";
 
 function decimalFromString(value: string) {
   return new Prisma.Decimal(value);
@@ -47,12 +47,7 @@ function parseProposalForm(formData: FormData) {
 }
 
 export async function createProposal(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
-
+  const userId = await requireAuth();
   const parsed = parseProposalForm(formData);
 
   if (!parsed.success) {
@@ -62,7 +57,7 @@ export async function createProposal(formData: FormData) {
 
   const profile = await prisma.providerProfile.findUnique({
     where: {
-      userId: session.user.id
+      userId
     },
     select: {
       id: true,

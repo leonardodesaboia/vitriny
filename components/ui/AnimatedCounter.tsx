@@ -3,10 +3,10 @@
 import { useEffect, useRef } from "react";
 import { useInView, animate } from "framer-motion";
 
-interface AnimatedCounterProps {
+type AnimatedCounterProps = {
   value: number;
   className?: string;
-}
+};
 
 export function AnimatedCounter({ value, className = "" }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null);

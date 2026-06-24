@@ -98,7 +98,13 @@ export default async function PublicProviderProfilePage({
           <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
             O que ofereço
           </h2>
-          <PublicServicesGrid services={profile.services} slug={slug} />
+          <PublicServicesGrid
+          services={profile.services.map((s) => ({
+            ...s,
+            basePrice: s.basePrice?.toString() ?? null
+          }))}
+          slug={slug}
+        />
         </div>
       </div>
 

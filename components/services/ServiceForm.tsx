@@ -1,6 +1,10 @@
+"use client";
+
+import { useActionState } from "react";
 import type { Service } from "@prisma/client";
 
 import { createService, updateService } from "@/lib/actions/services";
+import type { ActionResult } from "@/types";
 
 type ServiceFormProps = {
   service?: Service;
@@ -12,13 +16,29 @@ function formatPrice(value: Service["basePrice"] | null | undefined) {
 
 export function ServiceForm({ service }: ServiceFormProps) {
   const action = service ? updateService : createService;
+  const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
+    action,
+    undefined
+  );
 
   return (
-    <form action={action} className="grid gap-4 rounded-lg border border-stone-200 bg-white p-5">
+    <form
+      action={formAction}
+      className="grid gap-4 rounded-lg border border-stone-200 bg-white p-5"
+    >
       {service ? <input name="serviceId" type="hidden" value={service.id} /> : null}
 
+      {state?.error ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {state.error}
+        </p>
+      ) : null}
+
       <div className="grid gap-2">
-        <label className="text-sm font-semibold text-ink" htmlFor={`name-${service?.id ?? "new"}`}>
+        <label
+          className="text-sm font-semibold text-ink"
+          htmlFor={`name-${service?.id ?? "new"}`}
+        >
           Nome do serviço
         </label>
         <input
@@ -77,10 +97,11 @@ export function ServiceForm({ service }: ServiceFormProps) {
       </div>
 
       <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443] md:w-fit"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443] disabled:opacity-50 md:w-fit"
+        disabled={isPending}
         type="submit"
       >
-        {service ? "Salvar serviço" : "Cadastrar serviço"}
+        {isPending ? "Salvando..." : service ? "Salvar serviço" : "Cadastrar serviço"}
       </button>
     </form>
   );

@@ -3,18 +3,13 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
-type Service = {
-  id: string;
-  name: string;
-  description: string | null;
-  basePrice: { toString: () => string } | null;
-};
+import type { PublicService } from "@/types";
 
-function formatMoney(value: { toString: () => string }) {
+function formatMoney(value: string) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL"
-  }).format(Number(value.toString()));
+  }).format(Number(value));
 }
 
 const container = {
@@ -35,7 +30,7 @@ export function PublicServicesGrid({
   services,
   slug
 }: {
-  services: Service[];
+  services: PublicService[];
   slug: string;
 }) {
   if (services.length === 0) {

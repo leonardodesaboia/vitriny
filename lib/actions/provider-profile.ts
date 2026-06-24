@@ -3,16 +3,16 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
+import { requireAuth } from "@/lib/actions/auth-guard";
+import type { ActionResult } from "@/types";
 
-export async function saveProviderProfile(formData: FormData) {
-  const session = await auth();
-
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+export async function saveProviderProfile(
+  _prevState: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const userId = await requireAuth();
 
   const parsed = providerProfileSchema.safeParse({
     businessName: formData.get("businessName"),
@@ -26,30 +26,21 @@ export async function saveProviderProfile(formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect("/dashboard/perfil?error=invalid");
+    return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
   const existingSlug = await prisma.providerProfile.findUnique({
-    where: {
-      slug: parsed.data.slug
-    },
-    select: {
-      userId: true
-    }
+    where: { slug: parsed.data.slug },
+    select: { userId: true }
   });
 
-  if (existingSlug && existingSlug.userId !== session.user.id) {
-    redirect("/dashboard/perfil?error=slug");
+  if (existingSlug && existingSlug.userId !== userId) {
+    return { error: "Este slug já está em uso. Escolha outro." };
   }
 
   await prisma.providerProfile.upsert({
-    where: {
-      userId: session.user.id
-    },
-    create: {
-      ...parsed.data,
-      userId: session.user.id
-    },
+    where: { userId },
+    create: { ...parsed.data, userId },
     update: parsed.data
   });
 

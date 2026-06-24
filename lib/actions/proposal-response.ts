@@ -4,8 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
-
-type ProposalResponse = "APPROVED" | "REJECTED";
+import type { ProposalResponse } from "@/types";
 
 export async function respondToProposal(
   publicToken: string,
