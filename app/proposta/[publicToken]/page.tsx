@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 
 import { respondToProposal } from "@/lib/actions/proposal-response";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { prisma } from "@/lib/prisma";
+import { formatPhoneBR } from "@/lib/utils/phone";
 
 type PublicProposalPageProps = {
   params: Promise<{
@@ -67,7 +69,18 @@ export default async function PublicProposalPage({
   const proposal = await prisma.proposal.findUnique({
     where: { publicToken },
     include: {
-      provider: true,
+      provider: {
+        select: {
+          businessName: true,
+          email: true,
+          phone: true,
+          city: true,
+          state: true,
+          pixKey: true,
+          pixKeyType: true,
+          pixHolderName: true
+        }
+      },
       quoteRequest: true,
       items: { orderBy: { createdAt: "asc" } },
       statusHistory: {
@@ -96,6 +109,8 @@ export default async function PublicProposalPage({
     .join(", ");
 
   const displayStatus = isExpired ? "EXPIRED" : proposal.status;
+  const providerPhoneDisplay = formatPhoneBR(proposal.provider.phone);
+  const customerPhoneDisplay = formatPhoneBR(proposal.quoteRequest.customerPhone);
 
   return (
     <main className="min-h-screen bg-paper px-4 py-12 text-ink sm:px-6">
@@ -109,7 +124,7 @@ export default async function PublicProposalPage({
                 Proposta comercial
               </p>
               <h1 className="mt-1 font-fraunces text-3xl font-bold text-white md:text-4xl">
-                {proposal.title}
+                {proposal.title ?? proposal.provider.businessName}
               </h1>
             </div>
             <span
@@ -153,6 +168,87 @@ export default async function PublicProposalPage({
               </div>
             ) : null}
 
+            {/* Pix deposit instructions */}
+            {proposal.depositAmount &&
+            Number(proposal.depositAmount.toString()) > 0 &&
+            (proposal.status === "SENT" || proposal.status === "APPROVED") ? (
+              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                  Sinal de pagamento
+                </p>
+                <p className="mt-2 font-fraunces text-2xl font-bold text-ink">
+                  {formatMoney(proposal.depositAmount)} via Pix
+                </p>
+
+                {proposal.status === "SENT" ? (
+                  <p className="mt-2 text-sm leading-6 text-ink-muted">
+                    Ao aprovar esta proposta, você precisará pagar este sinal via Pix
+                    para confirmar a reserva do serviço.
+                  </p>
+                ) : (
+                  <p className="mt-2 text-sm leading-6 text-ink-muted">
+                    Para confirmar a reserva, realize o pagamento do sinal diretamente
+                    ao prestador.
+                  </p>
+                )}
+
+                {proposal.provider.pixKey ? (
+                  <div className="mt-4 rounded-lg border border-amber-200 bg-white p-4">
+                    <dl className="grid gap-4">
+                      <div>
+                        <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                          Chave Pix
+                        </dt>
+                        <dd className="mt-2 flex flex-wrap items-center gap-3">
+                          <span className="font-medium text-ink">
+                            {proposal.provider.pixKey}
+                          </span>
+                          <CopyButton
+                            text={proposal.provider.pixKey}
+                            label="Copiar chave"
+                            className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                          />
+                        </dd>
+                      </div>
+                      {proposal.provider.pixKeyType ? (
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                            Tipo da chave
+                          </dt>
+                          <dd className="mt-1 text-sm text-ink">
+                            {proposal.provider.pixKeyType}
+                          </dd>
+                        </div>
+                      ) : null}
+                      {proposal.provider.pixHolderName ? (
+                        <div>
+                          <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                            Titular
+                          </dt>
+                          <dd className="mt-1 text-sm text-ink">
+                            {proposal.provider.pixHolderName}
+                          </dd>
+                        </div>
+                      ) : null}
+                    </dl>
+                  </div>
+                ) : null}
+
+                <p className="mt-4 text-xs text-amber-700">
+                  Após pagar, envie o comprovante pelo WhatsApp ou combine a
+                  confirmação diretamente com o prestador.
+                </p>
+
+                {proposal.depositPaidAt ? (
+                  <div className="mt-4 rounded-lg border border-mint bg-mint/40 px-4 py-3">
+                    <p className="text-sm font-semibold text-leaf">
+                      ✓ Sinal marcado como recebido pelo prestador.
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+
             {/* Provider + Client */}
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-paper-soft bg-paper p-5">
@@ -171,11 +267,11 @@ export default async function PublicProposalPage({
                       </dd>
                     </div>
                   ) : null}
-                  {proposal.provider.phone ? (
+                  {providerPhoneDisplay ? (
                     <div className="flex items-center gap-2">
                       <dt className="text-ink-muted">Telefone</dt>
                       <dd className="font-medium text-ink">
-                        {proposal.provider.phone}
+                        {providerPhoneDisplay}
                       </dd>
                     </div>
                   ) : null}
@@ -204,11 +300,11 @@ export default async function PublicProposalPage({
                       </dd>
                     </div>
                   ) : null}
-                  {proposal.quoteRequest.customerPhone ? (
+                  {customerPhoneDisplay ? (
                     <div className="flex items-center gap-2">
                       <dt className="text-ink-muted">Telefone</dt>
                       <dd className="font-medium text-ink">
-                        {proposal.quoteRequest.customerPhone}
+                        {customerPhoneDisplay}
                       </dd>
                     </div>
                   ) : null}
@@ -217,35 +313,36 @@ export default async function PublicProposalPage({
             </div>
 
             {/* Items table */}
-            <div className="mt-8">
-              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                Itens da proposta
-              </p>
-              <div className="mt-3 overflow-hidden rounded-xl border border-paper-soft">
-                {/* Table header */}
-                <div className="grid grid-cols-[1fr_60px_120px_120px] gap-4 bg-paper-soft px-5 py-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                  <span>Descrição</span>
-                  <span className="text-right">Qtd</span>
-                  <span className="text-right">Unit.</span>
-                  <span className="text-right">Total</span>
-                </div>
-                {proposal.items.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className={`grid grid-cols-[1fr_60px_120px_120px] gap-4 px-5 py-4 text-sm ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
-                  >
-                    <span className="font-medium text-ink">{item.description}</span>
-                    <span className="text-right text-ink-muted">{item.quantity}</span>
-                    <span className="text-right text-ink-muted">
-                      {formatMoney(item.unitPrice)}
-                    </span>
-                    <span className="text-right font-semibold text-ink">
-                      {formatMoney(item.totalPrice)}
-                    </span>
+            {proposal.items.length > 0 ? (
+              <div className="mt-8">
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Itens da proposta
+                </p>
+                <div className="mt-3 overflow-hidden rounded-xl border border-paper-soft">
+                  <div className="grid grid-cols-[1fr_60px_120px_120px] gap-4 bg-paper-soft px-5 py-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                    <span>Descrição</span>
+                    <span className="text-right">Qtd</span>
+                    <span className="text-right">Unit.</span>
+                    <span className="text-right">Total</span>
                   </div>
-                ))}
+                  {proposal.items.map((item, index) => (
+                    <div
+                      key={item.id}
+                      className={`grid grid-cols-[1fr_60px_120px_120px] gap-4 px-5 py-4 text-sm ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
+                    >
+                      <span className="font-medium text-ink">{item.description}</span>
+                      <span className="text-right text-ink-muted">{item.quantity}</span>
+                      <span className="text-right text-ink-muted">
+                        {formatMoney(item.unitPrice)}
+                      </span>
+                      <span className="text-right font-semibold text-ink">
+                        {formatMoney(item.totalPrice)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : null}
 
             {/* Totals + validity */}
             <div className="mt-4 flex flex-col items-end gap-4 rounded-xl border border-paper-soft bg-paper p-5 sm:flex-row sm:items-center sm:justify-between">
