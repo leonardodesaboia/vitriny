@@ -8,7 +8,12 @@ const optionalText = z
 const optionalPrice = z
   .string()
   .trim()
-  .transform((value) => (value === "" ? null : value.replace(",", ".")))
+  .transform((value) => {
+    if (!value) return null;
+    return value.includes(",")
+      ? value.replace(/\./g, "").replace(",", ".")
+      : value;
+  })
   .pipe(
     z
       .string()

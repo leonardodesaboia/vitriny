@@ -1,10 +1,17 @@
+"use client";
+
+import { useState } from "react";
+
 import { ProposalItemsFields } from "@/components/proposals/ProposalItemsFields";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { createProposal } from "@/lib/actions/proposals";
+
+type PricingMode = "SIMPLE" | "ITEMIZED";
 
 type ProposalFormProps = {
   requestId: string;
   initialValues?: {
-    title?: string;
+    title?: string | null;
     description?: string | null;
     items?: Array<{
       description: string;
@@ -15,6 +22,9 @@ type ProposalFormProps = {
 };
 
 export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
+  const hasInitialItems = (initialValues?.items?.length ?? 0) > 0;
+  const [mode, setMode] = useState<PricingMode>(hasInitialItems ? "ITEMIZED" : "SIMPLE");
+
   const initialItems = initialValues?.items?.map((item) => ({
     description: item.description,
     quantity: item.quantity,
@@ -22,54 +32,129 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
   }));
 
   return (
-    <form action={createProposal} className="mt-8 grid gap-5">
+    <form action={createProposal} className="mt-8 grid gap-6">
       <input name="requestId" type="hidden" value={requestId} />
+      <input name="pricingMode" type="hidden" value={mode} />
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-ink" htmlFor="title">
-          Título
-        </label>
-        <input
-          className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
-          defaultValue={initialValues?.title ?? ""}
-          id="title"
-          name="title"
-          required
-          type="text"
-        />
+      {/* Mode toggle */}
+      <div className="flex rounded-xl border border-paper-soft bg-paper p-1">
+        <button
+          type="button"
+          onClick={() => setMode("SIMPLE")}
+          className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+            mode === "SIMPLE"
+              ? "bg-white shadow-sm text-ink"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          Proposta simples
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("ITEMIZED")}
+          className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition ${
+            mode === "ITEMIZED"
+              ? "bg-white shadow-sm text-ink"
+              : "text-ink-muted hover:text-ink"
+          }`}
+        >
+          Proposta detalhada
+        </button>
       </div>
 
-      <div className="grid gap-2">
-        <label className="text-sm font-semibold text-ink" htmlFor="description">
-          Descrição
-        </label>
-        <textarea
-          className="min-h-28 rounded-md border border-stone-300 bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
-          defaultValue={initialValues?.description ?? ""}
-          id="description"
-          name="description"
-        />
+      {mode === "SIMPLE" ? (
+        <div className="grid gap-5">
+          <div className="grid gap-1.5">
+            <label className="text-sm font-semibold text-ink" htmlFor="description-simple">
+              Descrição do serviço{" "}
+              <span className="font-normal text-ink-muted">(opcional)</span>
+            </label>
+            <textarea
+              className="min-h-28 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
+              defaultValue={initialValues?.description ?? ""}
+              id="description-simple"
+              name="description"
+              placeholder="Ex: Pintura de 3 cômodos com tinta fosca. Inclui mão de obra e material. Não inclui remoção de mobília."
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <label className="text-sm font-semibold text-ink" htmlFor="totalAmount">
+              Valor total <span className="text-red-500">*</span>
+            </label>
+            <CurrencyInput
+              className="min-h-11 max-w-48 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
+              id="totalAmount"
+              name="totalAmount"
+              required
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid gap-5">
+          <div className="grid gap-1.5">
+            <label className="text-sm font-semibold text-ink" htmlFor="description-itemized">
+              Descrição{" "}
+              <span className="font-normal text-ink-muted">(opcional)</span>
+            </label>
+            <textarea
+              className="min-h-24 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
+              defaultValue={initialValues?.description ?? ""}
+              id="description-itemized"
+              name="description"
+              placeholder="Ex: Detalhes gerais do serviço prestado."
+            />
+          </div>
+
+          <ProposalItemsFields
+            initialItems={initialItems}
+            minItems={1}
+          />
+        </div>
+      )}
+
+      {/* Common fields */}
+      <div className="rounded-xl border border-paper-soft bg-paper p-5">
+        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+          Sinal (entrada)
+        </p>
+        <p className="mt-1 text-sm text-ink-muted">
+          Valor que o cliente paga antecipadamente para confirmar a reserva. Você recebe via Pix e marca como recebido manualmente.
+        </p>
+        <div className="mt-4 grid gap-1.5">
+          <label className="text-sm font-semibold text-ink" htmlFor="depositAmount">
+            Valor do sinal{" "}
+            <span className="font-normal text-ink-muted">(opcional)</span>
+          </label>
+          <CurrencyInput
+            className="min-h-11 max-w-48 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
+            id="depositAmount"
+            name="depositAmount"
+          />
+        </div>
       </div>
 
-      <div className="grid gap-2">
+      <div className="grid gap-1.5">
         <label className="text-sm font-semibold text-ink" htmlFor="validUntil">
-          Validade
+          Validade da proposta{" "}
+          <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
         <input
-          className="min-h-11 rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
+          className="min-h-11 max-w-48 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
           id="validUntil"
           name="validUntil"
           type="date"
         />
+        <p className="text-xs text-ink-muted">
+          Se informado, a proposta expira nesta data e o cliente não poderá mais aprovar.
+        </p>
       </div>
 
-      <ProposalItemsFields initialItems={initialItems} />
-
       <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443] md:w-fit"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover md:w-fit"
         type="submit"
       >
-        Criar proposta
+        Enviar proposta
       </button>
     </form>
   );

@@ -6,6 +6,7 @@ import {
   createProposalTemplate,
   updateProposalTemplate
 } from "@/lib/actions/proposal-templates";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import type { ProposalTemplateItem, ProposalTemplateData, ActionResult } from "@/types";
 
 type ProposalTemplateFormProps = {
@@ -152,15 +153,12 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
                 >
                   Valor unitario
                 </label>
-                <input
+                <CurrencyInput
                   className="min-h-10 w-full rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-leaf"
                   defaultValue={formatPrice(item.unitPrice)}
                   id={`itemUnitPrice-${template?.id ?? "new"}-${index}`}
-                  min="0"
                   name="itemUnitPrice"
                   required={index === 0}
-                  step="0.01"
-                  type="number"
                 />
               </div>
             </div>

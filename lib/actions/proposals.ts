@@ -20,6 +20,20 @@ function decimalFromString(value: string) {
 }
 
 function parseProposalForm(formData: FormData) {
+  const pricingMode = formData.get("pricingMode");
+
+  if (pricingMode === "SIMPLE") {
+    return proposalSchema.safeParse({
+      pricingMode: "SIMPLE",
+      requestId: formData.get("requestId"),
+      title: formData.get("title"),
+      description: formData.get("description"),
+      validUntil: formData.get("validUntil"),
+      totalAmount: formData.get("totalAmount"),
+      depositAmount: formData.get("depositAmount")
+    });
+  }
+
   const descriptions = formData.getAll("itemDescription");
   const quantities = formData.getAll("itemQuantity");
   const unitPrices = formData.getAll("itemUnitPrice");
@@ -31,17 +45,18 @@ function parseProposalForm(formData: FormData) {
       unitPrice: unitPrices[index]
     }))
     .filter((item) => {
-      const description = String(item.description ?? "").trim();
-      const unitPrice = String(item.unitPrice ?? "").trim();
-
-      return description !== "" || unitPrice !== "";
+      const desc = String(item.description ?? "").trim();
+      const price = String(item.unitPrice ?? "").trim();
+      return desc !== "" || price !== "";
     });
 
   return proposalSchema.safeParse({
+    pricingMode: "ITEMIZED",
     requestId: formData.get("requestId"),
     title: formData.get("title"),
     description: formData.get("description"),
     validUntil: formData.get("validUntil"),
+    depositAmount: formData.get("depositAmount"),
     items
   });
 }
@@ -56,13 +71,8 @@ export async function createProposal(formData: FormData) {
   }
 
   const profile = await prisma.providerProfile.findUnique({
-    where: {
-      userId
-    },
-    select: {
-      id: true,
-      plan: true
-    }
+    where: { userId },
+    select: { id: true, plan: true }
   });
 
   if (!profile) {
@@ -70,17 +80,8 @@ export async function createProposal(formData: FormData) {
   }
 
   const quoteRequest = await prisma.quoteRequest.findFirst({
-    where: {
-      id: parsed.data.requestId,
-      providerId: profile.id
-    },
-    include: {
-      proposal: {
-        select: {
-          id: true
-        }
-      }
-    }
+    where: { id: parsed.data.requestId, providerId: profile.id },
+    include: { proposal: { select: { id: true } } }
   });
 
   if (!quoteRequest) {
@@ -91,37 +92,38 @@ export async function createProposal(formData: FormData) {
     redirect(`/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=exists`);
   }
 
-  const items = parsed.data.items.map((item) => {
-    const unitPrice = decimalFromString(item.unitPrice);
-    const totalPrice = unitPrice.mul(item.quantity);
+  let totalAmount: Prisma.Decimal;
+  let itemsToCreate: Array<{
+    description: string;
+    quantity: number;
+    unitPrice: Prisma.Decimal;
+    totalPrice: Prisma.Decimal;
+  }> = [];
 
-    return {
-      description: item.description,
-      quantity: item.quantity,
-      unitPrice,
-      totalPrice
-    };
-  });
-
-  const totalAmount = items.reduce(
-    (total, item) => total.plus(item.totalPrice),
-    new Prisma.Decimal(0)
-  );
+  if (parsed.data.pricingMode === "SIMPLE") {
+    totalAmount = decimalFromString(parsed.data.totalAmount);
+  } else {
+    itemsToCreate = parsed.data.items.map((item) => {
+      const unitPrice = decimalFromString(item.unitPrice);
+      const totalPrice = unitPrice.mul(item.quantity);
+      return { description: item.description, quantity: item.quantity, unitPrice, totalPrice };
+    });
+    totalAmount = itemsToCreate.reduce(
+      (sum, item) => sum.plus(item.totalPrice),
+      new Prisma.Decimal(0)
+    );
+  }
 
   const monthRange = getCurrentMonthRange();
   const created = await prisma.$transaction(async (tx) => {
     const monthlyProposalsCount = await tx.proposal.count({
       where: {
         providerId: profile.id,
-        createdAt: {
-          gte: monthRange.start,
-          lt: monthRange.end
-        }
+        createdAt: { gte: monthRange.start, lt: monthRange.end }
       }
     });
-    const limit = getPlanLimit(profile.plan, "monthlyProposals");
 
-    if (hasReachedLimit(monthlyProposalsCount, limit)) {
+    if (hasReachedLimit(monthlyProposalsCount, getPlanLimit(profile.plan, "monthlyProposals"))) {
       return false;
     }
 
@@ -130,33 +132,27 @@ export async function createProposal(formData: FormData) {
         providerId: profile.id,
         quoteRequestId: quoteRequest.id,
         publicToken: crypto.randomBytes(24).toString("hex"),
+        pricingMode: parsed.data.pricingMode,
         title: parsed.data.title,
         description: parsed.data.description,
         totalAmount,
+        depositAmount: parsed.data.depositAmount
+          ? decimalFromString(parsed.data.depositAmount)
+          : null,
         status: "SENT",
         validUntil: parsed.data.validUntil
           ? new Date(`${parsed.data.validUntil}T00:00:00`)
           : null,
-        items: {
-          create: items
-        },
+        items: { create: itemsToCreate },
         statusHistory: {
-          create: {
-            toStatus: "SENT",
-            actor: "PROVIDER",
-            note: "Proposta criada e enviada."
-          }
+          create: { toStatus: "SENT", actor: "PROVIDER", note: "Proposta criada e enviada." }
         }
       }
     });
 
     await tx.quoteRequest.update({
-      where: {
-        id: quoteRequest.id
-      },
-      data: {
-        status: "PROPOSAL_SENT"
-      }
+      where: { id: quoteRequest.id },
+      data: { status: "PROPOSAL_SENT" }
     });
 
     if (quoteRequest.status !== "PROPOSAL_SENT") {
@@ -182,4 +178,32 @@ export async function createProposal(formData: FormData) {
 
   revalidatePath("/dashboard/pedidos");
   redirect("/dashboard/pedidos");
+}
+
+export async function markDepositPaid(formData: FormData) {
+  const userId = await requireAuth();
+  const proposalId = String(formData.get("proposalId") ?? "");
+
+  if (!proposalId) return;
+
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId },
+    select: { id: true }
+  });
+
+  if (!profile) return;
+
+  const proposal = await prisma.proposal.findFirst({
+    where: { id: proposalId, providerId: profile.id, status: "APPROVED" },
+    select: { id: true }
+  });
+
+  if (!proposal) return;
+
+  await prisma.proposal.update({
+    where: { id: proposal.id },
+    data: { depositPaidAt: new Date() }
+  });
+
+  revalidatePath("/dashboard/pedidos");
 }

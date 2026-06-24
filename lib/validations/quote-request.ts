@@ -1,9 +1,20 @@
 import { z } from "zod";
 
+import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
+
 const optionalText = z
-  .string()
-  .trim()
+  .preprocess((value) => (value == null ? "" : value), z.string())
+  .transform((value) => value.trim())
   .transform((value) => (value === "" ? null : value));
+
+const optionalPhone = optionalText.pipe(
+  z
+    .string()
+    .max(30, "Use no máximo 30 caracteres.")
+    .nullable()
+    .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
+    .transform((value) => (value ? formatPhoneBR(value) : null))
+);
 
 export const quoteRequestSchema = z.object({
   customerName: z
@@ -18,9 +29,7 @@ export const quoteRequestSchema = z.object({
       .max(120, "Use no máximo 120 caracteres.")
       .nullable()
   ),
-  customerPhone: optionalText.pipe(
-    z.string().max(30, "Use no máximo 30 caracteres.").nullable()
-  ),
+  customerPhone: optionalPhone,
   serviceId: optionalText.pipe(z.string().cuid().nullable()),
   description: z
     .string()
