@@ -115,6 +115,9 @@ Priorize:
 - Usar `publicToken` para proposta pública.
 - Usar `slug` para perfil público.
 - Cliente público não precisa de login.
+- Serviço com `pricingType = FIXED` exige `basePrice` válido e maior que zero.
+- Não remover enum `ServicePricingType` nem campo `pricingType` de `Service`.
+- Compatibilidade: serviços sem `pricingType` são tratados como `CUSTOM`.
 - Login é só Google OAuth + e-mail/senha. GitHub foi removido; não reintroduzir sem pedido explícito.
 - Sessão é `jwt`, não `database` — necessário para o Credentials provider.
 - Senha sempre hash bcrypt, nunca texto puro.
@@ -144,6 +147,9 @@ Priorize:
 - Notas internas: nunca exibir em rotas públicas e sempre filtrar pelo prestador dono do pedido.
 - Templates de proposta: sempre filtrar pelo prestador dono do modelo.
 - Proposal response: bloquear se já aprovada/recusada ou expirada.
+- Tipo de serviço: `pricingType = FIXED` exige `basePrice`; validar no Zod, não no banco.
+- Formulário público: linguagem de 'solicitação' vs 'orçamento' é definida no servidor via SSR com base no `?serviceId=`.
+- Painel de pedidos: CTA 'Criar proposta' é secundário para pedidos FIXED.
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
 
