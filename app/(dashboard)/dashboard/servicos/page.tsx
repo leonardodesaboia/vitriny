@@ -32,10 +32,16 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
     where: {
       userId: session.user.id
     },
-    include: {
+    select: {
       services: {
-        orderBy: {
-          createdAt: "desc"
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          basePrice: true,
+          isActive: true,
+          pricingType: true
         }
       }
     }
@@ -94,7 +100,8 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
                     name: s.name,
                     description: s.description,
                     basePrice: s.basePrice?.toString() ?? null,
-                    isActive: s.isActive
+                    isActive: s.isActive,
+                    pricingType: s.pricingType
                   }))}
                 />
               </div>
