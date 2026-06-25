@@ -24,6 +24,7 @@ type ProposalFormProps = {
 export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
   const hasInitialItems = (initialValues?.items?.length ?? 0) > 0;
   const [mode, setMode] = useState<PricingMode>(hasInitialItems ? "ITEMIZED" : "SIMPLE");
+  const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD no timezone do navegador
 
   const initialItems = initialValues?.items?.map((item) => ({
     description: item.description,
@@ -142,6 +143,7 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
         <input
           className="min-h-11 max-w-48 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
           id="validUntil"
+          min={today}
           name="validUntil"
           type="date"
         />

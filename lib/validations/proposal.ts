@@ -54,7 +54,16 @@ const baseFields = {
   description: optionalText.pipe(
     z.string().max(1000, "Use no máximo 1000 caracteres.").nullable()
   ),
-  validUntil: optionalText.pipe(z.string().date().nullable()),
+  validUntil: optionalText.pipe(
+    z
+      .string()
+      .date()
+      .nullable()
+      .refine(
+        (v) => v === null || v >= new Date().toISOString().slice(0, 10),
+        { message: "A validade não pode ser uma data passada." }
+      )
+  ),
   depositAmount: optionalMoney
 };
 
