@@ -9,15 +9,15 @@ export type PublicService = {
   id: string;
   name: string;
   description: string | null;
-  basePrice: string | null;
   pricingType: "FIXED" | "CUSTOM";
+  basePrice: string | null;
 };
 
 export type ServiceForClient = {
   id: string;
   name: string;
   description: string | null;
+  pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
   isActive: boolean;
-  pricingType: "FIXED" | "CUSTOM";
 };
