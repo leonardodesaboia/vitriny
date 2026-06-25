@@ -2,10 +2,18 @@ import { createQuoteRequest } from "@/lib/actions/quote-requests";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { ServiceSummary } from "@/types";
 
+type SelectedService = {
+  id: string;
+  name: string;
+  pricingType: "FIXED" | "CUSTOM";
+  basePrice: string | null;
+};
+
 type QuoteRequestFormProps = {
   slug: string;
   services: ServiceSummary[];
   selectedServiceId?: string | null;
+  selectedService?: SelectedService | null;
 };
 
 const inputClass =
@@ -13,15 +21,40 @@ const inputClass =
 
 const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
+function formatMoney(value: string) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(Number(value));
+}
+
 export function QuoteRequestForm({
   slug,
   services,
-  selectedServiceId
+  selectedServiceId,
+  selectedService
 }: QuoteRequestFormProps) {
   const action = createQuoteRequest.bind(null, slug);
+  const isFixed = selectedService?.pricingType === "FIXED";
 
   return (
     <form action={action} className="mt-8 grid gap-5">
+      {selectedService ? (
+        <div className="rounded-xl border border-paper-soft bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+            Serviço selecionado
+          </p>
+          <p className="mt-1 font-fraunces text-lg font-bold text-ink">
+            {selectedService.name}
+          </p>
+          {isFixed && selectedService.basePrice ? (
+            <p className="mt-1 text-sm font-semibold text-leaf">
+              {formatMoney(selectedService.basePrice)}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="customerName">
           Nome *
@@ -77,6 +110,9 @@ export function QuoteRequestForm({
             {services.map((service) => (
               <option key={service.id} value={service.id}>
                 {service.name}
+                {service.pricingType === "FIXED" && service.basePrice
+                  ? ` — ${formatMoney(service.basePrice)}`
+                  : ""}
               </option>
             ))}
           </select>
@@ -85,14 +121,20 @@ export function QuoteRequestForm({
 
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="description">
-          Descreva o que você precisa *
+          {isFixed
+            ? "Observações adicionais"
+            : "Descreva o que você precisa *"}
         </label>
         <textarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
           id="description"
           name="description"
-          placeholder="Conte um pouco mais sobre o que você precisa, prazo, tamanho do projeto..."
-          required
+          placeholder={
+            isFixed
+              ? "Alguma observação sobre data, local ou preferências? (opcional)"
+              : "Conte um pouco mais sobre o que você precisa, prazo, tamanho do projeto..."
+          }
+          required={!isFixed}
         />
       </div>
 
@@ -100,7 +142,7 @@ export function QuoteRequestForm({
         className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         type="submit"
       >
-        Enviar pedido
+        {isFixed ? "Solicitar serviço" : "Enviar pedido"}
       </button>
     </form>
   );

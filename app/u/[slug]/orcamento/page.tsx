@@ -39,7 +39,7 @@ export default async function PublicQuoteRequestPage({
       services: {
         where: { isActive: true },
         orderBy: { name: "asc" },
-        select: { id: true, name: true }
+        select: { id: true, name: true, pricingType: true, basePrice: true }
       }
     }
   });
@@ -50,6 +50,10 @@ export default async function PublicQuoteRequestPage({
     (service) => service.id === query.serviceId
   )
     ? query.serviceId
+    : null;
+
+  const selectedService = selectedServiceId
+    ? profile.services.find((s) => s.id === selectedServiceId) ?? null
     : null;
 
   return (
@@ -66,7 +70,9 @@ export default async function PublicQuoteRequestPage({
         {/* Header */}
         <div className="mt-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            Pedido de orçamento
+            {selectedService?.pricingType === "FIXED"
+              ? "Solicitação de serviço"
+              : "Pedido de orçamento"}
           </p>
           <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
             {profile.businessName}
@@ -111,7 +117,22 @@ export default async function PublicQuoteRequestPage({
             ) : null}
             <QuoteRequestForm
               selectedServiceId={selectedServiceId}
-              services={profile.services}
+              selectedService={
+                selectedService
+                  ? {
+                      id: selectedService.id,
+                      name: selectedService.name,
+                      pricingType: selectedService.pricingType,
+                      basePrice: selectedService.basePrice?.toString() ?? null
+                    }
+                  : null
+              }
+              services={profile.services.map((s) => ({
+                id: s.id,
+                name: s.name,
+                pricingType: s.pricingType,
+                basePrice: s.basePrice?.toString() ?? null
+              }))}
               slug={slug}
             />
           </>
