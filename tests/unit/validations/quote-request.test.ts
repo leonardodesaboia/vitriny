@@ -80,4 +80,29 @@ describe("quoteRequestSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.serviceId).toBe("cm000000000000000000000000");
   });
+
+  it("aceita description nula (pedido de serviço com preço fixo)", () => {
+    const result = quoteRequestSchema.safeParse({
+      customerName: "Maria Silva",
+      customerEmail: "",
+      customerPhone: "",
+      serviceId: "",
+      description: ""
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.description).toBeNull();
+    }
+  });
+
+  it("rejeita description com menos de 10 caracteres quando preenchida", () => {
+    const result = quoteRequestSchema.safeParse({
+      customerName: "Maria Silva",
+      customerEmail: "",
+      customerPhone: "",
+      serviceId: "",
+      description: "Curta"
+    });
+    expect(result.success).toBe(false);
+  });
 });

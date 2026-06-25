@@ -34,8 +34,16 @@ export const quoteRequestSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
-    .max(1200, "Use no máximo 1200 caracteres.")
+    .transform((v) => (v === "" ? null : v))
+    .pipe(
+      z.union([
+        z.null(),
+        z
+          .string()
+          .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
+          .max(1200, "Use no máximo 1200 caracteres.")
+      ])
+    )
 });
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
