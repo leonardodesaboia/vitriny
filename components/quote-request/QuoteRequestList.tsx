@@ -34,6 +34,12 @@ export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListPr
       {quoteRequests.map((quoteRequest) => {
         const serialized: SerializedQuoteRequest = {
           ...quoteRequest,
+          service: quoteRequest.service
+            ? {
+                ...quoteRequest.service,
+                basePrice: quoteRequest.service.basePrice?.toString() ?? null
+              }
+            : null,
           proposal: quoteRequest.proposal
             ? {
                 ...quoteRequest.proposal,

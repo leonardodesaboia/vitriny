@@ -31,7 +31,9 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           service: {
             select: {
               id: true,
-              name: true
+              name: true,
+              pricingType: true,
+              basePrice: true
             }
           },
           proposal: {
@@ -64,7 +66,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           }
         }
       },
-      services: { select: { id: true, name: true } }
+      services: { select: { id: true, name: true, pricingType: true, basePrice: true } }
     }
   });
 
@@ -117,7 +119,10 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
         <div className="mt-8">
           <QuoteRequestList
             quoteRequests={profile.quoteRequests}
-            services={profile.services}
+            services={profile.services.map((s) => ({
+              ...s,
+              basePrice: s.basePrice?.toString() ?? null
+            }))}
           />
         </div>
       )}

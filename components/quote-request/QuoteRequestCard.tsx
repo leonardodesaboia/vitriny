@@ -31,8 +31,16 @@ type SerializedProposal = {
   depositPaidAt: Date | null;
 };
 
-export type SerializedQuoteRequest = Omit<QuoteRequestWithRelations, "proposal"> & {
+type SerializedService = {
+  id: string;
+  name: string;
+  pricingType: "FIXED" | "CUSTOM";
+  basePrice: string | null;
+};
+
+export type SerializedQuoteRequest = Omit<QuoteRequestWithRelations, "proposal" | "service"> & {
   proposal: SerializedProposal | null;
+  service: SerializedService | null;
 };
 
 type Props = {
@@ -148,6 +156,14 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             </span>
             {serviceLabel ? (
               <span className="text-xs text-ink-muted">· {serviceLabel}</span>
+            ) : null}
+            {quoteRequest.service?.pricingType === "FIXED" ? (
+              <span className="rounded-full bg-mint px-2.5 py-0.5 text-xs font-semibold text-leaf border border-mint">
+                Preço fixo
+                {quoteRequest.service.basePrice
+                  ? ` · ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(quoteRequest.service.basePrice))}`
+                  : ""}
+              </span>
             ) : null}
           </div>
           <p className="mt-0.5 text-xs text-ink-muted">
@@ -397,13 +413,27 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               })()}
             </div>
           ) : (
-            <div className="mt-5">
-              <Link
-                className="inline-flex min-h-10 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover"
-                href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
-              >
-                Criar proposta
-              </Link>
+            <div className="mt-5 flex flex-col gap-3">
+              {quoteRequest.service?.pricingType !== "FIXED" ? (
+                <Link
+                  className="inline-flex min-h-10 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+                  href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
+                >
+                  Criar proposta
+                </Link>
+              ) : (
+                <>
+                  <p className="text-sm text-ink-muted">
+                    Solicitação de serviço com preço fixo.
+                  </p>
+                  <Link
+                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                    href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
+                  >
+                    Criar proposta mesmo assim
+                  </Link>
+                </>
+              )}
             </div>
           )}
 
