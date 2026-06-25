@@ -1,5 +1,6 @@
 import { toggleServiceStatus } from "@/lib/actions/services";
 import { ServiceForm } from "@/components/services/ServiceForm";
+import { DeleteServiceButton } from "@/components/services/DeleteServiceButton";
 import type { ServiceForClient } from "@/types/service";
 
 type ServiceListProps = {
@@ -43,20 +44,23 @@ export function ServiceList({ services }: ServiceListProps) {
                 {service.isActive ? "· Ativo" : "· Inativo"}
               </span>
             </div>
-            <form action={toggleServiceStatus}>
-              <input name="serviceId" type="hidden" value={service.id} />
-              <input
-                name="nextStatus"
-                type="hidden"
-                value={String(!service.isActive)}
-              />
-              <button
-                className="inline-flex min-h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-                type="submit"
-              >
-                {service.isActive ? "Desativar" : "Ativar"}
-              </button>
-            </form>
+            <div className="flex gap-2">
+              <form action={toggleServiceStatus}>
+                <input name="serviceId" type="hidden" value={service.id} />
+                <input
+                  name="nextStatus"
+                  type="hidden"
+                  value={String(!service.isActive)}
+                />
+                <button
+                  className="inline-flex min-h-10 items-center justify-center rounded-md border border-stone-300 bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                  type="submit"
+                >
+                  {service.isActive ? "Desativar" : "Ativar"}
+                </button>
+              </form>
+              <DeleteServiceButton serviceId={service.id} />
+            </div>
           </div>
 
           <div className="mt-5">

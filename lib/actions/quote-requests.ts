@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import {
@@ -9,6 +10,8 @@ import {
   PLAN_LIMIT_ERROR_CODES
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
+import { requireProviderProfile } from "@/lib/actions/auth-guard";
+import type { ActionResult } from "@/types";
 import { quoteRequestSchema } from "@/lib/validations/quote-request";
 
 export async function createQuoteRequest(slug: string, formData: FormData) {
@@ -102,4 +105,31 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
   }
 
   redirect(`/u/${slug}/orcamento?success=1`);
+}
+
+export async function updateQuoteRequestDescription(
+  _: ActionResult,
+  formData: FormData
+): Promise<ActionResult> {
+  const { profile } = await requireProviderProfile();
+  if (!profile) return { error: "Perfil não encontrado." };
+
+  const requestId = String(formData.get("requestId") ?? "");
+  const raw = String(formData.get("description") ?? "").trim();
+  const description = raw || null;
+
+  const quoteRequest = await prisma.quoteRequest.findFirst({
+    where: { id: requestId, providerId: profile.id },
+    select: { id: true }
+  });
+
+  if (!quoteRequest) return { error: "Pedido não encontrado." };
+
+  await prisma.quoteRequest.update({
+    where: { id: quoteRequest.id },
+    data: { description }
+  });
+
+  revalidatePath("/dashboard/pedidos");
+  return undefined;
 }

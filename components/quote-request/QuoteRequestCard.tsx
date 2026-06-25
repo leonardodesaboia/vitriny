@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import type { QuoteRequestStatusActor } from "@prisma/client";
 
 import { updateQuoteRequestStatus } from "@/lib/actions/quote-request-status";
+import { updateQuoteRequestDescription } from "@/lib/actions/quote-requests";
 import {
   createQuoteRequestNote,
   deleteQuoteRequestNote
@@ -122,6 +123,15 @@ function splitServiceFromDescription(
 
 export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [noteState, noteAction, notePending] = useActionState(
+    updateQuoteRequestDescription,
+    undefined
+  );
+
+  useEffect(() => {
+    if (noteState && !noteState.error) setEditingNote(false);
+  }, [noteState]);
 
   const legacyService = splitServiceFromDescription(
     quoteRequest.description ?? "",
@@ -236,17 +246,59 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             </div>
           </div>
 
-          {/* Description */}
-          {cleanDescription ? (
-            <div className="mt-5">
+          {/* Nota do cliente — sempre visível, editável */}
+          <div className="mt-5">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                Descrição
+                Nota do cliente
               </p>
-              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">
-                {cleanDescription}
-              </p>
+              {!editingNote ? (
+                <button
+                  type="button"
+                  onClick={() => setEditingNote(true)}
+                  className="text-xs font-semibold text-leaf transition hover:underline"
+                >
+                  Editar
+                </button>
+              ) : null}
             </div>
-          ) : null}
+            {editingNote ? (
+              <form action={noteAction} className="mt-2">
+                <input type="hidden" name="requestId" value={quoteRequest.id} />
+                <textarea
+                  name="description"
+                  defaultValue={cleanDescription ?? ""}
+                  className="min-h-24 w-full rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
+                  placeholder="Adicione uma nota sobre este pedido..."
+                />
+                {noteState?.error ? (
+                  <p className="mt-1 text-xs text-red-600">{noteState.error}</p>
+                ) : null}
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={notePending}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50"
+                  >
+                    {notePending ? "Salvando..." : "Salvar"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingNote(false)}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-stone-300"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink">
+                {cleanDescription ?? (
+                  <span className="text-ink-muted">Nenhuma nota adicionada.</span>
+                )}
+              </p>
+            )}
+          </div>
 
           {/* Proposal section */}
           {quoteRequest.proposal ? (

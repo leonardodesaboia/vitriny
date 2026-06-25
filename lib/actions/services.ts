@@ -123,6 +123,29 @@ export async function updateService(
   redirect("/dashboard/servicos");
 }
 
+export async function deleteService(formData: FormData) {
+  const { profile } = await requireProviderProfile();
+  const serviceId = String(formData.get("serviceId") ?? "");
+
+  if (!profile) {
+    redirect("/dashboard/servicos?error=profile");
+  }
+
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, providerId: profile.id },
+    select: { id: true }
+  });
+
+  if (!service) {
+    redirect("/dashboard/servicos?error=not-found");
+  }
+
+  await prisma.service.delete({ where: { id: service.id } });
+
+  revalidatePath("/dashboard/servicos");
+  redirect("/dashboard/servicos");
+}
+
 export async function toggleServiceStatus(formData: FormData) {
   const { profile } = await requireProviderProfile();
   const serviceId = String(formData.get("serviceId") ?? "");
