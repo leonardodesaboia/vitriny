@@ -101,7 +101,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
         />
       </div>
 
-      <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
+      <div className="grid gap-5 md:grid-cols-[1fr_auto]">
         <div className="grid gap-2">
           <label
             className="text-sm font-semibold text-ink"
@@ -127,7 +127,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
           ) : null}
         </div>
 
-        <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-ink">
+        <label className="flex min-h-11 items-center gap-3 text-sm font-semibold text-ink md:mt-7">
           <input
             className="h-4 w-4 accent-leaf"
             defaultChecked={service?.isActive ?? true}
