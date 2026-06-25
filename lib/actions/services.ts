@@ -20,7 +20,8 @@ function parseServiceForm(formData: FormData) {
     name: formData.get("name"),
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
-    isActive: formData.get("isActive") === "on"
+    isActive: formData.get("isActive") === "on",
+    pricingType: formData.get("pricingType")
   });
 }
 
@@ -59,7 +60,8 @@ export async function createService(
       name: parsed.data.name,
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
+      isActive: parsed.data.isActive,
+      pricingType: parsed.data.pricingType
     }
   });
 
@@ -112,7 +114,8 @@ export async function updateService(
       name: parsed.data.name,
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
+      isActive: parsed.data.isActive,
+      pricingType: parsed.data.pricingType
     }
   });
 
