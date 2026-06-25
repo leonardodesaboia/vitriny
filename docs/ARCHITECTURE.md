@@ -197,7 +197,7 @@ Limites `FREE`:
 ### Comandos
 
 ```bash
-npm test                   # unit + actions (179 testes, sem banco real)
+npm test                   # unit + actions (200 testes, sem banco real)
 npm run test:integration   # integração com banco real (24 testes)
 npm run test:e2e           # E2E Playwright (exige dev server rodando)
 npm run test:e2e:ui        # Playwright com UI interativa

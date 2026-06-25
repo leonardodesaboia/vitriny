@@ -25,7 +25,11 @@
 - Recuperação de senha por e-mail (Resend)
 - Polimento visual, validações e preparação para deploy
 - Assinatura mensal PRO via Stripe Checkout (sem checkout próprio, sem coleta de cartão)
-- Testes automatizados: unitários (179), integração com banco real (24) e E2E com Playwright
+- Testes automatizados: unitários (200), integração com banco real (24) e E2E com Playwright
+- Tipos de preço de serviço: FIXED (preço exibido publicamente) e CUSTOM (sob orçamento)
+- Exclusão de serviço com confirmação
+- Edição de nota do cliente diretamente no card do pedido
+- Lista de serviços colapsável com padrão accordion (expandir ao clicar)
 
 ## Próximos passos recomendados
 

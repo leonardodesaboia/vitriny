@@ -13,10 +13,13 @@ Funciona hoje:
 - login com Google OAuth e e-mail/senha (cadastro, login, recuperação de senha);
 - dashboard protegido;
 - perfil do prestador;
-- serviços;
+- serviços com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
+- exclusão de serviço com confirmação (`deleteService`);
+- lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
 - página pública `/u/[slug]`;
 - pedido público;
 - painel de pedidos;
+- edição de nota do cliente diretamente no card do pedido (`updateQuoteRequestDescription`);
 - criação de proposta;
 - página pública `/proposta/[publicToken]`;
 - aprovação/recusa;
@@ -65,7 +68,7 @@ npm run prisma:generate
 npm run prisma:studio
 
 # Testes
-npm test                   # unitários + actions (179 testes, sem banco real)
+npm test                   # unitários + actions (200 testes, sem banco real)
 npm run test:integration   # integração com banco real (24 testes, usa orcafacil_test)
 npm run test:e2e           # E2E Playwright (dev server deve estar rodando na porta 3000)
 npm run test:e2e:ui        # Playwright com interface interativa
@@ -118,6 +121,7 @@ Priorize:
 - Serviço com `pricingType = FIXED` exige `basePrice` válido e maior que zero.
 - Não remover enum `ServicePricingType` nem campo `pricingType` de `Service`.
 - Compatibilidade: serviços sem `pricingType` são tratados como `CUSTOM`.
+- `QuoteRequest.description` é nullable (`String?`) — pedidos FIXED podem não ter descrição do cliente.
 - Login é só Google OAuth + e-mail/senha. GitHub foi removido; não reintroduzir sem pedido explícito.
 - Sessão é `jwt`, não `database` — necessário para o Credentials provider.
 - Senha sempre hash bcrypt, nunca texto puro.
@@ -187,6 +191,8 @@ npx prisma migrate deploy
 ## Billing / Stripe
 
 - `lib/stripe.ts` — singleton lazy do Stripe SDK (evita erro de build com chave ausente).
+- `lib/actions/services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService` (com `revalidatePath` + `redirect`).
+- `lib/actions/quote-requests.ts` — `createQuoteRequest`, `updateQuoteRequestDescription` (inline edit de nota, retorna `ActionResult`).
 - `lib/actions/billing.ts` — `createCheckoutSession`: cria/reutiliza stripeCustomerId, cria Checkout Session mode subscription, redireciona para Stripe.
 - `app/api/stripe/webhook/route.ts` — valida assinatura, processa eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
 - `app/(dashboard)/dashboard/billing/page.tsx` — página de billing.
