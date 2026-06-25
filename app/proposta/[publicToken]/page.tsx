@@ -81,7 +81,13 @@ export default async function PublicProposalPage({
           pixHolderName: true
         }
       },
-      quoteRequest: true,
+      quoteRequest: {
+        include: {
+          service: {
+            select: { name: true }
+          }
+        }
+      },
       items: { orderBy: { createdAt: "asc" } },
       statusHistory: {
         orderBy: { createdAt: "desc" },
@@ -118,17 +124,23 @@ export default async function PublicProposalPage({
         {/* Document header */}
         <div className="rounded-2xl border border-paper-soft bg-white shadow-card">
           {/* Top bar */}
-          <div className="grain flex items-center justify-between rounded-t-2xl bg-leaf px-8 py-6">
-            <div>
+          <div className="grain flex items-start justify-between gap-4 rounded-t-2xl bg-leaf px-8 py-6">
+            <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                 Proposta comercial
               </p>
               <h1 className="mt-1 font-fraunces text-3xl font-bold text-white md:text-4xl">
                 {proposal.title ?? proposal.provider.businessName}
               </h1>
+              {proposal.quoteRequest.service?.name ? (
+                <p className="mt-2 text-sm font-medium text-white/70">
+                  Serviço:{" "}
+                  <span className="text-white">{proposal.quoteRequest.service.name}</span>
+                </p>
+              ) : null}
             </div>
             <span
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${statusColors[displayStatus] ?? "bg-paper-soft text-ink-muted"}`}
+              className={`mt-1 flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${statusColors[displayStatus] ?? "bg-paper-soft text-ink-muted"}`}
             >
               {isExpired ? "Expirada" : statusLabels[proposal.status]}
             </span>
@@ -165,87 +177,6 @@ export default async function PublicProposalPage({
             {query.error ? (
               <div className="mt-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
                 {errorMessages[query.error] ?? "Não foi possível responder."}
-              </div>
-            ) : null}
-
-            {/* Pix deposit instructions */}
-            {proposal.depositAmount &&
-            Number(proposal.depositAmount.toString()) > 0 &&
-            (proposal.status === "SENT" || proposal.status === "APPROVED") ? (
-              <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-6">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                  Sinal de pagamento
-                </p>
-                <p className="mt-2 font-fraunces text-2xl font-bold text-ink">
-                  {formatMoney(proposal.depositAmount)} via Pix
-                </p>
-
-                {proposal.status === "SENT" ? (
-                  <p className="mt-2 text-sm leading-6 text-ink-muted">
-                    Ao aprovar esta proposta, você precisará pagar este sinal via Pix
-                    para confirmar a reserva do serviço.
-                  </p>
-                ) : (
-                  <p className="mt-2 text-sm leading-6 text-ink-muted">
-                    Para confirmar a reserva, realize o pagamento do sinal diretamente
-                    ao prestador.
-                  </p>
-                )}
-
-                {proposal.provider.pixKey ? (
-                  <div className="mt-4 rounded-lg border border-amber-200 bg-white p-4">
-                    <dl className="grid gap-4">
-                      <div>
-                        <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                          Chave Pix
-                        </dt>
-                        <dd className="mt-2 flex flex-wrap items-center gap-3">
-                          <span className="font-medium text-ink">
-                            {proposal.provider.pixKey}
-                          </span>
-                          <CopyButton
-                            text={proposal.provider.pixKey}
-                            label="Copiar chave"
-                            className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                          />
-                        </dd>
-                      </div>
-                      {proposal.provider.pixKeyType ? (
-                        <div>
-                          <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                            Tipo da chave
-                          </dt>
-                          <dd className="mt-1 text-sm text-ink">
-                            {proposal.provider.pixKeyType}
-                          </dd>
-                        </div>
-                      ) : null}
-                      {proposal.provider.pixHolderName ? (
-                        <div>
-                          <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                            Titular
-                          </dt>
-                          <dd className="mt-1 text-sm text-ink">
-                            {proposal.provider.pixHolderName}
-                          </dd>
-                        </div>
-                      ) : null}
-                    </dl>
-                  </div>
-                ) : null}
-
-                <p className="mt-4 text-xs text-amber-700">
-                  Após pagar, envie o comprovante pelo WhatsApp ou combine a
-                  confirmação diretamente com o prestador.
-                </p>
-
-                {proposal.depositPaidAt ? (
-                  <div className="mt-4 rounded-lg border border-mint bg-mint/40 px-4 py-3">
-                    <p className="text-sm font-semibold text-leaf">
-                      ✓ Sinal marcado como recebido pelo prestador.
-                    </p>
-                  </div>
-                ) : null}
               </div>
             ) : null}
 
@@ -373,6 +304,83 @@ export default async function PublicProposalPage({
                 </p>
               </div>
             </div>
+
+            {/* Sinal (entrada) */}
+            {proposal.depositAmount &&
+            Number(proposal.depositAmount.toString()) > 0 &&
+            (proposal.status === "SENT" || proposal.status === "APPROVED") ? (
+              <div className="mt-4 overflow-hidden rounded-xl border border-amber-200">
+                <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 px-5 py-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
+                      Sinal (entrada)
+                    </p>
+                    <p className="mt-1 font-fraunces text-3xl font-bold text-amber-800">
+                      {formatMoney(proposal.depositAmount)}
+                    </p>
+                  </div>
+                  {proposal.depositPaidAt ? (
+                    <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
+                      Recebido pelo prestador
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                      Aguardando pagamento
+                    </span>
+                  )}
+                </div>
+                <div className="border-t border-amber-200 bg-white p-5">
+                  <p className="text-sm leading-6 text-ink-muted">
+                    {proposal.status === "SENT"
+                      ? "Ao aprovar esta proposta, você precisará pagar este sinal via Pix para confirmar a reserva do serviço."
+                      : "Realize o pagamento do sinal via Pix para confirmar sua reserva."}
+                  </p>
+                  {proposal.provider.pixKey ? (
+                    <div className="mt-4 grid gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                          Chave Pix
+                        </p>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-3">
+                          <span className="font-medium text-ink">
+                            {proposal.provider.pixKey}
+                          </span>
+                          <CopyButton
+                            text={proposal.provider.pixKey}
+                            label="Copiar chave"
+                            className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                          />
+                        </div>
+                      </div>
+                      {proposal.provider.pixKeyType ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                            Tipo da chave
+                          </p>
+                          <p className="mt-1 text-sm text-ink">
+                            {proposal.provider.pixKeyType}
+                          </p>
+                        </div>
+                      ) : null}
+                      {proposal.provider.pixHolderName ? (
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                            Titular
+                          </p>
+                          <p className="mt-1 text-sm text-ink">
+                            {proposal.provider.pixHolderName}
+                          </p>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  <p className="mt-4 text-xs text-amber-700">
+                    Após pagar, envie o comprovante pelo WhatsApp ou combine a
+                    confirmação diretamente com o prestador.
+                  </p>
+                </div>
+              </div>
+            ) : null}
 
             {proposal.statusHistory.length > 0 ? (
               <div className="mt-6 rounded-xl border border-paper-soft bg-white p-5">
