@@ -111,8 +111,9 @@ model Service {
   name        String
   description String?
   basePrice   Decimal? @db.Decimal(10, 2)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
+  isActive    Boolean            @default(true)
+  pricingType ServicePricingType @default(CUSTOM)
+  createdAt   DateTime           @default(now())
   updatedAt   DateTime @updatedAt
 
   provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
@@ -248,6 +249,11 @@ model ProposalItem {
   updatedAt   DateTime @updatedAt
 
   proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+}
+
+enum ServicePricingType {
+  FIXED
+  CUSTOM
 }
 
 enum QuoteRequestStatus {
