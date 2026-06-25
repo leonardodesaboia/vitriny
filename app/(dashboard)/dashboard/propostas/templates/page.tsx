@@ -14,7 +14,7 @@ type ProposalTemplatesPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do modelo.",
   profile: "Crie o perfil do prestador antes de criar modelos.",
-  "not-found": "Modelo nao encontrado.",
+  "not-found": "Modelo não encontrado.",
   "limit-proposal-templates":
     LIMIT_ERROR_MESSAGES["limit-proposal-templates"]
 };
@@ -51,13 +51,15 @@ export default async function ProposalTemplatesPage({
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
         Templates de proposta
       </h1>
-      <p className="mt-2 text-sm text-ink-muted">
-        Crie modelos reutilizaveis para propostas comuns.
+      <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
+        Modelos são conjuntos de itens com nome, descrição e preço que você salva uma vez e
+        carrega na hora de criar uma proposta. Evita redigitar os mesmos itens toda vez que
+        fechar um serviço recorrente.
       </p>
 
       {params.error ? (
         <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {errorMessages[params.error] ?? "Nao foi possivel salvar o modelo."}
+          {errorMessages[params.error] ?? "Não foi possível salvar o modelo."}
         </p>
       ) : null}
 
