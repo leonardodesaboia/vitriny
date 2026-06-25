@@ -91,6 +91,15 @@ describe("serviceSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("FIXED rejeita quando basePrice é zero", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      basePrice: "0"
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("FIXED rejeita quando basePrice é nulo", () => {
     const result = serviceSchema.safeParse({
       ...valid,

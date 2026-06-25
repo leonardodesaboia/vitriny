@@ -36,7 +36,8 @@ export const serviceSchema = z
     isActive: z.boolean()
   })
   .superRefine((data, ctx) => {
-    if (data.pricingType === "FIXED" && !data.basePrice) {
+    const price = data.basePrice ? parseFloat(data.basePrice) : 0;
+    if (data.pricingType === "FIXED" && (!data.basePrice || price <= 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Informe o preço para serviço com preço fixo.",
