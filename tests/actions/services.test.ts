@@ -17,7 +17,7 @@ beforeEach(async () => {
 });
 
 const validServiceForm = () =>
-  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on" });
+  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on", pricingType: "CUSTOM" });
 
 describe("createService", () => {
   it("cria serviço e redireciona para /dashboard/servicos em caso de sucesso", async () => {
@@ -73,7 +73,8 @@ describe("createService", () => {
     const inactiveForm = makeFormData({
       name: "Pintura residencial",
       description: "",
-      basePrice: ""
+      basePrice: "",
+      pricingType: "CUSTOM"
     });
 
     db.service.create.mockResolvedValue({});
@@ -105,7 +106,8 @@ describe("updateService", () => {
       name: "Pintura residencial",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      pricingType: "CUSTOM"
     });
 
   beforeEach(() => {

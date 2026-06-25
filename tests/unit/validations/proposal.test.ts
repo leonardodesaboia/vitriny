@@ -85,8 +85,8 @@ describe("proposalSchema", () => {
   });
 
   it("aceita validUntil em formato ISO (YYYY-MM-DD)", () => {
-    const result = proposalSchema.safeParse({ ...valid, validUntil: "2025-12-31" });
+    const result = proposalSchema.safeParse({ ...valid, validUntil: "2027-12-31" });
     expect(result.success).toBe(true);
-    if (result.success) expect(result.data.validUntil).toBe("2025-12-31");
+    if (result.success) expect(result.data.validUntil).toBe("2027-12-31");
   });
 });

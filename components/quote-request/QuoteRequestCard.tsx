@@ -124,7 +124,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [expanded, setExpanded] = useState(false);
 
   const legacyService = splitServiceFromDescription(
-    quoteRequest.description,
+    quoteRequest.description ?? "",
     serviceNamesById
   );
   const serviceLabel = quoteRequest.service?.name ?? legacyService.serviceLabel;
