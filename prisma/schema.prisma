@@ -127,7 +127,7 @@ model QuoteRequest {
   customerName  String
   customerEmail String?
   customerPhone String?
-  description   String
+  description   String?
   status        QuoteRequestStatus @default(NEW)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
