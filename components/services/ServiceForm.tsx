@@ -9,9 +9,10 @@ import type { ServiceForClient } from "@/types/service";
 
 type ServiceFormProps = {
   service?: ServiceForClient;
+  onCancel?: () => void;
 };
 
-export function ServiceForm({ service }: ServiceFormProps) {
+export function ServiceForm({ service, onCancel }: ServiceFormProps) {
   const action = service ? updateService : createService;
   const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
     action,
@@ -107,7 +108,7 @@ export function ServiceForm({ service }: ServiceFormProps) {
             className="text-sm font-semibold text-ink"
             htmlFor={`basePrice-${service?.id ?? "new"}`}
           >
-            Preço
+            {pricingType === "FIXED" ? "Preço" : "Preço base"}
             {pricingType === "FIXED" ? (
               <span className="ml-1 text-red-500">*</span>
             ) : (
@@ -138,13 +139,25 @@ export function ServiceForm({ service }: ServiceFormProps) {
         </label>
       </div>
 
-      <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 md:w-fit"
-        disabled={isPending}
-        type="submit"
-      >
-        {isPending ? "Salvando..." : service ? "Salvar serviço" : "Cadastrar serviço"}
-      </button>
+      <div className="flex flex-wrap gap-3">
+        <button
+          className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 md:w-fit"
+          disabled={isPending}
+          type="submit"
+        >
+          {isPending ? "Salvando..." : service ? "Salvar serviço" : "Cadastrar serviço"}
+        </button>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={isPending}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-stone-300 bg-white px-5 text-sm font-semibold text-ink transition hover:border-stone-400 disabled:opacity-50 md:w-fit"
+          >
+            Cancelar
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }
