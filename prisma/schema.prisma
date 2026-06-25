@@ -251,11 +251,6 @@ model ProposalItem {
   proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
 }
 
-enum ServicePricingType {
-  FIXED
-  CUSTOM
-}
-
 enum QuoteRequestStatus {
   NEW
   REVIEWING
@@ -296,4 +291,9 @@ enum SubscriptionStatus {
   INCOMPLETE_EXPIRED
   UNPAID
   PAUSED
+}
+
+enum ServicePricingType {
+  FIXED
+  CUSTOM
 }
