@@ -33,7 +33,8 @@ export default async function PublicProviderProfilePage({
           id: true,
           name: true,
           description: true,
-          basePrice: true
+          basePrice: true,
+          pricingType: true
         }
       }
     }

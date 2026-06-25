@@ -67,16 +67,20 @@ export function PublicServicesGrid({
           ) : (
             <div className="flex-1" />
           )}
-          {service.basePrice ? (
-            <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-leaf">
-              A partir de {formatMoney(service.basePrice)}
+          {service.pricingType === "FIXED" && service.basePrice ? (
+            <p className="mt-3 font-fraunces text-lg font-bold text-ink">
+              {formatMoney(service.basePrice)}
             </p>
-          ) : null}
+          ) : (
+            <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+              Sob orçamento
+            </p>
+          )}
           <Link
             href={`/u/${slug}/orcamento?serviceId=${service.id}`}
             className="mt-4 inline-flex min-h-9 w-fit items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
           >
-            Pedir orçamento →
+            {service.pricingType === "FIXED" ? "Solicitar serviço →" : "Pedir orçamento →"}
           </Link>
         </motion.article>
       ))}
