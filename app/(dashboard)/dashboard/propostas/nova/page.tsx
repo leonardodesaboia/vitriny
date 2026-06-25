@@ -59,7 +59,10 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
       providerId: profile.id
     },
     include: {
-      proposal: true
+      proposal: true,
+      service: {
+        select: { name: true }
+      }
     }
   });
 
@@ -85,7 +88,12 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
         </p>
         <h1 className="mt-3 text-3xl font-bold">Criar proposta</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Pedido de {quoteRequest.customerName}.
+          Pedido de {quoteRequest.customerName}
+          {quoteRequest.service?.name ? (
+            <>
+              {" "}— <span className="font-semibold text-ink">{quoteRequest.service.name}</span>
+            </>
+          ) : null}
         </p>
 
         {params.error ? (
