@@ -21,17 +21,28 @@ const optionalPrice = z
       .nullable()
   );
 
-export const serviceSchema = z.object({
-  name: z
-    .string()
-    .trim()
-    .min(2, "Informe o nome do serviço.")
-    .max(120, "Use no máximo 120 caracteres."),
-  description: optionalText.pipe(
-    z.string().max(600, "Use no máximo 600 caracteres.").nullable()
-  ),
-  basePrice: optionalPrice,
-  isActive: z.boolean()
-});
+export const serviceSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(2, "Informe o nome do serviço.")
+      .max(120, "Use no máximo 120 caracteres."),
+    description: optionalText.pipe(
+      z.string().max(600, "Use no máximo 600 caracteres.").nullable()
+    ),
+    pricingType: z.enum(["FIXED", "CUSTOM"]),
+    basePrice: optionalPrice,
+    isActive: z.boolean()
+  })
+  .superRefine((data, ctx) => {
+    if (data.pricingType === "FIXED" && !data.basePrice) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe o preço para serviço com preço fixo.",
+        path: ["basePrice"]
+      });
+    }
+  });
 
 export type ServiceInput = z.infer<typeof serviceSchema>;
