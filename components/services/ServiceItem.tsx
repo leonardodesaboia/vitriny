@@ -95,7 +95,7 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
           />
 
           <div className="mt-5 border-t border-paper-soft pt-5">
-            <DeleteServiceButton serviceId={service.id} />
+            <DeleteServiceButton serviceId={service.id} serviceName={service.name} />
           </div>
         </div>
       ) : null}
