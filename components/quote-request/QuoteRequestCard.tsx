@@ -9,6 +9,7 @@ import {
   deleteQuoteRequestNote,
   updateQuoteRequestNote
 } from "@/lib/actions/quote-request-notes";
+import { deleteQuoteRequest } from "@/lib/actions/quote-requests";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import {
   buildWaUrl,
@@ -125,6 +126,8 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [deletePending, startDeleteTransition] = useTransition();
+  const [confirmDeleteRequest, setConfirmDeleteRequest] = useState(false);
+  const [deleteRequestPending, startDeleteRequestTransition] = useTransition();
 
   const legacyService = splitServiceFromDescription(
     quoteRequest.description ?? "",
@@ -152,15 +155,15 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="grid h-32 w-full grid-cols-[36px_minmax(0,1fr)_20px] items-start gap-3 p-4 text-left transition hover:bg-paper/50 sm:grid-cols-[40px_minmax(0,1fr)_auto] sm:gap-4 sm:p-5"
+        className="grid h-28 w-full grid-cols-[36px_minmax(0,1fr)_20px] items-center gap-3 p-4 text-left transition hover:bg-paper/50 sm:grid-cols-[40px_minmax(0,1fr)_auto] sm:gap-4 sm:p-5"
         title={`Abrir pedido de ${quoteRequest.customerName}`}
       >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf sm:h-10 sm:w-10">
           {getInitials(quoteRequest.customerName)}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-1.5 overflow-hidden">
+        <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-hidden">
             <span
               className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge[quoteRequest.status] ?? "bg-paper-soft text-ink-muted"}`}
             >
@@ -181,12 +184,12 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
           >
             {quoteRequest.customerName}
           </p>
-          <p className="mt-1 line-clamp-1 text-xs text-ink-muted">
+          <p className="line-clamp-1 text-xs text-ink-muted">
             {serviceLabel ?? "Serviço não informado"}
           </p>
         </div>
 
-        <div className="flex h-full shrink-0 items-center justify-end gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
           <svg
             className={`h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
             fill="none"
@@ -637,6 +640,16 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               </div>
             </form>
           </div>
+          {/* Excluir pedido */}
+          <div className="mt-5 border-t border-paper-soft pt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteRequest(true)}
+              className="text-xs font-semibold text-red-500 transition hover:text-red-700"
+            >
+              Excluir pedido
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -659,6 +672,27 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             const formData = new FormData();
             formData.set("noteId", id);
             await deleteQuoteRequestNote(formData);
+          });
+        }}
+      />
+
+      <ConfirmModal
+        open={confirmDeleteRequest}
+        title="Excluir pedido"
+        description="O pedido e todos os dados relacionados (proposta, notas, histórico) serão removidos permanentemente."
+        eyebrow="Pedidos"
+        confirmLabel="Excluir pedido"
+        cancelLabel="Cancelar"
+        variant="danger"
+        pending={deleteRequestPending}
+        pendingLabel="Excluindo..."
+        onClose={() => setConfirmDeleteRequest(false)}
+        onConfirm={() => {
+          setConfirmDeleteRequest(false);
+          startDeleteRequestTransition(async () => {
+            const formData = new FormData();
+            formData.set("requestId", quoteRequest.id);
+            await deleteQuoteRequest(formData);
           });
         }}
       />
