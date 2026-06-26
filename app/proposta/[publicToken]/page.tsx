@@ -1,8 +1,10 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 
 import { respondToProposal } from "@/lib/actions/proposal-response";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { prisma } from "@/lib/prisma";
+import { createPixPayment } from "@/lib/pix";
 import { formatPhoneBR } from "@/lib/utils/phone";
 
 type PublicProposalPageProps = {
@@ -20,7 +22,7 @@ const statusLabels: Record<string, string> = {
   SENT: "Enviada",
   APPROVED: "Aprovada",
   REJECTED: "Recusada",
-  EXPIRED: "Expirada"
+  EXPIRED: "Expirada",
 };
 
 const statusColors: Record<string, string> = {
@@ -28,30 +30,30 @@ const statusColors: Record<string, string> = {
   SENT: "bg-amber-soft text-amber",
   APPROVED: "bg-mint text-leaf",
   REJECTED: "bg-red-50 text-red-700",
-  EXPIRED: "bg-paper-soft text-ink-muted"
+  EXPIRED: "bg-paper-soft text-ink-muted",
 };
 
 const actorLabels: Record<string, string> = {
   CUSTOMER: "Cliente",
   PROVIDER: "Prestador",
-  SYSTEM: "Sistema"
+  SYSTEM: "Sistema",
 };
 
 const responseMessages: Record<string, string> = {
   approved: "Proposta aprovada com sucesso.",
-  rejected: "Proposta recusada."
+  rejected: "Proposta recusada.",
 };
 
 const errorMessages: Record<string, string> = {
   answered: "Esta proposta já foi respondida.",
   expired: "Esta proposta está expirada e não pode mais ser respondida.",
-  "not-found": "Proposta não encontrada."
+  "not-found": "Proposta não encontrada.",
 };
 
 function formatMoney(value: { toString: () => string }) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(Number(value.toString()));
 }
 
@@ -61,7 +63,7 @@ function formatDate(date: Date) {
 
 export default async function PublicProposalPage({
   params,
-  searchParams
+  searchParams,
 }: PublicProposalPageProps) {
   const { publicToken } = await params;
   const query = await searchParams;
@@ -78,15 +80,16 @@ export default async function PublicProposalPage({
           state: true,
           pixKey: true,
           pixKeyType: true,
-          pixHolderName: true
-        }
+          pixHolderName: true,
+          pixCity: true,
+        },
       },
       quoteRequest: {
         include: {
           service: {
-            select: { name: true }
-          }
-        }
+            select: { name: true },
+          },
+        },
       },
       items: { orderBy: { createdAt: "asc" } },
       statusHistory: {
@@ -97,15 +100,17 @@ export default async function PublicProposalPage({
           toStatus: true,
           actor: true,
           note: true,
-          createdAt: true
-        }
-      }
-    }
+          createdAt: true,
+        },
+      },
+    },
   });
 
   if (!proposal) notFound();
 
-  const isExpired = proposal.validUntil ? proposal.validUntil < new Date() : false;
+  const isExpired = proposal.validUntil
+    ? proposal.validUntil < new Date()
+    : false;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
   const canRespond = !isAnswered && !isExpired;
@@ -116,7 +121,28 @@ export default async function PublicProposalPage({
 
   const displayStatus = isExpired ? "EXPIRED" : proposal.status;
   const providerPhoneDisplay = formatPhoneBR(proposal.provider.phone);
-  const customerPhoneDisplay = formatPhoneBR(proposal.quoteRequest.customerPhone);
+  const customerPhoneDisplay = formatPhoneBR(
+    proposal.quoteRequest.customerPhone,
+  );
+  const hasDeposit =
+    proposal.depositAmount !== null &&
+    Number(proposal.depositAmount.toString()) > 0;
+  const canShowPix =
+    proposal.status === "APPROVED" &&
+    hasDeposit &&
+    !!proposal.provider.pixKey &&
+    !!proposal.provider.pixHolderName &&
+    !!proposal.provider.pixCity;
+  const pixPayment = canShowPix
+    ? await createPixPayment({
+        pixKey: proposal.provider.pixKey!,
+        pixHolderName: proposal.provider.pixHolderName!,
+        pixCity: proposal.provider.pixCity!,
+        amount: proposal.depositAmount!.toString(),
+        transactionId: proposal.id,
+        description: "ENTRADA ORCAFACIL",
+      })
+    : null;
 
   return (
     <main className="min-h-screen bg-paper px-4 py-12 text-ink sm:px-6">
@@ -135,7 +161,9 @@ export default async function PublicProposalPage({
               {proposal.quoteRequest.service?.name ? (
                 <p className="mt-2 text-sm font-medium text-white/70">
                   Serviço:{" "}
-                  <span className="text-white">{proposal.quoteRequest.service.name}</span>
+                  <span className="text-white">
+                    {proposal.quoteRequest.service.name}
+                  </span>
                 </p>
               ) : null}
             </div>
@@ -209,7 +237,9 @@ export default async function PublicProposalPage({
                   {providerLocation ? (
                     <div className="flex items-center gap-2">
                       <dt className="text-ink-muted">Local</dt>
-                      <dd className="font-medium text-ink">{providerLocation}</dd>
+                      <dd className="font-medium text-ink">
+                        {providerLocation}
+                      </dd>
                     </div>
                   ) : null}
                 </dl>
@@ -261,8 +291,12 @@ export default async function PublicProposalPage({
                       key={item.id}
                       className={`grid grid-cols-[1fr_60px_120px_120px] gap-4 px-5 py-4 text-sm ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
                     >
-                      <span className="font-medium text-ink">{item.description}</span>
-                      <span className="text-right text-ink-muted">{item.quantity}</span>
+                      <span className="font-medium text-ink">
+                        {item.description}
+                      </span>
+                      <span className="text-right text-ink-muted">
+                        {item.quantity}
+                      </span>
                       <span className="text-right text-ink-muted">
                         {formatMoney(item.unitPrice)}
                       </span>
@@ -306,17 +340,18 @@ export default async function PublicProposalPage({
             </div>
 
             {/* Sinal (entrada) */}
-            {proposal.depositAmount &&
-            Number(proposal.depositAmount.toString()) > 0 &&
+            {hasDeposit &&
             (proposal.status === "SENT" || proposal.status === "APPROVED") ? (
               <div className="mt-4 overflow-hidden rounded-xl border border-amber-200">
                 <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 px-5 py-4">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                      Sinal (entrada)
+                      {proposal.status === "APPROVED"
+                        ? "Entrada (sinal)"
+                        : "Entrada previsto"}
                     </p>
                     <p className="mt-1 font-fraunces text-3xl font-bold text-amber-800">
-                      {formatMoney(proposal.depositAmount)}
+                      {formatMoney(proposal.depositAmount!)}
                     </p>
                   </div>
                   {proposal.depositPaidAt ? (
@@ -325,59 +360,90 @@ export default async function PublicProposalPage({
                     </span>
                   ) : (
                     <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                      Aguardando pagamento
+                      {proposal.status === "APPROVED"
+                        ? "Aguardando pagamento"
+                        : "Valor informado"}
                     </span>
                   )}
                 </div>
                 <div className="border-t border-amber-200 bg-white p-5">
                   <p className="text-sm leading-6 text-ink-muted">
                     {proposal.status === "SENT"
-                      ? "Ao aprovar esta proposta, você precisará pagar este sinal via Pix para confirmar a reserva do serviço."
-                      : "Realize o pagamento do sinal via Pix para confirmar sua reserva."}
+                      ? "Esta proposta informa um valor de entrada previsto. As instruções de pagamento aparecem somente após a aprovação."
+                      : "Realize o pagamento de entrada via Pix para confirmar sua reserva."}
                   </p>
-                  {proposal.provider.pixKey ? (
-                    <div className="mt-4 grid gap-3">
-                      <div>
+
+                  {pixPayment ? (
+                    <div className="mt-5 grid gap-5 lg:grid-cols-[220px_1fr]">
+                      <div className="rounded-xl border border-paper-soft bg-paper p-4">
                         <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                          Chave Pix
+                          QR Code Pix
                         </p>
-                        <div className="mt-1.5 flex flex-wrap items-center gap-3">
-                          <span className="font-medium text-ink">
-                            {proposal.provider.pixKey}
-                          </span>
-                          <CopyButton
-                            text={proposal.provider.pixKey}
-                            label="Copiar chave"
-                            className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                          />
+                        <Image
+                          alt="QR Code Pix para pagamento de entrada"
+                          className="mt-3 h-auto w-full rounded-lg bg-white"
+                          height={280}
+                          src={pixPayment.qrCodeDataUrl}
+                          unoptimized
+                          width={280}
+                        />
+                      </div>
+
+                      <div className="grid gap-4">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                            Código Pix copia e cola
+                          </p>
+                          <div className="mt-1.5 grid gap-2">
+                            <code className="max-h-28 overflow-auto break-all rounded-lg border border-paper-soft bg-paper px-3 py-2 text-xs leading-5 text-ink">
+                              {pixPayment.copyPasteCode}
+                            </code>
+                            <div className="flex justify-between">
+                              <CopyButton
+                                text={pixPayment.copyPasteCode}
+                                label="Copiar código Pix"
+                                className="inline-flex min-h-8 w-fit items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex justify-between text-sm text-ink-muted sm:grid-cols-3">
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest">
+                              Titular
+                            </p>
+                            <p className="mt-1 text-ink">
+                              {proposal.provider.pixHolderName}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-widest">
+                              Cidade
+                            </p>
+                            <p className="mt-1 text-ink">
+                              {proposal.provider.pixCity}
+                            </p>
+                          </div>
                         </div>
                       </div>
-                      {proposal.provider.pixKeyType ? (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                            Tipo da chave
-                          </p>
-                          <p className="mt-1 text-sm text-ink">
-                            {proposal.provider.pixKeyType}
-                          </p>
-                        </div>
-                      ) : null}
-                      {proposal.provider.pixHolderName ? (
-                        <div>
-                          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                            Titular
-                          </p>
-                          <p className="mt-1 text-sm text-ink">
-                            {proposal.provider.pixHolderName}
-                          </p>
-                        </div>
-                      ) : null}
                     </div>
                   ) : null}
-                  <p className="mt-4 text-xs text-amber-700">
-                    Após pagar, envie o comprovante pelo WhatsApp ou combine a
-                    confirmação diretamente com o prestador.
-                  </p>
+
+                  {proposal.status === "APPROVED" ? (
+                    <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
+                      <p className="font-semibold">
+                        Pagamento feito diretamente ao prestador.
+                      </p>
+                      <p>
+                        O OrçaFácil não confirma esse pagamento automaticamente.
+                      </p>
+                      <p>
+                        Após pagar, envie o comprovante ao prestador ou combine
+                        a confirmação diretamente com ele.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ) : null}
@@ -467,7 +533,9 @@ export default async function PublicProposalPage({
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-ink-muted">
           Proposta gerada via{" "}
-          <span className="font-fraunces font-semibold text-leaf">OrçaFácil</span>
+          <span className="font-fraunces font-semibold text-leaf">
+            OrçaFácil
+          </span>
         </p>
       </div>
     </main>

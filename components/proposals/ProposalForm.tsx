@@ -117,14 +117,14 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
       {/* Common fields */}
       <div className="rounded-xl border border-paper-soft bg-paper p-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-          Sinal (entrada)
+          Entrada (sinal)
         </p>
         <p className="mt-1 text-sm text-ink-muted">
           Valor que o cliente paga antecipadamente para confirmar a reserva. Você recebe via Pix e marca como recebido manualmente.
         </p>
         <div className="mt-4 grid gap-1.5">
           <label className="text-sm font-semibold text-ink" htmlFor="depositAmount">
-            Valor do sinal{" "}
+            Valor de entrada{" "}
             <span className="font-normal text-ink-muted">(opcional)</span>
           </label>
           <CurrencyInput

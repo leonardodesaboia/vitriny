@@ -33,7 +33,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
     >
       {template ? <input name="templateId" type="hidden" value={template.id} /> : null}
 
-      {state?.error ? (
+      {state && "error" in state ? (
         <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {state.error}
         </p>

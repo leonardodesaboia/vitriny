@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { ProposalTemplateForm } from "@/components/proposals/ProposalTemplateForm";
 import { deleteProposalTemplate } from "@/lib/actions/proposal-templates";
 import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
+import type { ProposalTemplateData } from "@/types";
 
 type ProposalTemplatesPageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -18,6 +20,25 @@ const errorMessages: Record<string, string> = {
   "limit-proposal-templates":
     LIMIT_ERROR_MESSAGES["limit-proposal-templates"]
 };
+
+type TemplateWithItems = Prisma.ProposalTemplateGetPayload<{
+  include: { items: true };
+}>;
+
+function serializeTemplate(template: TemplateWithItems): ProposalTemplateData {
+  return {
+    id: template.id,
+    name: template.name,
+    title: template.title,
+    description: template.description,
+    items: template.items.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice.toString()
+    }))
+  };
+}
 
 export default async function ProposalTemplatesPage({
   searchParams
@@ -52,9 +73,8 @@ export default async function ProposalTemplatesPage({
         Templates de proposta
       </h1>
       <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
-        Modelos são conjuntos de itens com nome, descrição e preço que você salva uma vez e
-        carrega na hora de criar uma proposta. Evita redigitar os mesmos itens toda vez que
-        fechar um serviço recorrente.
+        Use modelos para serviços sob demanda, quando o valor depende do pedido e você precisa
+        montar uma proposta personalizada. Serviços com preço fixo não precisam de template.
       </p>
 
       {params.error ? (
@@ -69,7 +89,7 @@ export default async function ProposalTemplatesPage({
             Crie seu perfil primeiro
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Templates ficam vinculados ao perfil do prestador.
+            Templates de serviços sob demanda ficam vinculados ao perfil do prestador.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
@@ -82,7 +102,7 @@ export default async function ProposalTemplatesPage({
         <div className="mt-8 grid gap-8">
           <section>
             <h2 className="font-fraunces text-2xl font-bold text-ink">
-              Novo modelo
+              Novo modelo para serviço sob demanda
             </h2>
             <div className="mt-4">
               <ProposalTemplateForm />
@@ -123,7 +143,7 @@ export default async function ProposalTemplatesPage({
                           </button>
                         </form>
                       </div>
-                      <ProposalTemplateForm template={template} />
+                      <ProposalTemplateForm template={serializeTemplate(template)} />
                     </div>
                   </article>
                 ))}

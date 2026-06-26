@@ -5,13 +5,24 @@ import { QuoteRequestList } from "@/components/quote-request/QuoteRequestList";
 import { prisma } from "@/lib/prisma";
 
 type RequestsPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; notice?: string; warning?: string }>;
 };
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   profile: "Crie o perfil do prestador antes de receber pedidos.",
   "not-found": "Pedido não encontrado."
+};
+
+const noticeMessages: Record<string, string> = {
+  "proposal-email-sent": "Proposta criada e enviada por e-mail ao cliente."
+};
+
+const warningMessages: Record<string, string> = {
+  "proposal-email-missing":
+    "Proposta criada, mas o pedido não tem e-mail do cliente para envio automático.",
+  "proposal-email-failed":
+    "Proposta criada, mas o e-mail não foi enviado. Verifique o Resend, EMAIL_FROM e se o domínio está validado."
 };
 
 export default async function RequestsPage({ searchParams }: RequestsPageProps) {
@@ -66,7 +77,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           }
         }
       },
-      services: { select: { id: true, name: true, pricingType: true, basePrice: true } }
+      services: { select: { id: true, name: true, pricingType: true, basePrice: true, requiresSchedulingDetails: true } }
     }
   });
 
@@ -100,6 +111,18 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
         </p>
       ) : null}
 
+      {params.notice ? (
+        <p className="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          {noticeMessages[params.notice] ?? "Operação concluída."}
+        </p>
+      ) : null}
+
+      {params.warning ? (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          {warningMessages[params.warning] ?? "Operação concluída com aviso."}
+        </p>
+      ) : null}
+
       {!profile ? (
         <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
           <h2 className="font-fraunces text-xl font-bold text-ink">
@@ -121,7 +144,8 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             quoteRequests={profile.quoteRequests}
             services={profile.services.map((s) => ({
               ...s,
-              basePrice: s.basePrice?.toString() ?? null
+              basePrice: s.basePrice?.toString() ?? null,
+              requiresSchedulingDetails: s.requiresSchedulingDetails
             }))}
           />
         </div>

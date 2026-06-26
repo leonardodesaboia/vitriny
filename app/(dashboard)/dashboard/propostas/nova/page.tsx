@@ -17,6 +17,7 @@ type NewProposalPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados da proposta.",
   exists: "Este pedido já possui uma proposta.",
+  "fixed-price": "Pedidos de serviço com preço fixo não geram proposta.",
   "limit-monthly-proposals":
     LIMIT_ERROR_MESSAGES["limit-monthly-proposals"]
 };
@@ -61,7 +62,7 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
     include: {
       proposal: true,
       service: {
-        select: { name: true }
+        select: { name: true, pricingType: true }
       }
     }
   });
@@ -102,7 +103,20 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           </p>
         ) : null}
 
-        {quoteRequest.proposal ? (
+        {quoteRequest.service?.pricingType === "FIXED" ? (
+          <div className="mt-8 rounded-lg border border-mint bg-mint/30 p-5">
+            <h2 className="text-xl font-bold text-ink">Preço fixo</h2>
+            <p className="mt-2 text-sm leading-6 text-stone-700">
+              Este pedido veio de um serviço com preço fixo, então não é possível criar proposta.
+            </p>
+            <Link
+              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md bg-leaf px-4 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+              href="/dashboard/pedidos"
+            >
+              Voltar aos pedidos
+            </Link>
+          </div>
+        ) : quoteRequest.proposal ? (
           <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
             <h2 className="text-xl font-bold text-ink">Proposta já criada</h2>
             <p className="mt-2 text-sm leading-6 text-stone-700">

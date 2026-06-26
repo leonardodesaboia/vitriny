@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/prisma";
 import type { ProposalResponse } from "@/types";
+import { sendProposalResponseEmail } from "@/lib/email";
+
+function appUrl(path: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
 
 export async function respondToProposal(
   publicToken: string,
@@ -21,7 +27,19 @@ export async function respondToProposal(
       validUntil: true,
       quoteRequest: {
         select: {
-          status: true
+          status: true,
+          customerName: true
+        }
+      },
+      provider: {
+        select: {
+          businessName: true,
+          email: true,
+          user: {
+            select: {
+              email: true
+            }
+          }
         }
       }
     }
@@ -106,6 +124,26 @@ export async function respondToProposal(
 
   if (!answered) {
     redirect(`/proposta/${publicToken}?error=answered`);
+  }
+
+  const providerEmail = proposal.provider.email ?? proposal.provider.user.email;
+
+  if (providerEmail) {
+    try {
+      await sendProposalResponseEmail({
+        to: providerEmail,
+        businessName: proposal.provider.businessName,
+        customerName: proposal.quoteRequest.customerName,
+        response,
+        proposalUrl: appUrl(`/proposta/${publicToken}`)
+      });
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de resposta da proposta.", {
+        error,
+        proposalId: proposal.id,
+        response
+      });
+    }
   }
 
   revalidatePath(`/proposta/${publicToken}`);

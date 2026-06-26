@@ -14,6 +14,19 @@ import {
 import { prisma } from "@/lib/prisma";
 import { proposalSchema } from "@/lib/validations/proposal";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import { sendProposalSentEmail } from "@/lib/email";
+
+function appUrl(path: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+function formatCurrencyBRL(value: Prisma.Decimal) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(Number(value.toString()));
+}
 
 function decimalFromString(value: string) {
   return new Prisma.Decimal(value);
@@ -72,7 +85,7 @@ export async function createProposal(formData: FormData) {
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId },
-    select: { id: true, plan: true }
+    select: { id: true, plan: true, businessName: true }
   });
 
   if (!profile) {
@@ -81,7 +94,10 @@ export async function createProposal(formData: FormData) {
 
   const quoteRequest = await prisma.quoteRequest.findFirst({
     where: { id: parsed.data.requestId, providerId: profile.id },
-    include: { proposal: { select: { id: true } } }
+    include: {
+      proposal: { select: { id: true } },
+      service: { select: { pricingType: true } }
+    }
   });
 
   if (!quoteRequest) {
@@ -90,6 +106,10 @@ export async function createProposal(formData: FormData) {
 
   if (quoteRequest.proposal) {
     redirect(`/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=exists`);
+  }
+
+  if (quoteRequest.service?.pricingType === "FIXED") {
+    redirect(`/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=fixed-price`);
   }
 
   let totalAmount: Prisma.Decimal;
@@ -127,7 +147,7 @@ export async function createProposal(formData: FormData) {
       return false;
     }
 
-    await tx.proposal.create({
+    const proposal = await tx.proposal.create({
       data: {
         providerId: profile.id,
         quoteRequestId: quoteRequest.id,
@@ -147,6 +167,10 @@ export async function createProposal(formData: FormData) {
         statusHistory: {
           create: { toStatus: "SENT", actor: "PROVIDER", note: "Proposta criada e enviada." }
         }
+      },
+      select: {
+        id: true,
+        publicToken: true
       }
     });
 
@@ -167,7 +191,7 @@ export async function createProposal(formData: FormData) {
       });
     }
 
-    return true;
+    return proposal;
   });
 
   if (!created) {
@@ -176,8 +200,32 @@ export async function createProposal(formData: FormData) {
     );
   }
 
+  let redirectUrl = "/dashboard/pedidos";
+
+  if (quoteRequest.customerEmail) {
+    try {
+      await sendProposalSentEmail({
+        to: quoteRequest.customerEmail,
+        businessName: profile.businessName,
+        customerName: quoteRequest.customerName,
+        proposalUrl: appUrl(`/proposta/${created.publicToken}`),
+        totalAmount: formatCurrencyBRL(totalAmount)
+      });
+      redirectUrl = "/dashboard/pedidos?notice=proposal-email-sent";
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de proposta enviada.", {
+        error,
+        proposalId: created.id,
+        quoteRequestId: quoteRequest.id
+      });
+      redirectUrl = "/dashboard/pedidos?warning=proposal-email-failed";
+    }
+  } else {
+    redirectUrl = "/dashboard/pedidos?warning=proposal-email-missing";
+  }
+
   revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  redirect(redirectUrl);
 }
 
 export async function markDepositPaid(formData: FormData) {

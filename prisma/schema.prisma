@@ -94,6 +94,7 @@ model ProviderProfile {
   pixKey        String?
   pixKeyType    String?
   pixHolderName String?
+  pixCity       String?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -106,15 +107,18 @@ model ProviderProfile {
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  providerId  String
-  name        String
-  description String?
-  basePrice   Decimal? @db.Decimal(10, 2)
-  isActive    Boolean            @default(true)
-  pricingType ServicePricingType @default(CUSTOM)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime @updatedAt
+  id                        String             @id @default(cuid())
+  providerId                String
+  name                      String
+  description               String?
+  basePrice                 Decimal?           @db.Decimal(10, 2)
+  isActive                  Boolean            @default(true)
+  pricingType               ServicePricingType @default(CUSTOM)
+  requiresSchedulingDetails Boolean            @default(false)
+  imageUrl                  String?
+  imageStorageKey           String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   quoteRequests QuoteRequest[]
@@ -128,6 +132,9 @@ model QuoteRequest {
   customerEmail String?
   customerPhone String?
   description   String?
+  desiredDate   String?
+  desiredTime   String?
+  location      String?
   status        QuoteRequestStatus @default(NEW)
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt

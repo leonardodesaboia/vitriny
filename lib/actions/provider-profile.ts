@@ -25,7 +25,8 @@ export async function saveProviderProfile(
     isPublished: formData.get("isPublished") === "on",
     pixKey: formData.get("pixKey"),
     pixKeyType: formData.get("pixKeyType"),
-    pixHolderName: formData.get("pixHolderName")
+    pixHolderName: formData.get("pixHolderName"),
+    pixCity: formData.get("pixCity")
   });
 
   if (!parsed.success) {

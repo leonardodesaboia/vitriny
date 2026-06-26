@@ -37,6 +37,7 @@ export function makePrismaMock() {
       createMany: vi.fn()
     },
     quoteRequest: {
+      create: vi.fn(),
       findFirst: vi.fn(),
       update: vi.fn(),
       findUnique: vi.fn(),

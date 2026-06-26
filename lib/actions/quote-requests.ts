@@ -13,6 +13,12 @@ import { prisma } from "@/lib/prisma";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
 import type { ActionResult } from "@/types";
 import { quoteRequestSchema } from "@/lib/validations/quote-request";
+import { sendQuoteRequestReceivedEmail } from "@/lib/email";
+
+function appUrl(path: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
 
 export async function createQuoteRequest(slug: string, formData: FormData) {
   const parsed = quoteRequestSchema.safeParse({
@@ -20,7 +26,10 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     customerEmail: formData.get("customerEmail"),
     customerPhone: formData.get("customerPhone"),
     serviceId: formData.get("serviceId"),
-    description: formData.get("description")
+    description: formData.get("description"),
+    desiredDate: formData.get("desiredDate"),
+    desiredTime: formData.get("desiredTime"),
+    location: formData.get("location")
   });
 
   if (!parsed.success) {
@@ -34,7 +43,14 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     select: {
       id: true,
       plan: true,
-      isPublished: true
+      isPublished: true,
+      businessName: true,
+      email: true,
+      user: {
+        select: {
+          email: true
+        }
+      }
     }
   });
 
@@ -42,18 +58,21 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     redirect(`/u/${slug}/orcamento?error=unavailable`);
   }
 
-  if (parsed.data.serviceId) {
-    const service = await prisma.service.findFirst({
+  const service = parsed.data.serviceId
+    ? await prisma.service.findFirst({
       where: {
         id: parsed.data.serviceId,
         providerId: profile.id,
         isActive: true
       },
       select: {
-        id: true
+        id: true,
+        name: true
       }
-    });
+    })
+    : null;
 
+  if (parsed.data.serviceId) {
     if (!service) {
       redirect(`/u/${slug}/orcamento?error=service`);
     }
@@ -76,7 +95,7 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
       return false;
     }
 
-    await tx.quoteRequest.create({
+    return tx.quoteRequest.create({
       data: {
         providerId: profile.id,
         serviceId: parsed.data.serviceId,
@@ -84,6 +103,9 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
         customerEmail: parsed.data.customerEmail,
         customerPhone: parsed.data.customerPhone,
         description: parsed.data.description,
+        desiredDate: parsed.data.desiredDate,
+        desiredTime: parsed.data.desiredTime,
+        location: parsed.data.location,
         status: "NEW",
         statusHistory: {
           create: {
@@ -92,16 +114,37 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
             note: "Pedido criado pelo formulario publico."
           }
         }
+      },
+      select: {
+        id: true,
+        customerName: true
       }
     });
-
-    return true;
   });
 
   if (!created) {
     redirect(
       `/u/${slug}/orcamento?error=${PLAN_LIMIT_ERROR_CODES.monthlyQuoteRequests}`
     );
+  }
+
+  const providerEmail = profile.email ?? profile.user.email;
+
+  if (providerEmail) {
+    try {
+      await sendQuoteRequestReceivedEmail({
+        to: providerEmail,
+        businessName: profile.businessName,
+        customerName: created.customerName,
+        serviceName: service?.name,
+        dashboardUrl: appUrl("/dashboard/pedidos")
+      });
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de novo pedido.", {
+        error,
+        quoteRequestId: created.id
+      });
+    }
   }
 
   redirect(`/u/${slug}/orcamento?success=1`);
