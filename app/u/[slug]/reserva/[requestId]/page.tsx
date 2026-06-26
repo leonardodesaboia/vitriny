@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CopyPixButton } from "./CopyPixButton";
 import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
+import { getPublicThemePreset } from "@/lib/theme-presets";
 
 type PixReservationPageProps = {
   params: Promise<{
@@ -28,6 +29,8 @@ export default async function PixReservationPage({ params }: PixReservationPageP
       id: true,
       businessName: true,
       isPublished: true,
+      plan: true,
+      themePreset: true,
       pixKey: true,
       pixHolderName: true,
       pixCity: true
@@ -84,9 +87,10 @@ export default async function PixReservationPage({ params }: PixReservationPageP
   });
 
   const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
+  const theme = getPublicThemePreset(profile.plan, profile.themePreset);
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink">
+    <main className="min-h-screen bg-paper px-6 py-12 text-ink font-jakarta" data-brand-theme={theme.id}>
       <div className="mx-auto max-w-lg">
         <Link
           className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
@@ -160,7 +164,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
                 Pix Copia e Cola
               </p>
-              <p className="mt-2 break-all rounded-lg bg-paper px-3 py-3 font-mono text-xs text-ink">
+              <p className="mt-2 break-all rounded-lg bg-paper px-3 py-3 text-xs text-ink">
                 {copyPasteCode}
               </p>
               <CopyPixButton code={copyPasteCode} />

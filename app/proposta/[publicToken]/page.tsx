@@ -5,6 +5,7 @@ import { respondToProposal } from "@/lib/actions/proposal-response";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { prisma } from "@/lib/prisma";
 import { createPixPayment } from "@/lib/pix";
+import { getPublicThemePreset } from "@/lib/theme-presets";
 import { formatPhoneBR } from "@/lib/utils/phone";
 
 type PublicProposalPageProps = {
@@ -74,6 +75,8 @@ export default async function PublicProposalPage({
       provider: {
         select: {
           businessName: true,
+          plan: true,
+          themePreset: true,
           email: true,
           phone: true,
           city: true,
@@ -143,9 +146,13 @@ export default async function PublicProposalPage({
         description: "ENTRADA ORCAFACIL",
       })
     : null;
+  const theme = getPublicThemePreset(
+    proposal.provider.plan,
+    proposal.provider.themePreset,
+  );
 
   return (
-    <main className="min-h-screen bg-paper px-4 py-12 text-ink sm:px-6">
+    <main className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6" data-brand-theme={theme.id}>
       <div className="mx-auto max-w-3xl">
         {/* Document header */}
         <div className="rounded-2xl border border-paper-soft bg-white shadow-card">

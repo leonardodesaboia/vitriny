@@ -9,19 +9,21 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        paper: "#F5F0E8",
-        "paper-soft": "#EDE8DE",
-        ink: "#1C1917",
-        "ink-muted": "#78716C",
-        leaf: "#1B5E3B",
-        "leaf-hover": "#2D7A52",
-        mint: "#D4EBD9",
-        amber: "#C97D3F",
-        "amber-soft": "#F5E6D3"
+        paper: "rgb(var(--color-paper) / <alpha-value>)",
+        "paper-soft": "rgb(var(--color-paper-soft) / <alpha-value>)",
+        ink: "rgb(var(--color-ink) / <alpha-value>)",
+        "ink-muted": "rgb(var(--color-ink-muted) / <alpha-value>)",
+        leaf: "rgb(var(--color-leaf) / <alpha-value>)",
+        "leaf-hover": "rgb(var(--color-leaf-hover) / <alpha-value>)",
+        mint: "rgb(var(--color-mint) / <alpha-value>)",
+        amber: "rgb(var(--color-amber) / <alpha-value>)",
+        "amber-soft": "rgb(var(--color-amber-soft) / <alpha-value>)"
       },
       fontFamily: {
-        fraunces: ["var(--font-fraunces)", "serif"],
-        jakarta: ["var(--font-jakarta)", "sans-serif"],
+        sans: ["var(--font-brand-body)", "sans-serif"],
+        serif: ["var(--font-brand-display)", "serif"],
+        fraunces: ["var(--font-brand-display)", "serif"],
+        jakarta: ["var(--font-brand-body)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"]
       },
       boxShadow: {

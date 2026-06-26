@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 import type { PublicService } from "@/types";
-import type { PublicThemePreset } from "@/lib/theme-presets";
 
 function formatMoney(value: string) {
   return new Intl.NumberFormat("pt-BR", {
@@ -29,17 +28,15 @@ const item = {
 
 export function PublicServicesGrid({
   services,
-  slug,
-  theme
+  slug
 }: {
   services: PublicService[];
   slug: string;
-  theme: PublicThemePreset;
 }) {
   if (services.length === 0) {
     return (
-      <div className={`${theme.contactCard} mt-6 p-8 text-center`}>
-        <p className={theme.serviceDescription}>
+      <div className="mt-6 rounded-xl border border-paper-soft bg-white p-8 text-center shadow-card">
+        <p className="text-sm leading-6 text-ink-muted">
           Este prestador ainda não possui serviços publicados.
         </p>
       </div>
@@ -48,7 +45,7 @@ export function PublicServicesGrid({
 
   return (
     <motion.div
-      className={theme.serviceGrid}
+      className="mt-6 grid gap-4 sm:grid-cols-2"
       initial="hidden"
       whileInView="show"
       viewport={{ once: true, amount: 0.1 }}
@@ -58,24 +55,24 @@ export function PublicServicesGrid({
         <motion.article
           key={service.id}
           variants={item}
-          className={theme.serviceCard}
+          className="group flex flex-col overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card transition-shadow hover:shadow-card-hover"
         >
           {service.imageUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               alt={service.name}
-              className={theme.serviceImage}
+              className="h-44 w-full object-cover"
               loading="lazy"
               src={service.imageUrl}
             />
           ) : null}
 
           <div className="flex flex-1 flex-col p-6">
-            <h3 className={theme.serviceTitle}>
+            <h3 className="line-clamp-2 break-words font-jakarta text-base font-bold text-ink">
               {service.name}
             </h3>
             {service.description ? (
-              <p className={theme.serviceDescription}>
+              <p className="mt-2 line-clamp-3 flex-1 break-words text-sm leading-6 text-ink-muted">
                 {service.description}
               </p>
             ) : (
@@ -83,16 +80,16 @@ export function PublicServicesGrid({
             )}
             {service.basePrice ? (
               service.pricingType === "FIXED" ? (
-                <p className={theme.servicePrice}>
+                <p className="mt-3 font-fraunces text-lg font-bold text-ink">
                   {formatMoney(service.basePrice)}
                 </p>
               ) : (
-                <p className={theme.servicePrice}>
+                <p className="mt-3 font-fraunces text-lg font-bold text-ink">
                   A partir de {formatMoney(service.basePrice)}
                 </p>
               )
             ) : (
-              <p className={theme.badge}>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
                 Sob orçamento
               </p>
             )}
@@ -102,13 +99,13 @@ export function PublicServicesGrid({
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                 <Link
                   href={`/u/${slug}/orcamento?serviceId=${service.id}&modo=reserva`}
-                  className={theme.primaryButton}
+                  className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition-colors hover:bg-leaf-hover"
                 >
                   Reservar com Pix →
                 </Link>
                 <Link
                   href={`/u/${slug}/orcamento?serviceId=${service.id}`}
-                  className={theme.secondaryButton}
+                  className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors hover:border-leaf hover:text-leaf"
                 >
                   Apenas solicitar
                 </Link>
@@ -116,7 +113,7 @@ export function PublicServicesGrid({
             ) : (
               <Link
                 href={`/u/${slug}/orcamento?serviceId=${service.id}`}
-                className={`${theme.secondaryButton} mt-4 w-fit flex-none`}
+                className="mt-4 inline-flex min-h-9 w-fit flex-none items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors hover:border-leaf hover:text-leaf"
               >
                 {service.pricingType === "FIXED" ? "Solicitar serviço →" : "Pedir orçamento →"}
               </Link>

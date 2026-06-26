@@ -300,6 +300,7 @@ enum ProviderThemePreset {
   BEAUTY
   CREATIVE
   PREMIUM
+  BOLD
 }
 
 enum SubscriptionStatus {

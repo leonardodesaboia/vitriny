@@ -277,7 +277,10 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </div>
             <div className="rounded-xl border border-paper-soft bg-white p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-16 overflow-hidden rounded-lg border border-paper-soft">
+                <div
+                  className="flex h-10 w-16 overflow-hidden rounded-lg border border-paper-soft"
+                  data-brand-theme="DEFAULT"
+                >
                   <span className="flex-1 bg-paper" />
                   <span className="flex-1 bg-leaf" />
                   <span className="flex-1 bg-white" />
@@ -306,7 +309,10 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                   value={preset.id}
                 />
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
+                  <div
+                    className="flex h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-paper-soft"
+                    data-brand-theme={preset.id}
+                  >
                     <span className={`flex-1 ${preset.preview.background}`} />
                     <span className={`flex-1 ${preset.preview.accent}`} />
                     <span className={`flex-1 ${preset.preview.surface}`} />
@@ -315,6 +321,9 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                     <p className="text-sm font-semibold text-ink">{preset.name}</p>
                     <p className="mt-1 text-xs leading-5 text-ink-muted">
                       {preset.description}
+                    </p>
+                    <p className="mt-1 text-[11px] font-semibold uppercase tracking-widest text-ink-muted/80">
+                      {preset.fontLabel}
                     </p>
                   </div>
                 </div>

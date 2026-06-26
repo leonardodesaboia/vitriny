@@ -70,18 +70,18 @@ export default async function PublicProviderProfilePage({
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
 
   return (
-    <main className={`min-h-screen ${theme.page}`}>
+    <main className="min-h-screen bg-paper text-ink font-jakarta" data-brand-theme={theme.id}>
       {/* Hero */}
-      <div className={theme.hero}>
+      <div className="grain relative bg-leaf px-6 pb-16 pt-14">
         <div className="mx-auto max-w-4xl">
-          <p className={theme.heroEyebrow}>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
             Prestador de serviço{location ? ` · ${location}` : ""}
           </p>
-          <h1 className={theme.heroTitle}>
+          <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
             {profile.businessName}
           </h1>
           {profile.description ? (
-            <p className={theme.heroDescription}>
+            <p className="mt-5 max-w-2xl break-words text-base leading-7 text-white/80">
               {profile.description}
             </p>
           ) : null}
@@ -96,20 +96,20 @@ export default async function PublicProviderProfilePage({
             {contacts.map((c) => (
               <div
                 key={c.label}
-                className={theme.contactCard}
+                className="rounded-xl border border-paper-soft bg-white p-4 shadow-card"
               >
-                <p className={theme.contactLabel}>
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
                   {c.label}
                 </p>
                 {c.href ? (
                   <a
                     href={c.href}
-                    className={theme.contactValue}
+                    className="mt-1 text-sm font-semibold text-leaf transition hover:underline"
                   >
                     {c.value}
                   </a>
                 ) : (
-                  <p className={theme.serviceTitle}>{c.value}</p>
+                  <p className="mt-1 break-words text-sm font-semibold text-ink">{c.value}</p>
                 )}
               </div>
             ))}
@@ -119,10 +119,10 @@ export default async function PublicProviderProfilePage({
         {/* Services */}
         {hasServices ? (
           <div className="mt-12">
-            <p className={theme.sectionEyebrow}>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
               Serviços disponíveis
             </p>
-            <h2 className={theme.sectionTitle}>
+            <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
               O que ofereço
             </h2>
             <PublicServicesGrid
@@ -134,17 +134,16 @@ export default async function PublicProviderProfilePage({
                   !!(profile.pixKey && profile.pixHolderName && profile.pixCity)
               }))}
               slug={slug}
-              theme={theme}
             />
           </div>
         ) : null}
 
                 {/* How it works */}
         <div className="mt-12">
-          <p className={theme.sectionEyebrow}>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
             Como funciona
           </p>
-          <h2 className={theme.sectionTitle}>
+          <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
             Simples e rápido
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -167,20 +166,20 @@ export default async function PublicProviderProfilePage({
             ].map((s) => (
               <div
                 key={s.step}
-                className={theme.stepCard}
+                className="rounded-xl border border-paper-soft bg-white p-5 shadow-card"
               >
-                <span className={theme.stepMarker}>
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf">
                   {s.step}
                 </span>
-                <h3 className={`${theme.serviceTitle} mt-3`}>{s.title}</h3>
-                <p className={theme.serviceDescription}>{s.description}</p>
+                <h3 className="mt-3 line-clamp-2 break-words font-jakarta text-base font-bold text-ink">{s.title}</h3>
+                <p className="mt-2 line-clamp-3 flex-1 break-words text-sm leading-6 text-ink-muted">{s.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Powered by */}
-        <p className={theme.poweredBy}>
+        <p className="mt-8 text-center text-xs text-ink-muted/60">
           Powered by{" "}
           <span className="font-semibold text-ink-muted">OrçaFácil</span>
         </p>

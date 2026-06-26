@@ -7,7 +7,8 @@ const providerThemePresetSchema = z.enum([
   "CLEAN",
   "BEAUTY",
   "CREATIVE",
-  "PREMIUM"
+  "PREMIUM",
+  "BOLD"
 ]);
 
 const optionalText = z
