@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
-import { InvoiceList, type InvoiceItem } from "@/components/billing/InvoiceList";
+import { AsyncInvoiceList } from "@/components/billing/AsyncInvoiceList";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 
 export default async function BillingPage({
@@ -34,33 +35,17 @@ export default async function BillingPage({
     }
   });
 
-  if (!profile) {
-    redirect("/dashboard/perfil");
-  }
-
-  const limits = getPlanLimits(profile.plan);
-  const monthlyQuoteRequests = profile.quoteRequests.filter(
-    (r) => r.createdAt >= monthRange.start && r.createdAt < monthRange.end
-  ).length;
-  const monthlyProposals = profile.proposals.filter(
-    (p) => p.createdAt >= monthRange.start && p.createdAt < monthRange.end
-  ).length;
-
-  let invoices: InvoiceItem[] = [];
-  if (profile.stripeCustomerId) {
-    const stripeInvoices = await stripe.invoices.list({
-      customer: profile.stripeCustomerId,
-      limit: 10
-    });
-    invoices = stripeInvoices.data.map((inv) => ({
-      id: inv.id,
-      created: inv.created,
-      amountPaid: inv.amount_paid,
-      currency: inv.currency,
-      status: inv.status ?? null,
-      hostedUrl: inv.hosted_invoice_url ?? null
-    }));
-  }
+  const limits = profile ? getPlanLimits(profile.plan) : null;
+  const monthlyQuoteRequests = profile
+    ? profile.quoteRequests.filter(
+        (r) => r.createdAt >= monthRange.start && r.createdAt < monthRange.end
+      ).length
+    : 0;
+  const monthlyProposals = profile
+    ? profile.proposals.filter(
+        (p) => p.createdAt >= monthRange.start && p.createdAt < monthRange.end
+      ).length
+    : 0;
 
   return (
     <div className="p-8">
@@ -90,42 +75,61 @@ export default async function BillingPage({
         </div>
       ) : null}
 
-      <div className="mt-8">
-        <BillingCard
-          plan={profile.plan}
-          subscriptionStatus={profile.subscriptionStatus}
-          currentPeriodEnd={profile.currentPeriodEnd}
-          cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
-        />
-      </div>
+      {!profile || !limits ? (
+        <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
+          <h2 className="font-fraunces text-xl font-bold text-ink">
+            Crie seu perfil primeiro
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            Assinatura e limites ficam vinculados ao perfil do prestador.
+          </p>
+          <Link
+            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+            href="/dashboard/perfil"
+          >
+            Criar perfil
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="mt-8">
+            <BillingCard
+              plan={profile.plan}
+              subscriptionStatus={profile.subscriptionStatus}
+              currentPeriodEnd={profile.currentPeriodEnd}
+              cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
+            />
+          </div>
 
-      {invoices.length > 0 ? <InvoiceList invoices={invoices} /> : null}
+          <AsyncInvoiceList />
 
-      <PlanUsageCard
-        plan={profile.plan}
-        usage={[
-          {
-            current: profile.services.filter((s) => s.isActive).length,
-            limit: limits.activeServices,
-            resource: "activeServices"
-          },
-          {
-            current: monthlyQuoteRequests,
-            limit: limits.monthlyQuoteRequests,
-            resource: "monthlyQuoteRequests"
-          },
-          {
-            current: monthlyProposals,
-            limit: limits.monthlyProposals,
-            resource: "monthlyProposals"
-          },
-          {
-            current: profile.proposalTemplates.length,
-            limit: limits.proposalTemplates,
-            resource: "proposalTemplates"
-          }
-        ]}
-      />
+          <PlanUsageCard
+            plan={profile.plan}
+            usage={[
+              {
+                current: profile.services.filter((s) => s.isActive).length,
+                limit: limits.activeServices,
+                resource: "activeServices"
+              },
+              {
+                current: monthlyQuoteRequests,
+                limit: limits.monthlyQuoteRequests,
+                resource: "monthlyQuoteRequests"
+              },
+              {
+                current: monthlyProposals,
+                limit: limits.monthlyProposals,
+                resource: "monthlyProposals"
+              },
+              {
+                current: profile.proposalTemplates.length,
+                limit: limits.proposalTemplates,
+                resource: "proposalTemplates"
+              }
+            ]}
+          />
+        </>
+      )}
     </div>
   );
 }

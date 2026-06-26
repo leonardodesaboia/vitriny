@@ -49,6 +49,7 @@ async function handleStripeEvent(event: Stripe.Event) {
       break;
     }
 
+    case "customer.subscription.created":
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
