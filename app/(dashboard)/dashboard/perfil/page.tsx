@@ -1,8 +1,6 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import { ProfileForm } from "@/components/provider-profile/ProfileForm";
 import { prisma } from "@/lib/prisma";
 
@@ -34,30 +32,28 @@ export default async function ProviderProfilePage({
   });
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink">
-      <section className="mx-auto max-w-3xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <div className="flex items-center justify-between">
-          <Link className="text-sm font-semibold text-leaf" href="/dashboard">
-            Voltar ao dashboard
-          </Link>
-          <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft px-4 text-sm font-semibold text-ink-muted transition hover:border-red-300 hover:text-red-600" />
-        </div>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-leaf">
-          Perfil do prestador
-        </p>
-        <h1 className="mt-3 text-3xl font-bold">
-          {profile ? "Editar perfil" : "Criar perfil"}
-        </h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Estes dados serão usados depois na página pública do prestador.
-        </p>
-        {params.error ? (
-          <p className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+    <div className="p-6 md:p-8">
+      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+        Configurações
+      </p>
+      <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
+        {profile ? "Editar perfil" : "Criar perfil"}
+      </h1>
+      <p className="mt-2 text-sm text-ink-muted">
+        Estes dados aparecem na sua página pública e nas propostas enviadas.
+      </p>
+
+      {params.error ? (
+        <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm font-semibold text-red-700">
             {errorMessages[params.error] ?? "Não foi possível salvar o perfil."}
           </p>
-        ) : null}
+        </div>
+      ) : null}
+
+      <div className="mt-6 w-full rounded-xl border border-paper-soft bg-white p-6 shadow-card">
         <ProfileForm profile={profile} userEmail={session.user.email} />
-      </section>
-    </main>
+      </div>
+    </div>
   );
 }

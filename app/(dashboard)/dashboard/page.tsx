@@ -187,6 +187,7 @@ export default async function DashboardPage() {
       <OnboardingChecklist
         steps={onboardingSteps}
         slug={profile?.slug}
+        storageScope={session.user.id}
       />
 
       <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">

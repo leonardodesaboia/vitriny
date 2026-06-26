@@ -40,7 +40,7 @@ export function WhatsAppButton({ label, message, waUrl }: WhatsAppButtonProps) {
           ) : null}
         </div>
       </div>
-      <p className="mt-2 whitespace-pre-line rounded-md border border-paper-soft bg-paper px-3 py-2 text-xs leading-relaxed text-ink-muted">
+      <p className="mt-2 break-all whitespace-pre-line rounded-md border border-paper-soft bg-paper px-3 py-2 text-xs leading-relaxed text-ink-muted">
         {message}
       </p>
     </div>

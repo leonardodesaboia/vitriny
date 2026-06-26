@@ -15,7 +15,8 @@
 11. Prestador cria proposta.
 12. Cliente acessa `/proposta/[publicToken]`.
 13. Cliente aprova ou recusa.
-14. Prestador vê status atualizado.
+14. Se houver entrada Pix, cliente paga diretamente ao prestador e envia comprovante.
+15. Prestador vê status atualizado e marca o entrada como recebido.
 
 ## Passo a passo manual
 
@@ -36,7 +37,7 @@
 ### 2. Perfil
 
 - Acesse `/dashboard/perfil`.
-- Preencha `businessName`, `slug`, contatos e marque `isPublished`.
+- Preencha `businessName`, endereço do perfil, contatos, dados Pix se quiser receber entrada, e marque `isPublished`.
 - Salve.
 - Esperado: dashboard mostra perfil e link `/u/[slug]`.
 
@@ -55,8 +56,10 @@
 ### 5. Pedido público
 
 - Clique em `Pedir orçamento`.
+- Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Envie o formulário.
 - Esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
+- Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o prestador recebe e-mail avisando sobre o novo pedido.
 
 Como verificar no banco:
 
@@ -72,12 +75,13 @@ Como verificar no banco:
 ### 7. Proposta
 
 - Clique em `Criar proposta`.
-- Preencha título, validade e ao menos um item.
+- Preencha título, validade, ao menos um item e, se quiser cobrar entrada, o valor do entrada.
 - Salve.
 - Esperado:
   - `Proposal` criada.
   - `ProposalItem` criado.
   - `QuoteRequest.status` vira `PROPOSAL_SENT`.
+  - Se o pedido tiver e-mail do cliente, o cliente recebe um link da proposta por e-mail.
 
 Como verificar:
 
@@ -95,6 +99,18 @@ Como verificar:
   - `Proposal.status` vira `APPROVED` ou `REJECTED`.
   - `Proposal.respondedAt` é preenchido.
   - `QuoteRequest.status` vira `CLOSED`.
+  - O prestador recebe e-mail avisando se a proposta foi aprovada ou recusada.
+
+### 10. Pix manual para entrada
+
+- Se a proposta aprovada tiver `depositAmount > 0` e o prestador tiver `pixKey`, `pixHolderName` e `pixCity`, a página pública mostra QR Code Pix e código Pix copia e cola.
+- Esperado: cliente vê as mensagens:
+  - "Pagamento feito diretamente ao prestador."
+  - "O OrçaFácil não confirma esse pagamento automaticamente."
+  - "Após pagar, envie o comprovante ao prestador ou combine a confirmação diretamente com ele."
+- Cliente paga fora da plataforma e envia o comprovante ao prestador.
+- Prestador acessa `/dashboard/pedidos` e clica em `Marcar como recebido`.
+- Esperado: `Proposal.depositPaidAt` é preenchido e o painel mostra entrada recebido.
 
 ## Erros comuns
 
@@ -109,13 +125,15 @@ Verificar:
 - callback do Google OAuth
 - se for login por senha: e-mail/senha corretos, e se a conta não foi criada via Google (`password` nulo)
 
-### E-mail de redefinição de senha não chega
+### E-mail não chega
 
 Verificar:
 
 - `RESEND_API_KEY` configurada
-- remetente `onboarding@resend.dev` só entrega para o e-mail da própria conta Resend (sandbox)
+- `EMAIL_FROM` configurado com remetente validado no Resend
 - se o e-mail informado tem senha cadastrada (contas só-Google não recebem e-mail de reset)
+- se o cliente informou e-mail no pedido (necessário para receber proposta)
+- se o perfil do prestador tem e-mail; caso contrário, o app tenta usar o e-mail da conta
 
 ### Perfil público retorna 404
 

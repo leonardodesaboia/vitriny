@@ -9,7 +9,7 @@ Versão instalada no momento da documentação:
 - `next-auth@5.0.0-beta.31`
 - `@auth/prisma-adapter@2.11.2`
 - `bcryptjs` (hash de senha)
-- `resend` (envio de e-mail de redefinição de senha)
+- `resend` (envio de e-mails transacionais)
 
 GitHub OAuth foi removido completamente do projeto.
 
@@ -41,14 +41,24 @@ Não há mais GitHub. Não há login por magic link/e-mail mágico (`Verificatio
 - Modelo de dados: `PasswordResetToken` (`id`, `userId`, `token` único, `expiresAt`, `createdAt`), separado do `VerificationToken` padrão do Auth.js.
 - Token gerado com `crypto.randomBytes(32).toString("hex")`, expira em 1 hora, apagado após uso (e qualquer outro token do mesmo usuário, via `$transaction`).
 - **Proteção contra enumeração de e-mail:** `requestPasswordReset` sempre redireciona para `/esqueci-senha?sent=1` com a mesma mensagem de sucesso, independentemente de o e-mail existir ou ser conta Google-only. O e-mail só é efetivamente enviado quando existe um `User` com `password` definido para aquele e-mail.
-- Envio de e-mail via Resend (`lib/email.ts`, função `sendPasswordResetEmail`). Remetente atual: `onboarding@resend.dev` (sandbox — só entrega para o e-mail da própria conta Resend; trocar por domínio verificado antes de produção real). Falhas de envio (`{ error }` retornado pela API do Resend) lançam exceção em vez de falhar silenciosamente.
+- Envio de e-mail via Resend (`lib/email.ts`, função `sendPasswordResetEmail`). O remetente vem de `EMAIL_FROM`; em produção, usar um domínio verificado no Resend. Falhas de configuração ou envio (`{ error }` retornado pela API do Resend) lançam exceção em vez de falhar silenciosamente.
+
+## E-mails transacionais
+
+Além da recuperação de senha, `lib/email.ts` envia notificações para pontos críticos do MVP:
+
+- novo pedido público: e-mail para o prestador (`ProviderProfile.email` ou, se ausente, `User.email`);
+- proposta criada: e-mail para o cliente quando `QuoteRequest.customerEmail` existe;
+- proposta aprovada/recusada: e-mail para o prestador (`ProviderProfile.email` ou `User.email`).
+
+Falhas nesses e-mails são registradas no servidor com `console.error`, mas não bloqueiam o fluxo principal de criação de pedido, envio de proposta ou resposta do cliente.
 
 ## Arquivos envolvidos
 
 - `auth.ts` — configuração central (providers, sessão, callbacks, erros customizados)
 - `lib/actions/auth.ts` — `registerUser`, `loginWithCredentials`, `requestPasswordReset`, `resetPassword`
 - `lib/validations/auth.ts` — `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`
-- `lib/email.ts` — wrapper do Resend
+- `lib/email.ts` — wrapper do Resend e templates de e-mails transacionais
 - `app/api/auth/[...nextauth]/route.ts`
 - `proxy.ts`
 - `app/(auth)/layout.tsx` — layout compartilhado (painel decorativo) das 4 páginas de auth
@@ -72,6 +82,7 @@ AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
+EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
 ```
 
 Em produção, `AUTH_URL` deve apontar para o domínio real.
@@ -136,7 +147,7 @@ Cuidados:
 - Usar `AUTH_SECRET` forte.
 - Conferir `AUTH_URL`.
 - Conferir o redirect URI do Google.
-- Trocar o remetente do Resend de `onboarding@resend.dev` para um domínio verificado.
+- Configurar `EMAIL_FROM` com remetente de domínio verificado no Resend.
 - Rodar `npx prisma migrate deploy` antes de testar login em produção.
 
 ## Observações Auth.js v5

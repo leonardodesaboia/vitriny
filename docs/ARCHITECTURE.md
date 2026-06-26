@@ -165,7 +165,7 @@ Limites `FREE`:
 - 5 propostas por mês;
 - 1 template de proposta.
 
-`PRO` usa `null` nos limites para representar uso sem limite prático no MVP. Não há checkout, Pix, gateway ou cobrança real.
+`PRO` usa `null` nos limites para representar uso sem limite prático no MVP. Stripe é usado apenas para assinatura do prestador. Pagamento do cliente final por Pix é manual: a proposta aprovada pode exibir chave Pix, código copia e cola e QR Code, mas o OrçaFácil não processa dinheiro nem confirma pagamento automaticamente.
 
 ## Segurança adotada
 
@@ -226,7 +226,7 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 
 ## Riscos técnicos conhecidos
 
-- `QuoteRequest` possui `serviceId` opcional. Pedidos novos salvam a descrição limpa; a UI de pedidos ainda usa parsing legado da `description` apenas para pedidos antigos sem `serviceId`.
+- `QuoteRequest` possui `serviceId` opcional. Pedidos novos salvam a descrição limpa; a UI de pedidos ainda usa parsing legado da `description` apenas para pedidos antigos sem `serviceId`. No formulário público, quando o pedido vem de um card de serviço, o serviço já entra pré-selecionado e o select fica oculto.
 - Auth.js v5 está em beta (`next-auth@5.0.0-beta.31`).
 - Sessão `jwt` não é invalidável manualmente antes de expirar.
 - Remetente do Resend (`onboarding@resend.dev`) é sandbox; trocar por domínio verificado antes de produção real.

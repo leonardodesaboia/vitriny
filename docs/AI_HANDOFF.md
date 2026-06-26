@@ -14,10 +14,12 @@ Funciona hoje:
 - dashboard protegido;
 - perfil do prestador;
 - serviços com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
+- serviços com `requiresSchedulingDetails` (Boolean, default false): quando true, o formulário público exibe campos opcionais de data desejada, horário/período e local;
+- serviços com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
 - exclusão de serviço com confirmação (`deleteService`);
 - lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
 - página pública `/u/[slug]`;
-- pedido público;
+- pedido público com campos opcionais `desiredDate` (String YYYY-MM-DD), `desiredTime` (String) e `location` (String), exibidos no painel quando presentes;
 - painel de pedidos;
 - edição de nota do cliente diretamente no card do pedido (`updateQuoteRequestDescription`);
 - criação de proposta;
@@ -54,7 +56,7 @@ Limites centralizados em `lib/plan-limits.ts`:
 - `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
-Não há checkout, Pix, gateway ou cobrança real. A migration `add_provider_plan` ainda não foi criada nesta etapa.
+Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada com entrada: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente.
 
 ## Comandos principais
 
@@ -113,7 +115,7 @@ Priorize:
 ## Restrições importantes
 
 - Não usar Supabase.
-- Não implementar Pix, pagamento, WhatsApp API, PDF avançado ou IA sem validação.
+- Não implementar gateway Pix, confirmação automática de pagamento, WhatsApp API, PDF avançado ou IA sem validação.
 - Não expor IDs internos em links públicos.
 - Usar `publicToken` para proposta pública.
 - Usar `slug` para perfil público.
@@ -152,7 +154,7 @@ Priorize:
 - Templates de proposta: sempre filtrar pelo prestador dono do modelo.
 - Proposal response: bloquear se já aprovada/recusada ou expirada.
 - Tipo de serviço: `pricingType = FIXED` exige `basePrice`; validar no Zod, não no banco.
-- Formulário público: linguagem de 'solicitação' vs 'orçamento' é definida no servidor via SSR com base no `?serviceId=`.
+- Formulário público: linguagem de 'solicitação' vs 'orçamento' é definida no servidor via SSR com base no `?serviceId=`; quando o serviço já vem do card público, o formulário usa essa seleção e oculta o select.
 - Painel de pedidos: CTA 'Criar proposta' é secundário para pedidos FIXED.
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.

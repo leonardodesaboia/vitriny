@@ -32,7 +32,7 @@ export function pixDepositMessage(
   pixKey: string,
   pixHolderName: string
 ): string {
-  return `Oi, ${customerName}! Sua proposta foi aprovada 😊\n\nPara confirmar a reserva, você pode pagar o sinal de ${depositAmount} via Pix:\n\nChave Pix: ${pixKey}\nTitular: ${pixHolderName}\n\nApós o pagamento, envie o comprovante por aqui.`;
+  return `Oi, ${customerName}! Sua proposta foi aprovada 😊\n\nPara confirmar a reserva, você pode pagar o valor de entrada de ${depositAmount} via Pix:\n\nChave Pix: ${pixKey}\nTitular: ${pixHolderName}\n\nApós o pagamento, envie o comprovante por aqui.`;
 }
 
 // Remove non-digits and build a wa.me URL.

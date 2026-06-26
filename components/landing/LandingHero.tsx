@@ -58,7 +58,7 @@ export function LandingHero() {
           >
             Do pedido à aprovação do cliente — em um painel.
             <br />
-            Sem WhatsApp, sem PDF, sem confusão.
+            Sem confusão.
           </motion.p>
 
           <motion.div

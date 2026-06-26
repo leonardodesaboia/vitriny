@@ -24,7 +24,7 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 
 1. Acessa `/u/[slug]`.
 2. Consulta dados e serviços do prestador.
-3. Envia pedido em `/u/[slug]/orcamento`.
+3. Envia pedido em `/u/[slug]/orcamento`, com o serviço pré-selecionado quando acessa a partir de um card de serviço.
 4. Recebe/acessa link da proposta.
 5. Aprova ou recusa em `/proposta/[publicToken]`.
 
@@ -61,7 +61,7 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 - `/esqueci-senha`: solicitar redefinição de senha.
 - `/redefinir-senha/[token]`: definir nova senha a partir do token recebido por e-mail.
 - `/u/[slug]`: perfil público do prestador publicado.
-- `/u/[slug]/orcamento`: formulário público de pedido.
+- `/u/[slug]/orcamento`: formulário público de pedido, com seleção implícita do serviço quando a URL vem de um card do perfil.
 - `/proposta/[publicToken]`: página pública da proposta.
 - `/api/auth/[...nextauth]`: rota Auth.js.
 
@@ -83,4 +83,4 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 - O cliente não precisa de login.
 - Login do prestador é por Google OAuth ou e-mail/senha; GitHub OAuth foi removido.
 - Planos e limites de uso preparam a monetização, mas não cobram nada no MVP.
-- Pagamento, Pix, WhatsApp API, PDF avançado e IA estão fora do MVP.
+- Gateway de pagamento, confirmação automática de Pix, WhatsApp API, PDF avançado e IA estão fora do MVP. Pix manual para entrada de proposta aprovada existe sem processamento financeiro pelo OrçaFácil.

@@ -16,6 +16,7 @@ export type OnboardingStep = {
 interface OnboardingChecklistProps {
   steps: OnboardingStep[];
   slug?: string;
+  storageScope?: string;
 }
 
 const STORAGE_KEY = "orcafacil-onboarding-dismissed";
@@ -24,17 +25,21 @@ const STORAGE_KEY = "orcafacil-onboarding-dismissed";
 function subscribe(_callback: () => void) {
   return () => {};
 }
-function getSnapshot() {
-  return localStorage.getItem(STORAGE_KEY) === "1";
+function getSnapshot(storageScope: string) {
+  return localStorage.getItem(`${STORAGE_KEY}:${storageScope}`) === "1";
 }
 function getServerSnapshot() {
   return false;
 }
 
-export function OnboardingChecklist({ steps, slug }: OnboardingChecklistProps) {
+export function OnboardingChecklist({
+  steps,
+  slug,
+  storageScope = "default"
+}: OnboardingChecklistProps) {
   const storedDismissed = useSyncExternalStore(
     subscribe,
-    getSnapshot,
+    () => getSnapshot(storageScope),
     getServerSnapshot
   );
   const [localDismissed, setLocalDismissed] = useState(false);
@@ -47,7 +52,7 @@ export function OnboardingChecklist({ steps, slug }: OnboardingChecklistProps) {
   const progressPercent = Math.round((completedCount / steps.length) * 100);
 
   function handleDismiss() {
-    localStorage.setItem(STORAGE_KEY, "1");
+    localStorage.setItem(`${STORAGE_KEY}:${storageScope}`, "1");
     setLocalDismissed(true);
   }
 

@@ -12,6 +12,7 @@ import {
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { SubscriptionModal } from "@/components/billing/SubscriptionModal";
 import { UpdatePaymentModal } from "@/components/billing/UpdatePaymentModal";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   ACTIVE: "Ativa",
@@ -147,6 +148,28 @@ export function BillingCard({
         />
       ) : null}
 
+      <ConfirmModal
+        open={showCancelConfirm}
+        eyebrow="Cancelar assinatura"
+        title="Confirmar cancelamento do PRO?"
+        description={
+          <p>
+            Você mantém o acesso ao plano PRO até{" "}
+            <span className="font-semibold text-ink">
+              {periodEndLabel ?? "o final do período atual"}
+            </span>
+            . Depois disso, sua conta volta para o plano FREE.
+          </p>
+        }
+        confirmLabel="Confirmar cancelamento"
+        cancelLabel="Manter assinatura"
+        pending={pending}
+        pendingLabel="Cancelando..."
+        variant="danger"
+        onClose={() => setShowCancelConfirm(false)}
+        onConfirm={handleConfirmCancel}
+      />
+
       <section className="rounded-xl border border-paper-soft bg-white p-6 shadow-card">
         {showSuccess ? (
           <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
@@ -191,33 +214,10 @@ export function BillingCard({
             ) : null}
           </div>
 
-          <div className="flex flex-col items-start gap-2">
+          <div className="flex w-full flex-col items-start gap-2 sm:w-auto">
             {plan === "PRO" ? (
               <>
-                {showCancelConfirm ? (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p className="text-xs font-semibold text-amber-800">
-                      Tem certeza? Você mantém o acesso até{" "}
-                      {periodEndLabel ?? "o final do período"}.
-                    </p>
-                    <div className="mt-2 flex gap-2">
-                      <button
-                        onClick={handleConfirmCancel}
-                        disabled={pending}
-                        className="inline-flex min-h-8 items-center justify-center rounded-md bg-red-600 px-3 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
-                      >
-                        {pending ? "Aguarde..." : "Confirmar cancelamento"}
-                      </button>
-                      <button
-                        onClick={() => setShowCancelConfirm(false)}
-                        disabled={pending}
-                        className="inline-flex min-h-8 items-center justify-center rounded-md border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf disabled:opacity-60"
-                      >
-                        Voltar
-                      </button>
-                    </div>
-                  </div>
-                ) : cancelAtPeriodEnd ? (
+                {cancelAtPeriodEnd ? (
                   <button
                     onClick={handleReactivate}
                     disabled={pending}
@@ -229,7 +229,7 @@ export function BillingCard({
                   <button
                     onClick={() => setShowCancelConfirm(true)}
                     disabled={pending}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink-muted transition hover:border-red-300 hover:text-red-600 disabled:opacity-60"
+                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-red-300 bg-white px-5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 sm:w-44"
                   >
                     Cancelar assinatura
                   </button>
@@ -238,7 +238,7 @@ export function BillingCard({
                 <button
                   onClick={handleUpdateCard}
                   disabled={pending}
-                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                  className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60 sm:w-44"
                 >
                   {pending ? "Aguarde..." : "Atualizar cartão"}
                 </button>

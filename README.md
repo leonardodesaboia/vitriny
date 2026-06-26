@@ -33,7 +33,7 @@ MVP funcional implementado:
 - perfil do prestador;
 - cadastro de serviços;
 - página pública do prestador em `/u/[slug]`;
-- pedido público de orçamento em `/u/[slug]/orcamento`;
+- pedido público de orçamento em `/u/[slug]/orcamento`, com serviço pré-selecionado quando o cliente vem de um card;
 - painel de pedidos recebidos;
 - criação de proposta;
 - página pública da proposta em `/proposta/[publicToken]`;
@@ -48,8 +48,7 @@ MVP funcional implementado:
 
 Não implementar ainda sem validação:
 
-- pagamento real;
-- Pix;
+- pagamento automático ou gateway Pix;
 - WhatsApp API;
 - assinatura digital;
 - PDF avançado;
@@ -61,7 +60,7 @@ Não implementar ainda sem validação:
 
 ## Planos e limites de uso
 
-O produto já possui estrutura de plano no código para preparar monetização futura, sem pagamento real.
+O produto possui estrutura de plano no código para preparar monetização e também Pix manual para entrada de propostas aprovadas.
 
 Planos:
 
@@ -77,7 +76,51 @@ Limites do plano `FREE`:
 
 O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizadas em `lib/plan-limits.ts`.
 
-Importante: checkout, Pix, gateways de pagamento e cobrança recorrente ainda não foram implementados. A migration `add_provider_plan` ainda deve ser criada antes de usar o campo `ProviderProfile.plan` em um banco real.
+Importante: o Pix do cliente final é manual. O OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
+
+## Feature PRO: Imagem por serviço
+
+Usuários no plano PRO podem adicionar 1 imagem por serviço (JPEG, PNG ou WebP, máximo 2 MB). A imagem é exibida no card do serviço na página pública `/u/[slug]`.
+
+O storage usa MinIO (compatível com S3 via `@aws-sdk/client-s3`). As credenciais ficam exclusivamente server-side — nunca expostas ao browser.
+
+### Como rodar MinIO localmente com Docker
+
+```bash
+docker run -d \
+  --name minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  quay.io/minio/minio server /data --console-address ":9001"
+```
+
+Acesse o console em `http://localhost:9001` (usuário: `minioadmin`, senha: `minioadmin`).
+
+### Criar bucket e permitir leitura pública
+
+1. Acesse o console MinIO em `http://localhost:9001`
+2. Vá em **Buckets → Create Bucket**
+3. Nome: `orcafacil` (deve bater com `S3_BUCKET_NAME`)
+4. Vá em **Buckets → orcafacil → Access Policy**
+5. Selecione **Public** (ou defina a policy como `s3:GetObject` para todos)
+
+> **Importante:** Se o bucket não for público, o upload funciona mas as imagens não aparecerão no browser. O `imageUrl` armazenado no banco usa `S3_PUBLIC_BASE_URL`, que precisa ser acessível pelo navegador do cliente final.
+
+### Variáveis MinIO
+
+```env
+S3_ENDPOINT="http://localhost:9000"          # usado pelo SDK (interno)
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="minioadmin"
+S3_SECRET_ACCESS_KEY="minioadmin"
+S3_BUCKET_NAME="orcafacil"
+S3_PUBLIC_BASE_URL="http://localhost:9000/orcafacil"  # URL pública no imageUrl
+S3_FORCE_PATH_STYLE="true"                   # obrigatório para MinIO
+```
+
+> Em produção, `S3_ENDPOINT` aponta para o MinIO interno e `S3_PUBLIC_BASE_URL` aponta para o domínio público (ex: `https://files.seudominio.com/orcafacil`).
 
 ## Como rodar localmente
 
@@ -123,6 +166,7 @@ AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="seu-google-client-id"
 AUTH_GOOGLE_SECRET="seu-google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
+EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
 ```
 
 Para gerar `AUTH_SECRET`:
@@ -168,7 +212,7 @@ Migrations existentes:
 - `prisma/migrations/20260623003000_add_quote_request_internal_notes/migration.sql`
 - `prisma/migrations/20260623004000_add_proposal_templates/migration.sql`
 
-Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service` e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
+Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service`, pré-seleciona o serviço quando o cliente vem de um card e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
 Históricos de status, notas internas e templates de proposta já aparecem no front nas áreas correspondentes.
 O schema possui `PlanTier` e `ProviderProfile.plan`, mas a migration `add_provider_plan` ainda não foi criada nesta etapa.
 
@@ -208,6 +252,7 @@ AUTH_URL="https://seu-dominio.com"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
+EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
 ```
 
 Antes do deploy:
