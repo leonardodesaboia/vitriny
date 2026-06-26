@@ -39,7 +39,14 @@ export default async function PublicQuoteRequestPage({
       services: {
         where: { isActive: true },
         orderBy: { name: "asc" },
-        select: { id: true, name: true, pricingType: true, basePrice: true }
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          pricingType: true,
+          basePrice: true,
+          requiresSchedulingDetails: true
+        }
       }
     }
   });
@@ -122,16 +129,20 @@ export default async function PublicQuoteRequestPage({
                   ? {
                       id: selectedService.id,
                       name: selectedService.name,
+                      description: selectedService.description,
                       pricingType: selectedService.pricingType,
-                      basePrice: selectedService.basePrice?.toString() ?? null
+                      basePrice: selectedService.basePrice?.toString() ?? null,
+                      requiresSchedulingDetails: selectedService.requiresSchedulingDetails
                     }
                   : null
               }
               services={profile.services.map((s) => ({
                 id: s.id,
                 name: s.name,
+                description: s.description,
                 pricingType: s.pricingType,
-                basePrice: s.basePrice?.toString() ?? null
+                basePrice: s.basePrice?.toString() ?? null,
+                requiresSchedulingDetails: s.requiresSchedulingDetails
               }))}
               slug={slug}
             />

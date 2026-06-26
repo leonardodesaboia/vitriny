@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
@@ -26,6 +25,7 @@ export default async function PublicProviderProfilePage({
       city: true,
       state: true,
       isPublished: true,
+      plan: true,
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -34,7 +34,8 @@ export default async function PublicProviderProfilePage({
           name: true,
           description: true,
           basePrice: true,
-          pricingType: true
+          pricingType: true,
+          imageUrl: true
         }
       }
     }
@@ -77,15 +78,6 @@ export default async function PublicProviderProfilePage({
               {profile.description}
             </p>
           ) : null}
-          <Link
-            className="mt-8 inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-amber px-6 text-sm font-semibold text-white transition hover:bg-amber/90"
-            href={`/u/${slug}/orcamento`}
-          >
-            Pedir orçamento grátis
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </Link>
         </div>
       </div>
 
@@ -129,7 +121,8 @@ export default async function PublicProviderProfilePage({
             <PublicServicesGrid
               services={profile.services.map((s) => ({
                 ...s,
-                basePrice: s.basePrice?.toString() ?? null
+                basePrice: s.basePrice?.toString() ?? null,
+                imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null
               }))}
               slug={slug}
             />
@@ -182,16 +175,6 @@ export default async function PublicProviderProfilePage({
           <span className="font-semibold text-ink-muted">OrçaFácil</span>
         </p>
       </div>
-      </div>
-
-      {/* Sticky mobile CTA */}
-      <div className="fixed bottom-0 left-0 right-0 border-t border-paper-soft bg-white/90 px-6 py-4 backdrop-blur-sm sm:hidden">
-        <Link
-          className="block w-full rounded-md bg-leaf py-3 text-center text-sm font-semibold text-white transition hover:bg-leaf-hover"
-          href={`/u/${slug}/orcamento`}
-        >
-          Pedir orçamento
-        </Link>
       </div>
     </main>
   );

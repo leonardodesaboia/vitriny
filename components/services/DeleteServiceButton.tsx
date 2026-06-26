@@ -19,7 +19,7 @@ export function DeleteServiceButton({ serviceId }: { serviceId: string }) {
       type="button"
       onClick={handleClick}
       disabled={isPending}
-      className="inline-flex min-h-10 items-center justify-center rounded-md border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
+      className="inline-flex min-h-10 items-center justify-center rounded-lg border border-red-200 bg-white px-4 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:opacity-50"
     >
       {isPending ? "Excluindo..." : "Excluir"}
     </button>

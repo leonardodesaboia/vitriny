@@ -3,6 +3,7 @@ export type ServiceSummary = {
   name: string;
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
+  requiresSchedulingDetails: boolean;
 };
 
 export type PublicService = {
@@ -11,6 +12,7 @@ export type PublicService = {
   description: string | null;
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
+  imageUrl: string | null;
 };
 
 export type ServiceForClient = {
@@ -20,4 +22,6 @@ export type ServiceForClient = {
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
   isActive: boolean;
+  requiresSchedulingDetails: boolean;
+  imageUrl: string | null;
 };

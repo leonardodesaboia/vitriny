@@ -33,6 +33,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
       userId: session.user.id
     },
     select: {
+      plan: true,
       services: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -41,74 +42,79 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           description: true,
           basePrice: true,
           isActive: true,
-          pricingType: true
+          pricingType: true,
+          requiresSchedulingDetails: true,
+          imageUrl: true
         }
       }
     }
   });
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink">
-      <section className="mx-auto max-w-5xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <Link className="text-sm font-semibold text-leaf" href="/dashboard">
-          Voltar ao dashboard
-        </Link>
-        <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-leaf">
-          Serviços
-        </p>
-        <h1 className="mt-3 text-3xl font-bold">Cadastro de serviços</h1>
-        <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Cadastre os serviços que serão usados depois na página pública e nos
-          pedidos de orçamento.
-        </p>
+    <div className="p-4 sm:p-6 md:p-8">
+      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+        Serviços
+      </p>
+      <h1 className="mt-2 font-fraunces text-2xl sm:text-3xl md:text-4xl font-bold text-ink">
+        Cadastro de serviços
+      </h1>
+      <p className="mt-2 text-sm text-ink-muted">
+        Cadastre os serviços que serão exibidos no seu perfil público e usados nos pedidos de orçamento.
+      </p>
 
-        {params.error ? (
-          <p className="mt-5 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-            {errorMessages[params.error] ?? "Não foi possível salvar o serviço."}
+      {params.error ? (
+        <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {errorMessages[params.error] ?? "Não foi possível salvar o serviço."}
+        </p>
+      ) : null}
+
+      {!profile ? (
+        <div className="mt-8 rounded-xl border border-paper-soft bg-paper p-6">
+          <h2 className="font-fraunces text-xl font-bold text-ink">Crie seu perfil primeiro</h2>
+          <p className="mt-2 text-sm leading-6 text-ink-muted">
+            Serviços pertencem ao perfil do prestador. Crie o perfil antes de
+            cadastrar serviços.
           </p>
-        ) : null}
-
-        {!profile ? (
-          <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
-            <h2 className="text-xl font-bold text-ink">Crie seu perfil primeiro</h2>
-            <p className="mt-2 text-sm leading-6 text-stone-700">
-              Serviços pertencem ao perfil do prestador. Crie o perfil antes de
-              cadastrar serviços.
+          <Link
+            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+            href="/dashboard/perfil"
+          >
+            Criar perfil
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-8 grid max-w-2xl gap-8">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+              Novo serviço
             </p>
-            <Link
-              className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-[#1d6443]"
-              href="/dashboard/perfil"
-            >
-              Criar perfil
-            </Link>
+            <div className="mt-4">
+              <ServiceForm isPro={profile.plan === "PRO"} />
+            </div>
           </div>
-        ) : (
-          <div className="mt-8 grid gap-8">
-            <section>
-              <h2 className="text-xl font-bold text-ink">Novo serviço</h2>
-              <div className="mt-4">
-                <ServiceForm />
-              </div>
-            </section>
 
-            <section>
-              <h2 className="text-xl font-bold text-ink">Serviços cadastrados</h2>
-              <div className="mt-4">
-                <ServiceList
-                  services={profile.services.map((s) => ({
-                    id: s.id,
-                    name: s.name,
-                    description: s.description,
-                    basePrice: s.basePrice?.toString() ?? null,
-                    isActive: s.isActive,
-                    pricingType: s.pricingType
-                  }))}
-                />
-              </div>
-            </section>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+              Serviços cadastrados
+            </p>
+            <div className="mt-4">
+              <ServiceList
+                isPro={profile.plan === "PRO"}
+                services={profile.services.map((s) => ({
+                  id: s.id,
+                  name: s.name,
+                  description: s.description,
+                  basePrice: s.basePrice?.toString() ?? null,
+                  isActive: s.isActive,
+                  pricingType: s.pricingType,
+                  requiresSchedulingDetails: s.requiresSchedulingDetails,
+                  imageUrl: s.imageUrl ?? null
+                }))}
+              />
+            </div>
           </div>
-        )}
-      </section>
-    </main>
+        </div>
+      )}
+    </div>
   );
 }

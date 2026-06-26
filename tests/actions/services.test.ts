@@ -20,15 +20,14 @@ const validServiceForm = () =>
   makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on", pricingType: "CUSTOM" });
 
 describe("createService", () => {
-  it("cria serviço e redireciona para /dashboard/servicos em caso de sucesso", async () => {
+  it("cria serviço e retorna serviceId em caso de sucesso", async () => {
     db.service.count.mockResolvedValue(0);
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-id" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, validServiceForm())).rejects.toThrow(
-      "/dashboard/servicos"
-    );
+    const result = await createService(undefined, validServiceForm());
 
+    expect(result).toEqual({ serviceId: "new-service-id" });
     expect(db.service.create).toHaveBeenCalledOnce();
   });
 
@@ -77,24 +76,24 @@ describe("createService", () => {
       pricingType: "CUSTOM"
     });
 
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-1" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, inactiveForm)).rejects.toThrow("/dashboard/servicos");
+    const result = await createService(undefined, inactiveForm);
 
+    expect(result).toEqual({ serviceId: "new-service-1" });
     expect(db.service.count).not.toHaveBeenCalled();
   });
 
   it("prestador PRO cria serviço mesmo com 3+ serviços ativos", async () => {
     db.providerProfile.findUnique.mockResolvedValue(makeProfile({ plan: "PRO" }));
     db.service.count.mockResolvedValue(100);
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-2" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, validServiceForm())).rejects.toThrow(
-      "/dashboard/servicos"
-    );
+    const result = await createService(undefined, validServiceForm());
 
+    expect(result).toEqual({ serviceId: "new-service-2" });
     expect(db.service.create).toHaveBeenCalledOnce();
   });
 });

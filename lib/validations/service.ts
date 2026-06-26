@@ -33,7 +33,8 @@ export const serviceSchema = z
     ),
     pricingType: z.enum(["FIXED", "CUSTOM"]),
     basePrice: optionalPrice,
-    isActive: z.boolean()
+    isActive: z.boolean(),
+    requiresSchedulingDetails: z.boolean().default(false)
   })
   .superRefine((data, ctx) => {
     const price = data.basePrice ? parseFloat(data.basePrice) : 0;

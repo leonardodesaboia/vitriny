@@ -43,7 +43,19 @@ export const quoteRequestSchema = z.object({
           .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
           .max(1200, "Use no máximo 1200 caracteres.")
       ])
-    )
+    ),
+  desiredDate: optionalText.pipe(
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Informe uma data válida no formato AAAA-MM-DD.")
+      .nullable()
+  ),
+  desiredTime: optionalText.pipe(
+    z.string().max(100, "Use no máximo 100 caracteres.").nullable()
+  ),
+  location: optionalText.pipe(
+    z.string().max(200, "Use no máximo 200 caracteres.").nullable()
+  )
 });
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;

@@ -21,7 +21,8 @@ function parseServiceForm(formData: FormData) {
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
     isActive: formData.get("isActive") === "on",
-    pricingType: formData.get("pricingType")
+    pricingType: formData.get("pricingType"),
+    requiresSchedulingDetails: formData.get("requiresSchedulingDetails") === "on"
   });
 }
 
@@ -54,19 +55,21 @@ export async function createService(
     }
   }
 
-  await prisma.service.create({
+  const newService = await prisma.service.create({
     data: {
       providerId: profile.id,
       name: parsed.data.name,
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
-      pricingType: parsed.data.pricingType
-    }
+      pricingType: parsed.data.pricingType,
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
+    },
+    select: { id: true }
   });
 
   revalidatePath("/dashboard/servicos");
-  redirect("/dashboard/servicos");
+  return { serviceId: newService.id };
 }
 
 export async function updateService(
@@ -115,7 +118,8 @@ export async function updateService(
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
-      pricingType: parsed.data.pricingType
+      pricingType: parsed.data.pricingType,
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
     }
   });
 

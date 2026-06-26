@@ -3,13 +3,14 @@ import type { ServiceForClient } from "@/types/service";
 
 type ServiceListProps = {
   services: ServiceForClient[];
+  isPro?: boolean;
 };
 
-export function ServiceList({ services }: ServiceListProps) {
+export function ServiceList({ services, isPro = false }: ServiceListProps) {
   if (services.length === 0) {
     return (
-      <div className="rounded-lg border border-stone-200 bg-paper p-5">
-        <p className="text-sm leading-6 text-stone-700">
+      <div className="rounded-xl border border-paper-soft bg-paper p-5">
+        <p className="text-sm leading-6 text-ink-muted">
           Nenhum serviço cadastrado ainda.
         </p>
       </div>
@@ -19,7 +20,7 @@ export function ServiceList({ services }: ServiceListProps) {
   return (
     <div className="grid gap-2">
       {services.map((service) => (
-        <ServiceItem key={service.id} service={service} />
+        <ServiceItem isPro={isPro} key={service.id} service={service} />
       ))}
     </div>
   );

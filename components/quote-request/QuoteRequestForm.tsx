@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+
 import { createQuoteRequest } from "@/lib/actions/quote-requests";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { ServiceSummary } from "@/types";
@@ -5,8 +9,10 @@ import type { ServiceSummary } from "@/types";
 type SelectedService = {
   id: string;
   name: string;
+  description: string | null;
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
+  requiresSchedulingDetails: boolean;
 };
 
 type QuoteRequestFormProps = {
@@ -35,18 +41,36 @@ export function QuoteRequestForm({
   selectedService
 }: QuoteRequestFormProps) {
   const action = createQuoteRequest.bind(null, slug);
-  const isFixed = selectedService?.pricingType === "FIXED";
+
+  const [currentServiceId, setCurrentServiceId] = useState<string>(
+    selectedServiceId ?? ""
+  );
+
+  const activeService: SelectedService | null =
+    selectedService ??
+    (currentServiceId
+      ? (services.find((s) => s.id === currentServiceId) as SelectedService | undefined) ?? null
+      : null);
+
+  const isFixed = activeService?.pricingType === "FIXED";
+  const showScheduling = activeService?.requiresSchedulingDetails === true;
 
   return (
     <form action={action} className="mt-8 grid gap-5">
       {selectedService ? (
         <div className="rounded-xl border border-paper-soft bg-white p-4">
+          <input name="serviceId" type="hidden" value={selectedService.id} />
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
             Serviço selecionado
           </p>
           <p className="mt-1 font-fraunces text-lg font-bold text-ink">
             {selectedService.name}
           </p>
+          {selectedService.description ? (
+            <p className="mt-2 text-sm leading-6 text-ink-muted">
+              {selectedService.description}
+            </p>
+          ) : null}
           {isFixed && selectedService.basePrice ? (
             <p className="mt-1 text-sm font-semibold text-leaf">
               {formatMoney(selectedService.basePrice)}
@@ -95,7 +119,7 @@ export function QuoteRequestForm({
         </div>
       </div>
 
-      {services.length > 0 ? (
+      {!selectedService && services.length > 0 ? (
         <div className="grid gap-2">
           <label className={labelClass} htmlFor="serviceId">
             Serviço
@@ -105,17 +129,66 @@ export function QuoteRequestForm({
             defaultValue={selectedServiceId ?? ""}
             id="serviceId"
             name="serviceId"
+            onChange={(e) => setCurrentServiceId(e.target.value)}
           >
             <option value="">Não sei informar / Outro</option>
             {services.map((service) => (
               <option key={service.id} value={service.id}>
                 {service.name}
-                {service.pricingType === "FIXED" && service.basePrice
-                  ? ` — ${formatMoney(service.basePrice)}`
-                  : ""}
               </option>
             ))}
           </select>
+        </div>
+      ) : null}
+
+      {showScheduling ? (
+        <div className="grid gap-4 rounded-xl border border-paper-soft bg-paper p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+            Detalhes do agendamento{" "}
+            <span className="font-normal normal-case tracking-normal">(opcional)</span>
+          </p>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-2">
+              <label className={labelClass} htmlFor="desiredDate">
+                Data desejada
+              </label>
+              <input
+                className={inputClass}
+                id="desiredDate"
+                name="desiredDate"
+                type="date"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <label className={labelClass} htmlFor="desiredTime">
+                Horário ou período desejado
+              </label>
+              <input
+                className={inputClass}
+                id="desiredTime"
+                name="desiredTime"
+                placeholder="Ex: manhã, 14h, tarde"
+                type="text"
+                maxLength={100}
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <label className={labelClass} htmlFor="location">
+              Local, bairro ou cidade
+            </label>
+            <input
+              className={inputClass}
+              id="location"
+              name="location"
+              placeholder="Ex: Centro, São Paulo"
+              type="text"
+              maxLength={200}
+            />
+          </div>
         </div>
       ) : null}
 

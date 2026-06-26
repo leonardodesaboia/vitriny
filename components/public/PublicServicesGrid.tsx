@@ -55,33 +55,51 @@ export function PublicServicesGrid({
         <motion.article
           key={service.id}
           variants={item}
-          className="group flex flex-col rounded-xl border border-paper-soft bg-white p-6 shadow-card transition-shadow hover:shadow-card-hover"
+          className="group flex flex-col overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card transition-shadow hover:shadow-card-hover"
         >
-          <h3 className="font-jakarta text-base font-bold text-ink">
-            {service.name}
-          </h3>
-          {service.description ? (
-            <p className="mt-2 flex-1 text-sm leading-6 text-ink-muted">
-              {service.description}
-            </p>
-          ) : (
-            <div className="flex-1" />
-          )}
-          {service.pricingType === "FIXED" && service.basePrice ? (
-            <p className="mt-3 font-fraunces text-lg font-bold text-ink">
-              {formatMoney(service.basePrice)}
-            </p>
-          ) : (
-            <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
-              Sob orçamento
-            </p>
-          )}
-          <Link
-            href={`/u/${slug}/orcamento?serviceId=${service.id}`}
-            className="mt-4 inline-flex min-h-9 w-fit items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
-          >
-            {service.pricingType === "FIXED" ? "Solicitar serviço →" : "Pedir orçamento →"}
-          </Link>
+          {service.imageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={service.name}
+              className="h-44 w-full object-cover"
+              loading="lazy"
+              src={service.imageUrl}
+            />
+          ) : null}
+
+          <div className="flex flex-1 flex-col p-6">
+            <h3 className="font-jakarta text-base font-bold text-ink">
+              {service.name}
+            </h3>
+            {service.description ? (
+              <p className="mt-2 flex-1 text-sm leading-6 text-ink-muted">
+                {service.description}
+              </p>
+            ) : (
+              <div className="flex-1" />
+            )}
+            {service.basePrice ? (
+              service.pricingType === "FIXED" ? (
+                <p className="mt-3 font-fraunces text-lg font-bold text-ink">
+                  {formatMoney(service.basePrice)}
+                </p>
+              ) : (
+                <p className="mt-3 text-sm font-semibold text-ink">
+                  A partir de {formatMoney(service.basePrice)}
+                </p>
+              )
+            ) : (
+              <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Sob orçamento
+              </p>
+            )}
+            <Link
+              href={`/u/${slug}/orcamento?serviceId=${service.id}`}
+              className="mt-4 inline-flex min-h-9 w-fit items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
+            >
+              {service.pricingType === "FIXED" ? "Solicitar serviço →" : "Pedir orçamento →"}
+            </Link>
+          </div>
         </motion.article>
       ))}
     </motion.div>

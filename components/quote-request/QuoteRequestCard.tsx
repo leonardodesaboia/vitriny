@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import type { QuoteRequestStatusActor } from "@prisma/client";
 
-import { updateQuoteRequestStatus } from "@/lib/actions/quote-request-status";
 import { updateQuoteRequestDescription } from "@/lib/actions/quote-requests";
 import {
   createQuoteRequestNote,
@@ -125,13 +124,13 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [noteState, noteAction, notePending] = useActionState(
-    updateQuoteRequestDescription,
+    async (previousState: Awaited<ReturnType<typeof updateQuoteRequestDescription>>, formData: FormData) => {
+      const result = await updateQuoteRequestDescription(previousState, formData);
+      if (!result || !("error" in result)) setEditingNote(false);
+      return result;
+    },
     undefined
   );
-
-  useEffect(() => {
-    if (noteState && !noteState.error) setEditingNote(false);
-  }, [noteState]);
 
   const legacyService = splitServiceFromDescription(
     quoteRequest.description ?? "",
@@ -160,26 +159,23 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-fraunces text-base font-bold text-ink">
-              {quoteRequest.customerName}
-            </span>
+          <p className="truncate font-fraunces text-base font-bold text-ink">
+            {quoteRequest.customerName}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
             {serviceLabel ? (
-              <span className="text-xs text-ink-muted">· {serviceLabel}</span>
+              <span className="truncate text-xs text-ink-muted">· {serviceLabel}</span>
             ) : null}
             {quoteRequest.service?.pricingType === "FIXED" ? (
-              <span className="rounded-full bg-mint px-2.5 py-0.5 text-xs font-semibold text-leaf border border-mint">
+              <span className="shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf">
                 Preço fixo
-                {quoteRequest.service.basePrice
-                  ? ` · ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(quoteRequest.service.basePrice))}`
-                  : ""}
               </span>
             ) : null}
+            <span className="shrink-0 text-xs text-ink-muted">
+              {formatDateShort(quoteRequest.createdAt)}
+              {customerPhoneDisplay ? ` · ${customerPhoneDisplay}` : ""}
+            </span>
           </div>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            {formatDateShort(quoteRequest.createdAt)}
-            {customerPhoneDisplay ? ` · ${customerPhoneDisplay}` : ""}
-          </p>
         </div>
 
         <div className="flex shrink-0 items-center gap-3">
@@ -201,7 +197,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
 
       {/* Expanded content */}
       {expanded ? (
-        <div className="border-t border-paper-soft p-6">
+        <div className="border-t border-paper-soft p-4 sm:p-6">
           {/* Contact + service grid */}
           <div className="grid gap-3 sm:grid-cols-3">
             <div>
@@ -211,7 +207,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               {quoteRequest.customerEmail ? (
                 <a
                   href={`mailto:${quoteRequest.customerEmail}`}
-                  className="mt-1 block text-sm font-medium text-leaf transition hover:underline"
+                  className="mt-1 block truncate text-sm font-medium text-leaf transition hover:underline"
                 >
                   {quoteRequest.customerEmail}
                 </a>
@@ -246,6 +242,40 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             </div>
           </div>
 
+          {/* Scheduling details — shown only when present */}
+          {(quoteRequest.desiredDate || quoteRequest.desiredTime || quoteRequest.location) ? (
+            <div className="mt-4 grid gap-3 rounded-lg border border-paper-soft bg-paper px-4 py-3 sm:grid-cols-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Data desejada
+                </p>
+                <p className="mt-1 text-sm text-ink">
+                  {quoteRequest.desiredDate
+                    ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+                        new Date(quoteRequest.desiredDate + "T12:00:00Z")
+                      )
+                    : <span className="text-ink-muted">Não informado</span>}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Horário / período
+                </p>
+                <p className="mt-1 text-sm text-ink">
+                  {quoteRequest.desiredTime ?? <span className="text-ink-muted">Não informado</span>}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  Local
+                </p>
+                <p className="mt-1 text-sm text-ink">
+                  {quoteRequest.location ?? <span className="text-ink-muted">Não informado</span>}
+                </p>
+              </div>
+            </div>
+          ) : null}
+
           {/* Nota do cliente — sempre visível, editável */}
           <div className="mt-5">
             <div className="flex items-center justify-between gap-3">
@@ -271,7 +301,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                   className="min-h-24 w-full rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
                   placeholder="Adicione uma nota sobre este pedido..."
                 />
-                {noteState?.error ? (
+                {noteState && "error" in noteState ? (
                   <p className="mt-1 text-xs text-red-600">{noteState.error}</p>
                 ) : null}
                 <div className="mt-2 flex gap-2">
@@ -395,32 +425,36 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                   depositAmt !== undefined &&
                   Number(depositAmt.toString()) > 0;
 
-                if (!hasDeposit) return null;
-
                 const depositReceived = !!p.depositPaidAt;
-                const depositPending = p.status === "APPROVED" && !depositReceived;
+                const depositPending = hasDeposit && p.status === "APPROVED" && !depositReceived;
 
                 const formattedDeposit = new Intl.NumberFormat("pt-BR", {
                   style: "currency",
                   currency: "BRL"
-                }).format(Number(depositAmt!.toString()));
+                }).format(Number(depositAmt?.toString() ?? 0));
 
                 return (
                   <div className="mt-4 border-t border-paper-soft pt-4">
                     <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                      Sinal Pix
+                      Entrada Pix
                     </p>
 
-                    {depositReceived ? (
+                    {!hasDeposit ? (
+                      <div className="mt-2 flex items-center gap-2 rounded-lg border border-paper-soft bg-paper px-3 py-2">
+                        <span className="text-xs font-semibold text-ink-muted">
+                          Sem entrada configurado para esta proposta.
+                        </span>
+                      </div>
+                    ) : depositReceived ? (
                       <div className="mt-2 flex items-center gap-2 rounded-lg border border-mint bg-mint/40 px-3 py-2">
                         <span className="text-xs font-semibold text-leaf">
-                          ✓ Sinal recebido — {formattedDeposit}
+                          ✓ Entrada recebida — {formattedDeposit}
                         </span>
                       </div>
                     ) : depositPending ? (
                       <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
                         <span className="text-xs font-semibold text-amber-700">
-                          Aguardando sinal — {formattedDeposit}
+                          Aguardando entrada — {formattedDeposit}
                         </span>
                         <form action={markDepositPaid}>
                           <input type="hidden" name="proposalId" value={p.id} />
@@ -434,7 +468,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                       </div>
                     ) : (
                       <p className="mt-2 text-xs text-ink-muted">
-                        Sinal de {formattedDeposit} — aguardando aprovação.
+                        Entrada de {formattedDeposit} — aguardando aprovação.
                       </p>
                     )}
 
@@ -474,54 +508,14 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                   Criar proposta
                 </Link>
               ) : (
-                <>
+                <div className="rounded-lg border border-mint bg-mint/30 px-4 py-3">
                   <p className="text-sm text-ink-muted">
-                    Solicitação de serviço com preço fixo.
+                    Serviço com preço fixo. Este pedido não precisa de proposta.
                   </p>
-                  <Link
-                    className="inline-flex min-h-10 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-                    href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
-                  >
-                    Criar proposta mesmo assim
-                  </Link>
-                </>
+                </div>
               )}
             </div>
           )}
-
-          {/* Status update */}
-          <div className="mt-5 border-t border-paper-soft pt-5">
-            <form
-              action={updateQuoteRequestStatus}
-              className="flex flex-wrap items-end gap-3"
-            >
-              <input name="requestId" type="hidden" value={quoteRequest.id} />
-              <div className="grid gap-1.5">
-                <label
-                  className="text-xs font-semibold uppercase tracking-widest text-ink-muted"
-                  htmlFor={`status-${quoteRequest.id}`}
-                >
-                  Atualizar status
-                </label>
-                <select
-                  className="min-h-9 rounded-md border border-paper-soft bg-white px-3 text-sm text-ink outline-none focus:border-leaf"
-                  defaultValue={quoteRequest.status}
-                  id={`status-${quoteRequest.id}`}
-                  name="status"
-                >
-                  <option value="NEW">Novo</option>
-                  <option value="REVIEWING">Em análise</option>
-                  <option value="CLOSED">Fechado</option>
-                </select>
-              </div>
-              <button
-                className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-                type="submit"
-              >
-                Salvar
-              </button>
-            </form>
-          </div>
 
           {/* Status history */}
           {quoteRequest.statusHistory.length > 0 ? (
