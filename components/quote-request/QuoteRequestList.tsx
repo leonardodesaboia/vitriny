@@ -4,9 +4,16 @@ import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
 type QuoteRequestListProps = {
   quoteRequests: QuoteRequestWithRelations[];
   services: ServiceSummary[];
+  emptyDescription?: string;
+  emptyTitle?: string;
 };
 
-export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListProps) {
+export function QuoteRequestList({
+  emptyDescription = "Quando um cliente preencher o formulário do seu perfil, os pedidos aparecerão aqui.",
+  emptyTitle = "Nenhum pedido ainda",
+  quoteRequests,
+  services
+}: QuoteRequestListProps) {
   const serviceNamesById = Object.fromEntries(
     services.map((s) => [s.id, s.name])
   );
@@ -20,10 +27,10 @@ export function QuoteRequestList({ quoteRequests, services }: QuoteRequestListPr
           </svg>
         </div>
         <p className="mt-4 font-fraunces text-lg font-bold text-ink">
-          Nenhum pedido ainda
+          {emptyTitle}
         </p>
         <p className="mt-1 text-sm text-ink-muted">
-          Quando um cliente preencher o formulário do seu perfil, os pedidos aparecerão aqui.
+          {emptyDescription}
         </p>
       </div>
     );

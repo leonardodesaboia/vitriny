@@ -1,12 +1,40 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { QuoteRequestStatus } from "@prisma/client";
+
 import { auth } from "@/auth";
 import { QuoteRequestList } from "@/components/quote-request/QuoteRequestList";
 import { prisma } from "@/lib/prisma";
 
 type RequestsPageProps = {
-  searchParams: Promise<{ error?: string; notice?: string; warning?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    notice?: string;
+    status?: string;
+    warning?: string;
+  }>;
 };
+
+const statusFilters: { label: string; value: QuoteRequestStatus | "ALL" }[] = [
+  { label: "Todos", value: "ALL" },
+  { label: "Novo", value: "NEW" },
+  { label: "Em análise", value: "REVIEWING" },
+  { label: "Proposta enviada", value: "PROPOSAL_SENT" },
+  { label: "Fechado", value: "CLOSED" }
+];
+
+const statusLabel: Record<QuoteRequestStatus, string> = {
+  CLOSED: "Fechado",
+  NEW: "Novo",
+  PROPOSAL_SENT: "Proposta enviada",
+  REVIEWING: "Em análise"
+};
+
+function parseStatusFilter(status: string | undefined): QuoteRequestStatus | "ALL" {
+  return statusFilters.some((filter) => filter.value === status)
+    ? (status as QuoteRequestStatus | "ALL")
+    : "ALL";
+}
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
@@ -84,9 +112,22 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
 
   const totalRequests = profile?.quoteRequests.length ?? 0;
   const newRequests = profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
+  const activeStatus = parseStatusFilter(params.status);
+  const requestCounts = Object.fromEntries(
+    statusFilters.map((filter) => [
+      filter.value,
+      filter.value === "ALL"
+        ? totalRequests
+        : (profile?.quoteRequests.filter((request) => request.status === filter.value).length ?? 0)
+    ])
+  ) as Record<QuoteRequestStatus | "ALL", number>;
+  const filteredRequests =
+    activeStatus === "ALL"
+      ? (profile?.quoteRequests ?? [])
+      : (profile?.quoteRequests.filter((request) => request.status === activeStatus) ?? []);
 
   return (
-    <div className="p-6 md:p-8">
+    <div className="min-w-0 p-4 sm:p-6 md:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
         Pedidos
       </p>
@@ -140,9 +181,56 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           </Link>
         </div>
       ) : (
-        <div className="mt-8">
+        <div className="mt-8 min-w-0">
+          <div className="mb-5 overflow-x-auto pb-1">
+            <nav
+              aria-label="Filtrar pedidos por status"
+              className="flex min-w-max gap-2"
+            >
+              {statusFilters.map((filter) => {
+                const active = filter.value === activeStatus;
+                const href =
+                  filter.value === "ALL"
+                    ? "/dashboard/pedidos"
+                    : `/dashboard/pedidos?status=${filter.value}`;
+
+                return (
+                  <Link
+                    aria-current={active ? "page" : undefined}
+                    className={`inline-flex min-h-9 items-center justify-center gap-2 whitespace-nowrap rounded-full border px-3 text-xs font-semibold transition ${
+                      active
+                        ? "border-leaf bg-mint text-leaf"
+                        : "border-paper-soft bg-white text-ink-muted hover:bg-paper"
+                    }`}
+                    href={href}
+                    key={filter.value}
+                  >
+                    <span>{filter.label}</span>
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[11px] ${
+                        active ? "bg-white/70 text-leaf" : "bg-paper-soft text-ink-muted"
+                      }`}
+                    >
+                      {requestCounts[filter.value]}
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
           <QuoteRequestList
-            quoteRequests={profile.quoteRequests}
+            emptyDescription={
+              activeStatus === "ALL"
+                ? undefined
+                : `Nenhum pedido com status "${statusLabel[activeStatus]}".`
+            }
+            emptyTitle={
+              activeStatus === "ALL"
+                ? undefined
+                : "Nenhum pedido neste filtro"
+            }
+            quoteRequests={filteredRequests}
             services={profile.services.map((s) => ({
               ...s,
               basePrice: s.basePrice?.toString() ?? null,
