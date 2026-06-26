@@ -67,8 +67,7 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
       },
       select: {
         id: true,
-        name: true,
-        requiresSchedulingDetails: true
+        name: true
       }
     })
     : null;
@@ -76,12 +75,6 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
   if (parsed.data.serviceId) {
     if (!service) {
       redirect(`/u/${slug}/orcamento?error=service`);
-    }
-  }
-
-  if (service?.requiresSchedulingDetails) {
-    if (!parsed.data.desiredDate || !parsed.data.desiredTime || !parsed.data.location) {
-      redirect(`/u/${slug}/orcamento?error=scheduling-required`);
     }
   }
 
@@ -155,26 +148,6 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
   }
 
   redirect(`/u/${slug}/orcamento?success=1`);
-}
-
-export async function deleteQuoteRequest(formData: FormData) {
-  const { profile } = await requireProviderProfile();
-  const requestId = String(formData.get("requestId") ?? "");
-
-  if (!profile) redirect("/dashboard/pedidos?error=profile");
-  if (!requestId) redirect("/dashboard/pedidos?error=invalid");
-
-  const quoteRequest = await prisma.quoteRequest.findFirst({
-    where: { id: requestId, providerId: profile.id },
-    select: { id: true }
-  });
-
-  if (!quoteRequest) redirect("/dashboard/pedidos?error=not-found");
-
-  await prisma.quoteRequest.delete({ where: { id: quoteRequest.id } });
-
-  revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
 }
 
 export async function updateQuoteRequestDescription(
