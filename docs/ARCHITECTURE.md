@@ -56,6 +56,7 @@ Rotas públicas:
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
 - `app/u/[slug]/reserva/[requestId]/page.tsx` — página de reserva Pix: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e pix configurado.
+- `app/u/[slug]/pagamento/[requestId]/page.tsx` — página de pagamento Pix direto para serviço fixo; usa `fixedServiceAmount` e valida pedido, prestador, serviço e dados Pix.
 - `app/proposta/[publicToken]/page.tsx`
 
 Rotas autenticadas:
@@ -66,6 +67,7 @@ Rotas autenticadas:
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `app/(dashboard)/dashboard/propostas/nova/page.tsx`
 - `app/(dashboard)/dashboard/propostas/templates/page.tsx`
+- `app/(dashboard)/dashboard/billing/page.tsx`
 
 Auth:
 
@@ -89,7 +91,7 @@ Server Actions ficam em `lib/actions/`:
 
 - `provider-profile.ts`
 - `services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService`
-- `quote-requests.ts` — `createQuoteRequest` (fluxo normal + reserva Pix), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only)
+- `quote-requests.ts` — `createQuoteRequest` (fluxo normal, reserva e pagamento Pix direto), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only para reservas)
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts` — inclui `markDepositPaid` (provider-only)
@@ -105,7 +107,7 @@ Elas validam sessão quando necessário e aplicam regras de ownership.
 - `app/api/services/[id]/image/route.ts` — upload (`POST`) e remoção (`DELETE`) de imagem de serviço via MinIO/S3.
 - `app/api/billing/invoices/route.ts` — lista faturas Stripe do prestador autenticado sem bloquear a renderização da página.
 - `app/api/stripe/webhook/route.ts` — webhook Stripe com validação de assinatura.
-- `app/api/proposals/[id]/pdf/route.ts` — download de proposta em PDF.
+- `app/api/proposals/[id]/pdf/route.ts` — download autenticado de proposta aprovada ou recusada em PDF, com validação de ownership.
 
 ## Auth.js / NextAuth
 
@@ -171,7 +173,7 @@ Limites `FREE`:
 - 5 propostas por mês;
 - 1 template de proposta.
 
-`PRO` usa `null` nos limites para representar uso sem limite prático no MVP. Stripe é usado apenas para assinatura do prestador. Pagamento do cliente final por Pix é manual: a proposta aprovada pode exibir chave Pix, código copia e cola e QR Code, mas o OrçaFácil não processa dinheiro nem confirma pagamento automaticamente.
+`PRO` usa `null` nos limites para representar uso sem limite prático no MVP. A assinatura do prestador usa Stripe Checkout embutido, SetupIntent, portal, consulta de faturas e webhook assinado. O pagamento do cliente final usa Pix manual; a aplicação gera o código, mas não processa dinheiro nem recebe confirmação automática.
 
 ## Segurança adotada
 
@@ -180,6 +182,9 @@ Limites `FREE`:
 - Propostas públicas usam `publicToken`, não ID interno.
 - Perfil público só aparece se `isPublished=true`.
 - Serviços públicos só aparecem se `isActive=true`.
+- Páginas públicas de Pix validam que o pedido pertence ao perfil indicado pelo slug e usam o valor congelado em `fixedServiceAmount`.
+- Upload/remoção de imagem e geração de PDF validam autenticação, plano quando aplicável e ownership.
+- Webhook Stripe valida `stripe-signature` antes de alterar plano ou assinatura.
 - Proposta expirada não pode ser aprovada/recusada.
 - Proposta já aprovada/recusada não pode ser respondida novamente.
 - Mudanças de status de pedidos são registradas em `QuoteRequestStatusHistory`.
@@ -203,8 +208,8 @@ Limites `FREE`:
 ### Comandos
 
 ```bash
-npm test                   # unit + actions (200 testes, sem banco real)
-npm run test:integration   # integração com banco real (24 testes)
+npm test                   # unit + actions, sem banco real
+npm run test:integration   # integração com banco real
 npm run test:e2e           # E2E Playwright (exige dev server rodando)
 npm run test:e2e:ui        # Playwright com UI interativa
 npm run playwright:install # instalar browsers (primeira vez)
@@ -240,4 +245,4 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Não há rate limit em formulários públicos.
 - Reserva Pix não tem expiração automática: `pixReservationRequestedAt` fica permanente no banco mesmo se o cliente não pagar. Sem limpeza automática de reservas abandonadas.
-- Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket `orcafacil` deve existir com política de leitura pública. Em produção, configurar `STORAGE_ENDPOINT`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` e `STORAGE_BUCKET`.
+- Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket deve existir com leitura pública. Em produção, configurar as variáveis `S3_*` descritas em `.env.example`.

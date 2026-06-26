@@ -27,7 +27,7 @@ Conta OAuth usada pelo Auth.js/Prisma Adapter.
 
 ### Session
 
-Sessão persistida do Auth.js.
+Modelo padrão do adapter. O fluxo atual usa sessão JWT e não depende de registros persistidos em `Session`.
 
 ### VerificationToken
 
@@ -55,7 +55,8 @@ Campos importantes:
 - `plan`: plano comercial (`FREE` ou `PRO`) usado para limites de uso.
 - `themePreset`: preset visual salvo para dashboard do profissional e fluxo público do cliente. O valor default é `DEFAULT`.
 - `isPublished`: controla se o perfil aparece publicamente.
-- `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para pagamento manual de entrada em propostas aprovadas.
+- `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
+- `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para proposta, reserva e pagamento direto de serviço fixo.
 
 Relaciona-se com:
 
@@ -65,7 +66,7 @@ Relaciona-se com:
 - `Proposal`
 - `ProposalTemplate`
 
-Observação: o campo `plan` prepara os limites de uso do microSaaS. O default é `FREE`; `PRO` fica reservado para upgrade futuro sem checkout real nesta etapa. A migration `add_provider_plan` ainda não foi criada.
+O default de `plan` é `FREE`. A assinatura Stripe atualiza o plano e os campos de assinatura por webhook; migrations de plano e billing já estão versionadas.
 
 ### Service
 
@@ -92,7 +93,7 @@ Campos:
 - `desiredDate`, `desiredTime`, `location` — campos opcionais de agendamento, exibidos quando presentes;
 - status;
 - vínculo com `ProviderProfile`.
-- `fixedServiceAmount Decimal? @db.Decimal(10, 2)` — snapshot do `basePrice` do serviço no momento da reserva Pix. Imutável após criação; a página de reserva usa este valor, nunca o preço atual do serviço.
+- `fixedServiceAmount Decimal? @db.Decimal(10, 2)` — snapshot do `basePrice` no momento em que o pedido segue para reserva ou pagamento Pix direto. Imutável após criação; páginas de Pix usam este valor, nunca o preço atual do serviço.
 - `pixReservationRequestedAt DateTime?` — preenchido quando o cliente escolhe "Reservar com Pix" no formulário público.
 - `pixReservationPaidAt DateTime?` — preenchido manualmente pelo prestador ao confirmar recebimento do Pix.
 
@@ -124,6 +125,8 @@ Campos importantes:
 
 - `quoteRequestId`: único.
 - `publicToken`: único, usado no link público.
+- `pricingMode`: `SIMPLE` ou `ITEMIZED`.
+- `title` e `description`: conteúdo opcional da proposta.
 - `totalAmount`: `Decimal @db.Decimal(10, 2)`.
 - `status`.
 - `respondedAt`.
@@ -208,6 +211,11 @@ Ambos usam Decimal.
 - `FREE`
 - `PRO`
 
+### ProposalPricingMode
+
+- `SIMPLE`
+- `ITEMIZED`
+
 ### ProviderThemePreset
 
 - `DEFAULT`
@@ -233,6 +241,17 @@ Controla o fluxo de conversão de serviços com `pricingType = FIXED`.
 
 Serviços `CUSTOM` sempre ficam com `REQUEST_ONLY` (forçado na action).
 
+### SubscriptionStatus
+
+- `ACTIVE`
+- `TRIALING`
+- `PAST_DUE`
+- `CANCELED`
+- `INCOMPLETE`
+- `INCOMPLETE_EXPIRED`
+- `UNPAID`
+- `PAUSED`
+
 Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcula expiração por `validUntil` no momento da renderização.
 
 ## Regras de negócio no banco
@@ -247,13 +266,13 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Notas internas de pedido devem ser acessíveis apenas pelo prestador dono do pedido.
 - Templates de proposta pertencem a um prestador e não devem ser acessados por outros usuários.
 - Uma proposta pública deve ser acessada por `publicToken`.
-- Pix é manual: o OrçaFácil gera código Pix/QR Code estático com dados do prestador, mas não processa nem confirma pagamento automaticamente.
+- Pix é manual: o OrçaFácil gera código Pix/QR Code estático com dados do prestador, mas não processa dinheiro nem recebe confirmação automática.
 - Token de redefinição de senha é de uso único e expira em 1 hora.
 - Senha de usuário sempre armazenada como hash bcrypt, nunca texto puro.
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).
 - Serviços antigos sem `pricingType` explícito ficam como `CUSTOM` pelo default.
 - `QuoteRequest.description` é nullable; pedidos de serviços FIXED não exigem descrição do cliente.
-- `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento da reserva Pix. Nunca atualizar após criação do pedido.
+- `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento da reserva ou pagamento Pix direto. Nunca atualizar após criação do pedido.
 - `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.
 - Pedidos antigos têm `fixedServiceAmount`, `pixReservationRequestedAt` e `pixReservationPaidAt` todos `null` — retrocompatibilidade garantida.
 - `fixedServiceCheckoutMode` é forçado como `REQUEST_ONLY` para serviços `CUSTOM` na action, independente do que o formulário enviar.

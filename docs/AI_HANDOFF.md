@@ -15,6 +15,7 @@ O MVP principal está implementado.
 - o card de link público do onboarding passou a registrar, em `localStorage`, quando o usuário copiou ou abriu o link, para que o checklist reflita a ação real;
 - cards e listas de pedidos/serviços foram ajustados para lidar melhor com nomes longos, layout fixo e leitura em desktop e mobile; `/dashboard/servicos` usa `min-w-0`, contenção de overflow e inputs `w-full` para evitar quebra horizontal em telas como iPhone 12 Pro;
 - `/dashboard/pedidos` ganhou filtro por status via query string `?status=NEW|REVIEWING|PROPOSAL_SENT|CLOSED`, com contador por aba e fallback para `Todos` quando o status é inválido;
+- serviços `FIXED` com Pix configurado podem criar pedido com `fixedServiceAmount` e redirecionar para `/u/[slug]/pagamento/[requestId]`; esse fluxo não preenche `pixReservationRequestedAt` e não possui confirmação automática;
 - a documentação e o schema passaram a registrar o novo campo `ProviderProfile.themePreset`, a enum `ProviderThemePreset` e a migration correspondente.
 
 ## Estado atual
@@ -30,6 +31,7 @@ Funciona hoje:
 - exclusão de serviço com confirmação (`deleteService`);
 - lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
 - **reserva Pix para serviços FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `ALLOW_PIX_RESERVATION`); quando ativado + chave Pix configurada no perfil, exibe CTA "Reservar com Pix" na página pública; formulário em modo reserva redireciona para `/u/[slug]/reserva/[requestId]` com QR Code + copia e cola; `fixedServiceAmount` é snapshot imutável do preço no momento da reserva; confirmação manual pelo prestador via `markPixReservationPaid`; badge e botão de confirmação no painel de pedidos;
+- **pagamento Pix direto para serviços FIXED**: no fluxo comum, quando preço e dados Pix existem, o pedido salva o snapshot em `fixedServiceAmount` e redireciona para `/u/[slug]/pagamento/[requestId]`; o OrçaFácil apenas exibe os dados Pix;
 - página pública `/u/[slug]`;
 - pedido público com campos opcionais `desiredDate` (String YYYY-MM-DD), `desiredTime` (String) e `location` (String), exibidos no painel quando presentes;
 - painel de pedidos;
@@ -41,7 +43,7 @@ Funciona hoje:
 - notas internas do pedido;
 - templates de proposta;
 - editor dinâmico de itens da proposta;
-- planos e limites de uso sem checkout real;
+- planos e limites de uso;
 - assinatura mensal PRO via Stripe Checkout;
 - webhook Stripe em `/api/stripe/webhook` com validação de assinatura: trata `customer.subscription.created` e `customer.subscription.updated` (fall-through) para garantir que novas assinaturas ativem o plano PRO;
 - upgrade e downgrade de plano via webhook (nunca via redirect ou front).
@@ -69,7 +71,7 @@ Limites centralizados em `lib/plan-limits.ts`:
 - `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
-Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada com entrada: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente.
+Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada, reserva e pagamento direto de serviço fixo: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
 
 ## Comandos principais
 
@@ -83,8 +85,8 @@ npm run prisma:generate
 npm run prisma:studio
 
 # Testes
-npm test                   # unitários + actions (200 testes, sem banco real)
-npm run test:integration   # integração com banco real (24 testes, usa orcafacil_test)
+npm test                   # unitários + actions, sem banco real
+npm run test:integration   # integração com banco real, usa orcafacil_test
 npm run test:e2e           # E2E Playwright (dev server deve estar rodando na porta 3000)
 npm run test:e2e:ui        # Playwright com interface interativa
 npm run playwright:install # instalar browsers do Playwright (primeira vez)
@@ -113,7 +115,7 @@ Priorize:
 
 1. Validar fluxo em staging.
 2. Criar páginas de detalhe de pedido/proposta se isso trouxer ganho operacional real.
-3. Adicionar notificações por e-mail.
+3. Ampliar cobertura E2E de billing, Pix e personalização.
 4. Revisar um eventual backfill de pedidos antigos para remover o fallback legado da descrição.
 
 ## Padrões de código existentes
@@ -128,7 +130,7 @@ Priorize:
 ## Restrições importantes
 
 - Não usar Supabase.
-- Não implementar gateway Pix, confirmação automática de pagamento, WhatsApp API, PDF avançado ou IA sem validação.
+- Não implementar gateway Pix, confirmação automática de pagamento, WhatsApp API, editor avançado de PDF ou IA sem validação.
 - Não expor IDs internos em links públicos.
 - Usar `publicToken` para proposta pública.
 - Usar `slug` para perfil público.
@@ -153,6 +155,11 @@ Priorize:
   - Validar ownership de `QuoteRequest` pelo `ProviderProfile` do usuário logado.
   - `fixedServiceCheckoutMode = REQUEST_ONLY` para serviços CUSTOM — forçado na action.
   - Pedidos antigos ficam com campos Pix `null` — retrocompatibilidade obrigatória.
+- Pagamento Pix direto — restrições de produto:
+  - a rota é `/u/[slug]/pagamento/[requestId]`;
+  - exige serviço `FIXED`, `fixedServiceAmount` e dados Pix válidos;
+  - não exige `pixReservationRequestedAt` e não usa `markPixReservationPaid`;
+  - nunca recalcular o valor a partir de `Service.basePrice`.
 
 ## Arquivos para ler primeiro
 
@@ -183,16 +190,17 @@ Priorize:
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
 - Reserva Pix — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
+- Pagamento Pix direto — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, serviço `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
 - `fixedServiceAmount`: nunca recalcular; usar sempre o snapshot do banco. A página de reserva não busca `service.basePrice`.
 - `markPixReservationPaid`: validar ownership pelo perfil autenticado; checar `pixReservationRequestedAt !== null`; checar que `pixReservationPaidAt` ainda está `null` (idempotência).
 - Webhook Stripe: `customer.subscription.created` e `customer.subscription.updated` usam o mesmo handler via fall-through — não separar sem motivo.
 
-## Pendências de front documentadas
+## Registro de front
 
 - A relação `QuoteRequest.serviceId` existe no banco e já é consumida no front. Pedidos novos salvam a descrição limpa; o fallback legado existe apenas para pedidos antigos.
 - `QuoteRequestStatusHistory`, `ProposalStatusHistory`, `QuoteRequestInternalNote`, `ProposalTemplate` e `ProposalTemplateItem` já têm UI nas áreas correspondentes.
 - O formulário de proposta usa editor dinâmico para adicionar/remover itens sem limite fixo de linhas.
-- Detalhes de implementação futura ficam em `docs/FRONTEND_PENDING.md`.
+- `docs/FRONTEND_PENDING.md` registra o estado das melhorias concluídas e o backfill legado ainda opcional.
 
 ## Validação obrigatória após mudanças
 
@@ -223,7 +231,7 @@ npx prisma migrate deploy
 - `lib/stripe.ts` — singleton lazy do Stripe SDK (evita erro de build com chave ausente).
 - `lib/actions/services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService` (com `revalidatePath` + `redirect`).
 - `lib/actions/quote-requests.ts` — `createQuoteRequest`, `updateQuoteRequestDescription` (inline edit de nota, retorna `ActionResult`).
-- `lib/actions/billing.ts` — `createCheckoutSession`: cria/reutiliza stripeCustomerId, cria Checkout Session mode subscription, redireciona para Stripe.
+- `lib/actions/billing.ts` — cria Checkout Session embutida e retorna `clientSecret`; também cancela/reativa assinatura, cria SetupIntent, troca forma de pagamento e abre o portal Stripe.
 - `app/api/stripe/webhook/route.ts` — valida assinatura, processa eventos: `checkout.session.completed`, `customer.subscription.created` (fall-through para `updated`), `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
 - `app/(dashboard)/dashboard/billing/page.tsx` — página de billing.
 - `components/billing/BillingCard.tsx` — card com plano, status, renovação, botão "Assinar PRO".
@@ -234,7 +242,8 @@ Variáveis de ambiente obrigatórias:
 - `STRIPE_SECRET_KEY` — chave secreta da Stripe (`sk_test_...` em dev, `sk_live_...` em prod).
 - `STRIPE_WEBHOOK_SECRET` — segredo do endpoint do webhook (`whsec_...`).
 - `STRIPE_PRO_PRICE_ID` — ID do preço mensal PRO (`price_...`). Diferente entre test e live.
-- `NEXT_PUBLIC_APP_URL` — URL base para success_url e cancel_url do Checkout.
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — chave pública usada pelo Stripe Elements no navegador.
+- `NEXT_PUBLIC_APP_URL` — URL base para `return_url` do Checkout e retorno do portal.
 
 Regras críticas:
 - `plan` só vai para PRO via webhook (nunca via redirect de success_url ou front).

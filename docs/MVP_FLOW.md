@@ -10,7 +10,7 @@
 6. Usuário publica perfil.
 7. Usuário cadastra serviços.
 8. Cliente acessa `/u/[slug]`.
-9. Cliente envia pedido de orçamento **ou** faz reserva via Pix (se serviço FIXED + ALLOW_PIX_RESERVATION).
+9. Cliente envia pedido de orçamento, segue para pagamento Pix direto de serviço `FIXED` ou faz reserva Pix quando habilitada.
 10. Prestador vê pedido.
 11. Prestador cria proposta (apenas para serviços CUSTOM).
 12. Cliente acessa `/proposta/[publicToken]`.
@@ -26,6 +26,14 @@ Fluxo alternativo — Reserva Pix (serviços FIXED):
 9d. Cliente realiza o pagamento Pix diretamente ao prestador.
 9e. Prestador acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
 9f. `pixReservationPaidAt` é preenchido e o painel exibe badge "Reserva Pix confirmada".
+
+Fluxo alternativo — Pagamento Pix direto (serviços FIXED):
+
+9a. Cliente clica em `Solicitar serviço` para um serviço `FIXED` com Pix configurado.
+9b. Preenche os dados em `/u/[slug]/orcamento`.
+9c. O pedido salva `fixedServiceAmount` e redireciona para `/u/[slug]/pagamento/[requestId]`.
+9d. A página mostra QR Code e código copia e cola com o valor congelado no pedido.
+9e. A confirmação continua manual e fora do OrçaFácil; não existe webhook Pix.
 
 ## Passo a passo manual
 
@@ -66,10 +74,11 @@ Fluxo alternativo — Reserva Pix (serviços FIXED):
 
 ### 5. Pedido público
 
-- Clique em `Pedir orçamento` (serviços CUSTOM) ou `Solicitar serviço` (FIXED sem Pix).
+- Clique em `Pedir orçamento` para serviço `CUSTOM` ou `Solicitar serviço` para `FIXED`.
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Envie o formulário.
-- Esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
+- Para serviço `CUSTOM` ou `FIXED` sem Pix configurado, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
+- Para serviço `FIXED` com Pix configurado, esperado: `/u/[slug]/pagamento/[requestId]` com QR Code e valor de `fixedServiceAmount`.
 - Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o prestador recebe e-mail avisando sobre o novo pedido.
 
 ### 5a. Reserva Pix (serviços FIXED com ALLOW_PIX_RESERVATION)
@@ -90,6 +99,7 @@ Como verificar no banco:
 - Acesse `/dashboard/pedidos`.
 - Esperado: pedido aparece na lista.
 - Use os filtros de status (`Todos`, `Novo`, `Em análise`, `Proposta enviada`, `Fechado`) para validar a listagem filtrada.
+- Confirme que apenas o filtro selecionado tem destaque e que um `?status=` inválido volta para `Todos`.
 - Altere status para `REVIEWING` ou `CLOSED`.
 
 ### 7. Proposta

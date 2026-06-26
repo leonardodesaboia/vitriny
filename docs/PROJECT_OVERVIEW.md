@@ -15,7 +15,7 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 3. Cria e publica o perfil.
 4. Cadastra serviços.
 5. Recebe pedidos enviados pelo link público.
-6. Analisa pedido no painel.
+6. Filtra e analisa pedidos por status no painel.
 7. Cria proposta.
 8. Compartilha o link público da proposta.
 9. Acompanha aprovação ou recusa.
@@ -25,9 +25,10 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 1. Acessa `/u/[slug]`.
 2. Consulta dados e serviços do prestador.
 3. Envia pedido em `/u/[slug]/orcamento`, com o serviço pré-selecionado quando acessa a partir de um card de serviço.
-4. **Alternativa para serviços FIXED com reserva habilitada**: clica em "Reservar com Pix", preenche dados e é redirecionado para `/u/[slug]/reserva/[requestId]` com QR Code Pix.
-5. Recebe/acessa link da proposta.
-6. Aprova ou recusa em `/proposta/[publicToken]`.
+4. Para serviço `FIXED` com Pix configurado, pode pagar diretamente em `/u/[slug]/pagamento/[requestId]` após enviar os dados.
+5. Para serviço `FIXED` com reserva habilitada, pode usar `/u/[slug]/reserva/[requestId]`.
+6. Recebe/acessa link da proposta.
+7. Aprova ou recusa em `/proposta/[publicToken]`.
 
 ## Entidades principais
 
@@ -65,6 +66,7 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 - `/u/[slug]`: perfil público do prestador publicado.
 - `/u/[slug]/orcamento`: formulário público de pedido, com seleção implícita do serviço quando a URL vem de um card do perfil. Aceita `?modo=reserva` para fluxo de reserva Pix.
 - `/u/[slug]/reserva/[requestId]`: página de reserva Pix com QR Code e código copia e cola. Acessível sem login; exige que o pedido tenha `pixReservationRequestedAt` preenchido.
+- `/u/[slug]/pagamento/[requestId]`: página de Pix direto para um pedido de serviço `FIXED`; usa o snapshot `fixedServiceAmount` e não exige `pixReservationRequestedAt`.
 - `/proposta/[publicToken]`: página pública da proposta.
 - `/api/auth/[...nextauth]`: rota Auth.js.
 
@@ -76,6 +78,14 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 - `/dashboard/pedidos`: painel de pedidos recebidos.
 - `/dashboard/propostas/nova?requestId=...`: criação de proposta.
 - `/dashboard/propostas/templates`: gerenciamento de templates de proposta.
+- `/dashboard/billing`: plano, uso, assinatura, forma de pagamento e faturas.
+
+Route handlers autenticados ou server-to-server:
+
+- `/api/billing/invoices`: lista faturas do cliente Stripe autenticado.
+- `/api/proposals/[id]/pdf`: gera PDF de proposta aprovada ou recusada após validar autenticação e ownership.
+- `/api/services/[id]/image`: envia ou remove imagem de serviço após validar plano PRO e ownership.
+- `/api/stripe/webhook`: recebe eventos Stripe com validação de assinatura.
 
 ## Decisões de produto
 
@@ -85,7 +95,7 @@ Prestadores costumam receber pedidos por canais soltos, como mensagens e ligaç�
 - A página pública da proposta não usa ID interno.
 - O cliente não precisa de login.
 - Login do prestador é por Google OAuth ou e-mail/senha; GitHub OAuth foi removido.
-- Planos e limites de uso preparam a monetização, mas não cobram nada no MVP.
+- O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
-- Gateway de pagamento, confirmação automática de Pix, WhatsApp API, PDF avançado e IA estão fora do MVP.
-- Pix manual existe em dois contextos: (1) entrada de proposta aprovada; (2) reserva antecipada para serviços FIXED com `ALLOW_PIX_RESERVATION`. Em ambos os casos o OrçaFácil não processa dinheiro nem confirma automaticamente — apenas gera o QR Code/código estático e aguarda confirmação manual do prestador.
+- Gateway de pagamento do cliente final, confirmação automática de Pix, WhatsApp API, editor avançado de PDF e IA estão fora do MVP.
+- Pix manual existe em três contextos: entrada de proposta aprovada, reserva antecipada e pagamento direto de serviço `FIXED`. O OrçaFácil gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.

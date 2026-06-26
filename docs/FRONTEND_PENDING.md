@@ -1,6 +1,6 @@
-# Pendências de Frontend
+# Registro de Frontend
 
-Este documento registra alterações de front que devem ser feitas depois, quando não houver conflito com a frente visual em andamento.
+Este documento registra melhorias de front já concluídas. Não é uma lista de funcionalidades ainda não implementadas. A única pendência remanescente é o backfill opcional de `serviceId` para pedidos legados.
 
 ## 1. Usar relação real entre pedido e serviço
 
@@ -138,7 +138,7 @@ Registros sao criados quando:
 - prestador cria uma proposta (`toStatus: PROPOSAL_SENT`, `actor: PROVIDER`);
 - cliente aprova ou recusa proposta publica (`toStatus: CLOSED`, `actor: CUSTOMER`).
 
-### Arquivos provaveis a alterar depois
+### Arquivos envolvidos
 
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `components/quote-request/QuoteRequestList.tsx`
@@ -213,7 +213,7 @@ Registros sao criados quando:
 - cliente aprova a proposta publica (`toStatus: APPROVED`, `actor: CUSTOMER`);
 - cliente recusa a proposta publica (`toStatus: REJECTED`, `actor: CUSTOMER`).
 
-### Arquivos provaveis a alterar depois
+### Arquivos envolvidos
 
 - `app/proposta/[publicToken]/page.tsx`
 
@@ -291,7 +291,7 @@ Notas internas:
 - nao devem aparecer em rotas publicas;
 - sao removidas em cascata se o pedido for removido.
 
-### Arquivos provaveis a alterar depois
+### Arquivos envolvidos
 
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `components/quote-request/QuoteRequestList.tsx`
@@ -374,7 +374,7 @@ Templates:
 - validam ownership pelo prestador logado;
 - nao aparecem em rotas publicas.
 
-### Arquivos provaveis a alterar depois
+### Arquivos envolvidos
 
 Para gerenciamento:
 

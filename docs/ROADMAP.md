@@ -20,16 +20,23 @@
 - Notas internas do pedido
 - Templates de proposta
 - Editor dinâmico de itens da proposta
-- Planos e limites de uso sem checkout real
+- Planos e limites de uso
 - Login com Google OAuth e cadastro/login por e-mail e senha (substituindo GitHub OAuth)
 - Recuperação de senha por e-mail (Resend)
 - Polimento visual, validações e preparação para deploy
-- Assinatura mensal PRO via Stripe Checkout (sem checkout próprio, sem coleta de cartão)
-- Testes automatizados: unitários (200), integração com banco real (24) e E2E com Playwright
+- Assinatura mensal PRO via Stripe Checkout embutido, gestão de pagamento, portal, faturas e webhook
+- Testes automatizados unitários, de actions, integração com banco real e E2E com Playwright
 - Tipos de preço de serviço: FIXED (preço exibido publicamente) e CUSTOM (sob orçamento)
 - Exclusão de serviço com confirmação
 - Edição de nota do cliente diretamente no card do pedido
 - Lista de serviços colapsável com padrão accordion (expandir ao clicar)
+- Reserva e pagamento Pix direto para serviços fixos, com confirmação manual
+- Entrada Pix em proposta aprovada
+- Imagem por serviço para usuários PRO
+- Geração autenticada de PDF de proposta
+- Temas globais de cores e fontes para usuários PRO
+- Filtro de pedidos por status
+- Responsividade da página de serviços em telas mobile
 
 ## Próximos passos recomendados
 
@@ -50,27 +57,25 @@
 
 ## Melhorias de médio prazo
 
-- Envio de e-mail para notificar pedido e proposta.
-- Exportação simples de proposta.
+- Ampliar cobertura E2E dos fluxos de billing, Pix e personalização.
+- Expiração/limpeza de reservas Pix abandonadas.
 - Métricas básicas do prestador.
 
 ## Futuro, somente após validação
 
-- Pix.
-- Pagamento real.
-- Checkout de upgrade.
+- Gateway Pix com confirmação automática.
+- Pagamento online do cliente final por cartão.
 - WhatsApp API.
-- PDF avançado.
+- Editor avançado de PDF.
 - Assinatura digital.
 - IA para sugerir preço.
-- Planos pagos.
 - Marketplace.
 - Multiempresa complexo.
 - Aplicativo mobile.
 
 ## Não implementar ainda sem validação
 
-- Cobrança recorrente.
+- Cobrança do cliente final dentro da plataforma.
 - Automação de WhatsApp.
 - Gerador avançado de PDF.
 - IA de precificação.

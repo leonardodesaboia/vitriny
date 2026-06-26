@@ -42,8 +42,13 @@ MVP funcional implementado:
 - histórico de status da proposta na página pública;
 - notas internas do pedido no painel;
 - templates de proposta no dashboard;
+- filtro de pedidos por status em `/dashboard/pedidos`;
+- serviços com preço fixo ou sob orçamento, agendamento opcional e imagem para PRO;
+- Pix manual para entrada de proposta, reserva e pagamento direto de serviço fixo;
+- download autenticado da proposta em PDF após aprovação ou recusa;
+- personalização global de cores e fontes para usuários PRO;
 - tela de assinatura com faturas carregadas em segundo plano, sem travar o dashboard;
-- planos e limites de uso sem checkout real.
+- assinatura recorrente PRO via Stripe Checkout embutido e webhook assinado.
 
 ## Fora do MVP
 
@@ -52,16 +57,16 @@ Não implementar ainda sem validação:
 - pagamento automático ou gateway Pix;
 - WhatsApp API;
 - assinatura digital;
-- PDF avançado;
+- editor avançado de PDF;
 - IA para sugerir preço;
 - aplicativo mobile;
 - multiempresa complexo;
 - marketplace;
-- checkout, cobrança recorrente e planos pagos reais.
+- pagamento automatizado do cliente final.
 
 ## Planos e limites de uso
 
-O produto possui estrutura de plano no código para preparar monetização e também Pix manual para entrada de propostas aprovadas.
+O produto possui planos com limites de uso, assinatura PRO via Stripe e Pix manual para pagamentos do cliente final.
 
 Planos:
 
@@ -89,7 +94,7 @@ Os temas alteram apenas tokens globais de cor e fonte via CSS variables. Eles n�
 
 ## Feature de billing
 
-A página `/dashboard/billing` carrega o resumo do plano imediatamente e busca as faturas da Stripe depois, via `/api/billing/invoices`. Isso mantém a navegação responsiva mesmo quando a listagem da Stripe demora.
+A página `/dashboard/billing` permite assinar, cancelar e reativar o PRO, atualizar a forma de pagamento e abrir o portal da Stripe. O resumo do plano carrega imediatamente e as faturas são buscadas depois via `/api/billing/invoices`, sem bloquear a página. O webhook `/api/stripe/webhook` mantém plano e status da assinatura sincronizados.
 
 ## Feature PRO: Imagem por serviço
 
@@ -180,6 +185,18 @@ AUTH_GOOGLE_ID="seu-google-client-id"
 AUTH_GOOGLE_SECRET="seu-google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
 EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_PRO_PRICE_ID="price_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+S3_ENDPOINT="http://localhost:9000"
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="minioadmin"
+S3_SECRET_ACCESS_KEY="minioadmin"
+S3_BUCKET_NAME="orcafacil"
+S3_PUBLIC_BASE_URL="http://localhost:9000/orcafacil"
+S3_FORCE_PATH_STYLE="true"
 ```
 
 Para gerar `AUTH_SECRET`:
@@ -215,19 +232,10 @@ docker compose down
 
 Schema principal: `prisma/schema.prisma`.
 
-Migrations existentes:
-
-- `prisma/migrations/20260622204845_init/migration.sql`
-- `prisma/migrations/20260622205244_add_auth/migration.sql`
-- `prisma/migrations/20260623000000_add_quote_request_service_relation/migration.sql`
-- `prisma/migrations/20260623001000_add_quote_request_status_history/migration.sql`
-- `prisma/migrations/20260623002000_add_proposal_status_history/migration.sql`
-- `prisma/migrations/20260623003000_add_quote_request_internal_notes/migration.sql`
-- `prisma/migrations/20260623004000_add_proposal_templates/migration.sql`
+As migrations versionadas ficam em `prisma/migrations/`. O diretório é a fonte de verdade; não mantenha uma lista manual duplicada neste arquivo.
 
 Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service`, pré-seleciona o serviço quando o cliente vem de um card e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
-Históricos de status, notas internas e templates de proposta já aparecem no front nas áreas correspondentes.
-O schema possui `PlanTier` e `ProviderProfile.plan`, mas a migration `add_provider_plan` ainda não foi criada nesta etapa.
+Históricos de status, notas internas, templates de proposta, billing, Pix, imagens de serviço e temas globais já possuem migrations versionadas.
 
 Comandos:
 
@@ -248,6 +256,7 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
+   Para serviço fixo com Pix configurado, também pode seguir para `/u/[slug]/pagamento/[requestId]` ou `/u/[slug]/reserva/[requestId]`.
 9. Prestador vê o pedido em `/dashboard/pedidos`.
 10. Prestador cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.
@@ -266,6 +275,18 @@ AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
 EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
+STRIPE_SECRET_KEY="sk_live_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_PRO_PRICE_ID="price_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..."
+NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
+S3_ENDPOINT="https://storage-interno.exemplo.com"
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="credencial-do-storage"
+S3_SECRET_ACCESS_KEY="segredo-do-storage"
+S3_BUCKET_NAME="orcafacil"
+S3_PUBLIC_BASE_URL="https://files.seu-dominio.com/orcafacil"
+S3_FORCE_PATH_STYLE="true"
 ```
 
 Antes do deploy:
@@ -302,7 +323,12 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] Histórico de status da proposta
 - [x] Notas internas do pedido
 - [x] Templates de proposta
-- [x] Planos e limites de uso sem checkout real
+- [x] Planos, limites e assinatura PRO via Stripe
+- [x] Pix manual para propostas e serviços fixos
+- [x] PDF de proposta
+- [x] Imagem por serviço para PRO
+- [x] Temas globais para PRO
+- [x] Filtro de pedidos por status
 - [x] Polimento visual, validações e preparação para deploy
 
 ## Documentação complementar
