@@ -6,6 +6,15 @@ OrçaFácil é um MVP de microSaaS para prestadores receberem pedidos de orçame
 
 O MVP principal está implementado.
 
+## Mudanças recentes desta conversa
+
+- a tela de billing deixou de buscar faturas da Stripe no carregamento inicial; agora a página renderiza e o card de faturas faz fetch assíncrono em `/api/billing/invoices` via `components/billing/AsyncInvoiceList.tsx`;
+- a página pública do prestador ganhou presets visuais em `lib/theme-presets.ts`, com a regra pública centralizada em `getPublicThemePreset(plan, savedPreset)`: `PRO` usa o preset salvo e `FREE` sempre cai em `DEFAULT`;
+- o formulário de perfil ganhou a seção “Aparência da página”; usuários `FREE` veem apenas o tema padrão e o aviso de upgrade, enquanto `PRO` escolhem entre os presets;
+- o card de link público do onboarding passou a registrar, em `localStorage`, quando o usuário copiou ou abriu o link, para que o checklist reflita a ação real;
+- cards e listas de pedidos/serviços foram ajustados para lidar melhor com nomes longos, layout fixo e leitura em desktop e mobile;
+- a documentação e o schema passaram a registrar o novo campo `ProviderProfile.themePreset`, a enum `ProviderThemePreset` e a migration correspondente.
+
 ## Estado atual
 
 Funciona hoje:
@@ -18,6 +27,7 @@ Funciona hoje:
 - serviços com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
 - exclusão de serviço com confirmação (`deleteService`);
 - lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
+- **reserva Pix para serviços FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `ALLOW_PIX_RESERVATION`); quando ativado + chave Pix configurada no perfil, exibe CTA "Reservar com Pix" na página pública; formulário em modo reserva redireciona para `/u/[slug]/reserva/[requestId]` com QR Code + copia e cola; `fixedServiceAmount` é snapshot imutável do preço no momento da reserva; confirmação manual pelo prestador via `markPixReservationPaid`; badge e botão de confirmação no painel de pedidos;
 - página pública `/u/[slug]`;
 - pedido público com campos opcionais `desiredDate` (String YYYY-MM-DD), `desiredTime` (String) e `location` (String), exibidos no painel quando presentes;
 - painel de pedidos;
@@ -31,8 +41,9 @@ Funciona hoje:
 - editor dinâmico de itens da proposta;
 - planos e limites de uso sem checkout real;
 - assinatura mensal PRO via Stripe Checkout;
-- webhook Stripe em `/api/stripe/webhook` com validação de assinatura;
+- webhook Stripe em `/api/stripe/webhook` com validação de assinatura: trata `customer.subscription.created` e `customer.subscription.updated` (fall-through) para garantir que novas assinaturas ativem o plano PRO;
 - upgrade e downgrade de plano via webhook (nunca via redirect ou front).
+- carregamento de faturas em `/dashboard/billing` via `app/api/billing/invoices/route.ts` e `components/billing/AsyncInvoiceList.tsx`, sem bloquear a renderização da página;
 
 ## Stack
 
@@ -129,6 +140,17 @@ Priorize:
 - Senha sempre hash bcrypt, nunca texto puro.
 - Não vincular contas automaticamente entre Google e e-mail/senha com o mesmo e-mail.
 - "Esqueci minha senha" nunca deve revelar se um e-mail existe no sistema.
+- Reserva Pix — restrições de produto:
+  - Não implementar gateway Pix nem confirmação automática.
+  - Não usar Stripe para pagamento do cliente final.
+  - Não criar webhook de pagamento.
+  - Não exigir proposta para serviço FIXED.
+  - Não quebrar fluxo de proposta para serviços CUSTOM.
+  - Não alterar Stripe de assinatura.
+  - `markPixReservationPaid` é exclusivo do prestador autenticado — nunca expor ao cliente público.
+  - Validar ownership de `QuoteRequest` pelo `ProviderProfile` do usuário logado.
+  - `fixedServiceCheckoutMode = REQUEST_ONLY` para serviços CUSTOM — forçado na action.
+  - Pedidos antigos ficam com campos Pix `null` — retrocompatibilidade obrigatória.
 
 ## Arquivos para ler primeiro
 
@@ -158,6 +180,10 @@ Priorize:
 - Painel de pedidos: CTA 'Criar proposta' é secundário para pedidos FIXED.
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
+- Reserva Pix — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
+- `fixedServiceAmount`: nunca recalcular; usar sempre o snapshot do banco. A página de reserva não busca `service.basePrice`.
+- `markPixReservationPaid`: validar ownership pelo perfil autenticado; checar `pixReservationRequestedAt !== null`; checar que `pixReservationPaidAt` ainda está `null` (idempotência).
+- Webhook Stripe: `customer.subscription.created` e `customer.subscription.updated` usam o mesmo handler via fall-through — não separar sem motivo.
 
 ## Pendências de front documentadas
 
@@ -196,9 +222,11 @@ npx prisma migrate deploy
 - `lib/actions/services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService` (com `revalidatePath` + `redirect`).
 - `lib/actions/quote-requests.ts` — `createQuoteRequest`, `updateQuoteRequestDescription` (inline edit de nota, retorna `ActionResult`).
 - `lib/actions/billing.ts` — `createCheckoutSession`: cria/reutiliza stripeCustomerId, cria Checkout Session mode subscription, redireciona para Stripe.
-- `app/api/stripe/webhook/route.ts` — valida assinatura, processa eventos: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
+- `app/api/stripe/webhook/route.ts` — valida assinatura, processa eventos: `checkout.session.completed`, `customer.subscription.created` (fall-through para `updated`), `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`.
 - `app/(dashboard)/dashboard/billing/page.tsx` — página de billing.
 - `components/billing/BillingCard.tsx` — card com plano, status, renovação, botão "Assinar PRO".
+- `app/api/billing/invoices/route.ts` — consulta faturas do cliente Stripe autenticado sem travar a página.
+- `components/billing/AsyncInvoiceList.tsx` — busca as faturas depois do primeiro paint e renderiza loading/erro.
 
 Variáveis de ambiente obrigatórias:
 - `STRIPE_SECRET_KEY` — chave secreta da Stripe (`sk_test_...` em dev, `sk_live_...` em prod).

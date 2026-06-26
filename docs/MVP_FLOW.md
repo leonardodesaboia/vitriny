@@ -10,13 +10,22 @@
 6. Usuário publica perfil.
 7. Usuário cadastra serviços.
 8. Cliente acessa `/u/[slug]`.
-9. Cliente envia pedido de orçamento.
+9. Cliente envia pedido de orçamento **ou** faz reserva via Pix (se serviço FIXED + ALLOW_PIX_RESERVATION).
 10. Prestador vê pedido.
-11. Prestador cria proposta.
+11. Prestador cria proposta (apenas para serviços CUSTOM).
 12. Cliente acessa `/proposta/[publicToken]`.
 13. Cliente aprova ou recusa.
 14. Se houver entrada Pix, cliente paga diretamente ao prestador e envia comprovante.
 15. Prestador vê status atualizado e marca o entrada como recebido.
+
+Fluxo alternativo — Reserva Pix (serviços FIXED):
+
+9a. Cliente clica em "Reservar com Pix" no card do serviço.
+9b. Cliente preenche dados e envia formulário.
+9c. Cliente é redirecionado para `/u/[slug]/reserva/[requestId]` com QR Code + código copia e cola.
+9d. Cliente realiza o pagamento Pix diretamente ao prestador.
+9e. Prestador acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
+9f. `pixReservationPaidAt` é preenchido e o painel exibe badge "Reserva Pix confirmada".
 
 ## Passo a passo manual
 
@@ -37,7 +46,8 @@
 ### 2. Perfil
 
 - Acesse `/dashboard/perfil`.
-- Preencha `businessName`, endereço do perfil, contatos, dados Pix se quiser receber entrada, e marque `isPublished`.
+- Preencha `businessName`, endereço do perfil, contatos, aparência da página, dados Pix se quiser receber entrada, e marque `isPublished`.
+- Em plano FREE, a aparência pública usa o tema padrão. Em plano PRO, escolha um preset visual e salve.
 - Salve.
 - Esperado: dashboard mostra perfil e link `/u/[slug]`.
 
@@ -45,6 +55,7 @@
 
 - Acesse `/dashboard/servicos`.
 - Cadastre serviço ativo.
+- Para serviços `FIXED`: ative "Permitir reserva via Pix" se quiser que o cliente pague antecipadamente (requer chave Pix configurada no perfil).
 - Esperado: serviço aparece na listagem.
 
 ### 4. Página pública
@@ -55,11 +66,19 @@
 
 ### 5. Pedido público
 
-- Clique em `Pedir orçamento`.
+- Clique em `Pedir orçamento` (serviços CUSTOM) ou `Solicitar serviço` (FIXED sem Pix).
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Envie o formulário.
 - Esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
 - Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o prestador recebe e-mail avisando sobre o novo pedido.
+
+### 5a. Reserva Pix (serviços FIXED com ALLOW_PIX_RESERVATION)
+
+- Clique em `Reservar com Pix` no card do serviço (visível apenas quando `fixedServiceCheckoutMode = ALLOW_PIX_RESERVATION` e chave Pix configurada).
+- O formulário exibe o valor da reserva em destaque.
+- Envie o formulário.
+- Esperado: redirecionamento para `/u/[slug]/reserva/[requestId]` com QR Code Pix e código copia e cola.
+- O valor exibido é o snapshot `fixedServiceAmount` — não muda mesmo se o prestador alterar o preço depois.
 
 Como verificar no banco:
 

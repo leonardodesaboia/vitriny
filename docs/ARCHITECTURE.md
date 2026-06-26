@@ -31,11 +31,14 @@ docs/
 
 - `app/`: rotas, páginas e route handlers.
 - `components/`: componentes reutilizáveis de UI/formulários.
+- `components/onboarding/PublicLinkCard.tsx` e `components/onboarding/onboarding-storage.ts`: registram localmente a cópia/abertura do link público no onboarding.
+- `components/billing/AsyncInvoiceList.tsx`: carrega as faturas depois do primeiro paint para não travar a página de billing.
 - `lib/actions/`: Server Actions.
 - `lib/actions/auth-guard.ts`: helpers `requireAuth` e `requireProviderProfile`.
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
+- `lib/theme-presets.ts`: presets e classes estáticas da página pública do prestador.
 - `prisma/schema.prisma`: modelo de dados.
 - `types/`: tipos compartilhados entre actions e componentes.
 - `tests/`: testes automatizados (unit, actions, integration, e2e).
@@ -52,6 +55,7 @@ Rotas públicas:
 - `app/(auth)/redefinir-senha/[token]/page.tsx`
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
+- `app/u/[slug]/reserva/[requestId]/page.tsx` — página de reserva Pix: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e pix configurado.
 - `app/proposta/[publicToken]/page.tsx`
 
 Rotas autenticadas:
@@ -84,11 +88,11 @@ Exemplos:
 Server Actions ficam em `lib/actions/`:
 
 - `provider-profile.ts`
-- `services.ts`
-- `quote-requests.ts`
+- `services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService`
+- `quote-requests.ts` — `createQuoteRequest` (fluxo normal + reserva Pix), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only)
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
-- `proposals.ts`
+- `proposals.ts` — inclui `markDepositPaid` (provider-only)
 - `proposal-templates.ts`
 - `proposal-response.ts`
 - `auth.ts` (`registerUser`, `loginWithCredentials`, `requestPasswordReset`, `resetPassword`)
@@ -97,9 +101,11 @@ Elas validam sessão quando necessário e aplicam regras de ownership.
 
 ## Route Handlers
 
-O único route handler explícito é Auth.js:
-
-- `app/api/auth/[...nextauth]/route.ts`
+- `app/api/auth/[...nextauth]/route.ts` — Auth.js.
+- `app/api/services/[id]/image/route.ts` — upload (`POST`) e remoção (`DELETE`) de imagem de serviço via MinIO/S3.
+- `app/api/billing/invoices/route.ts` — lista faturas Stripe do prestador autenticado sem bloquear a renderização da página.
+- `app/api/stripe/webhook/route.ts` — webhook Stripe com validação de assinatura.
+- `app/api/proposals/[id]/pdf/route.ts` — download de proposta em PDF.
 
 ## Auth.js / NextAuth
 
@@ -233,3 +239,5 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 - O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Não há rate limit em formulários públicos.
+- Reserva Pix não tem expiração automática: `pixReservationRequestedAt` fica permanente no banco mesmo se o cliente não pagar. Sem limpeza automática de reservas abandonadas.
+- Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket `orcafacil` deve existir com política de leitura pública. Em produção, configurar `STORAGE_ENDPOINT`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY` e `STORAGE_BUCKET`.
