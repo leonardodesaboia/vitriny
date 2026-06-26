@@ -173,7 +173,7 @@ export function ServiceForm({
   return (
     <form
       action={formAction}
-      className={`grid gap-5 ${embedded ? "" : "rounded-xl border border-paper-soft bg-white p-4 sm:p-5 shadow-card"}`}
+      className={`grid w-full min-w-0 gap-5 overflow-hidden ${embedded ? "" : "rounded-xl border border-paper-soft bg-white p-4 shadow-card sm:p-5"}`}
     >
       {service ? (
         <input name="serviceId" type="hidden" value={service.id} />
@@ -204,10 +204,10 @@ export function ServiceForm({
       ) : null}
 
       {/* ── Informações básicas ────────────────── */}
-      <div className="grid gap-4">
+      <div className="grid min-w-0 gap-4">
         <SectionLabel>Informações</SectionLabel>
 
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <label
             className="text-sm font-semibold text-ink"
             htmlFor={`name-${service?.id ?? "new"}`}
@@ -215,7 +215,7 @@ export function ServiceForm({
             Nome do serviço
           </label>
           <input
-            className="min-h-11 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
+            className="min-h-11 w-full min-w-0 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.name ?? ""}
             id={`name-${service?.id ?? "new"}`}
             maxLength={120}
@@ -227,7 +227,7 @@ export function ServiceForm({
           <p className="text-xs text-ink-muted">Máximo 120 caracteres.</p>
         </div>
 
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <label
             className="text-sm font-semibold text-ink"
             htmlFor={`description-${service?.id ?? "new"}`}
@@ -236,7 +236,7 @@ export function ServiceForm({
             <span className="font-normal text-ink-muted">(opcional)</span>
           </label>
           <textarea
-            className="min-h-24 rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
+            className="min-h-24 w-full min-w-0 rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.description ?? ""}
             id={`description-${service?.id ?? "new"}`}
             maxLength={600}
@@ -248,18 +248,18 @@ export function ServiceForm({
       </div>
 
       {/* ── Precificação ───────────────────────── */}
-      <div className="grid gap-4">
+      <div className="grid min-w-0 gap-4">
         <SectionLabel>Precificação</SectionLabel>
 
         <div>
-          <div className="flex rounded-xl border border-paper-soft bg-paper p-1">
+          <div className="flex min-w-0 rounded-xl border border-paper-soft bg-paper p-1">
             <button
               type="button"
               onClick={() => {
                 setPricingType("CUSTOM");
                 setCheckoutMode("REQUEST_ONLY");
               }}
-              className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
+              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
                 pricingType === "CUSTOM"
                   ? "bg-white shadow-sm text-ink"
                   : "text-ink-muted hover:text-ink"
@@ -270,7 +270,7 @@ export function ServiceForm({
             <button
               type="button"
               onClick={() => setPricingType("FIXED")}
-              className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
+              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
                 pricingType === "FIXED"
                   ? "bg-white shadow-sm text-ink"
                   : "text-ink-muted hover:text-ink"
@@ -294,7 +294,7 @@ export function ServiceForm({
                 m === "REQUEST_ONLY" ? "ALLOW_PIX_RESERVATION" : "REQUEST_ONLY",
               )
             }
-            className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+            className={`flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
               checkoutMode === "ALLOW_PIX_RESERVATION"
                 ? "border-leaf/40 bg-mint/30"
                 : "border-paper-soft bg-paper"
@@ -316,11 +316,11 @@ export function ServiceForm({
                 }`}
               />
             </div>
-            <div className="grid gap-0.5">
-              <span className="text-sm font-semibold text-ink">
+            <div className="grid min-w-0 gap-0.5">
+              <span className="break-words text-sm font-semibold text-ink">
                 Permitir pagamento via Pix
               </span>
-              <span className="text-xs leading-5 text-ink-muted">
+              <span className="break-words text-xs leading-5 text-ink-muted">
                 {checkoutMode === "ALLOW_PIX_RESERVATION"
                   ? "O cliente poderá pagar via Pix pelo link. O pagamento é feito diretamente para você e a confirmação continua sendo manual."
                   : "O cliente apenas envia uma solicitação. Sem opção de pagamento antecipado."}
@@ -329,7 +329,7 @@ export function ServiceForm({
           </button>
         ) : null}
 
-        <div className="grid gap-2">
+        <div className="grid min-w-0 gap-2">
           <label
             className="text-sm font-semibold text-ink"
             htmlFor={`basePrice-${service?.id ?? "new"}`}
@@ -344,7 +344,7 @@ export function ServiceForm({
             )}
           </label>
           <CurrencyInput
-            className="min-h-11 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
+            className="min-h-11 w-full min-w-0 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.basePrice ?? ""}
             id={`basePrice-${service?.id ?? "new"}`}
             name="basePrice"
@@ -358,14 +358,14 @@ export function ServiceForm({
       </div>
 
       {/* ── Opções ─────────────────────────────── */}
-      <div className="grid gap-3">
+      <div className="grid min-w-0 gap-3">
         <SectionLabel>Opções</SectionLabel>
 
         {/* isActive toggle card */}
         <button
           type="button"
           onClick={() => setIsActive((v) => !v)}
-          className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+          className={`flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
             isActive
               ? "border-leaf/40 bg-mint/30"
               : "border-paper-soft bg-paper"
@@ -383,11 +383,11 @@ export function ServiceForm({
               }`}
             />
           </div>
-          <div className="grid gap-0.5">
-            <span className="text-sm font-semibold text-ink">
+          <div className="grid min-w-0 gap-0.5">
+            <span className="break-words text-sm font-semibold text-ink">
               {isActive ? "Visível na página pública" : "Oculto"}
             </span>
-            <span className="text-xs leading-5 text-ink-muted">
+            <span className="break-words text-xs leading-5 text-ink-muted">
               {isActive
                 ? "Este serviço aparece no seu perfil e os clientes podem solicitá-lo."
                 : "Este serviço está oculto. Clientes não conseguem vê-lo nem solicitá-lo."}
@@ -399,7 +399,7 @@ export function ServiceForm({
         <button
           type="button"
           onClick={() => setRequiresScheduling((v) => !v)}
-          className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+          className={`flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
             requiresScheduling
               ? "border-leaf/40 bg-mint/30"
               : "border-paper-soft bg-paper"
@@ -417,11 +417,11 @@ export function ServiceForm({
               }`}
             />
           </div>
-          <div className="grid gap-0.5">
-            <span className="text-sm font-semibold text-ink">
+          <div className="grid min-w-0 gap-0.5">
+            <span className="break-words text-sm font-semibold text-ink">
               Pedir data, horário e local
             </span>
-            <span className="text-xs leading-5 text-ink-muted">
+            <span className="break-words text-xs leading-5 text-ink-muted">
               {requiresScheduling
                 ? "O formulário de pedido pedirá a data desejada, horário ou período e o local do serviço."
                 : "O formulário de pedido não pede informações de agendamento."}
@@ -431,11 +431,11 @@ export function ServiceForm({
       </div>
 
       {/* ── Imagem ─────────────────────────────── */}
-      <div className="grid gap-3">
+      <div className="grid min-w-0 gap-3">
         <SectionLabel>Imagem</SectionLabel>
 
         {!isPro ? (
-          <div className="flex items-center gap-3 rounded-xl border border-paper-soft bg-paper px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3 rounded-xl border border-paper-soft bg-paper px-4 py-3">
             <p className="text-xs text-ink-muted">
               Imagem por serviço está disponível no plano{" "}
               <span className="font-semibold text-ink">PRO</span>.
@@ -443,7 +443,7 @@ export function ServiceForm({
           </div>
         ) : !service?.id ? (
           // PRO, novo serviço — pré-seleciona; upload ocorre após salvar
-          <div className="grid gap-3">
+          <div className="grid min-w-0 gap-3">
             {displayImage ? (
               <div className="relative overflow-hidden rounded-xl border border-paper-soft">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -464,10 +464,10 @@ export function ServiceForm({
                 </p>
               </div>
             )}
-            <div className="grid gap-1">
+            <div className="grid min-w-0 gap-1 overflow-hidden">
               <input
                 accept="image/jpeg,image/png,image/webp"
-                className="text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink hover:file:bg-paper-soft"
+                className="w-full min-w-0 max-w-full text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink hover:file:bg-paper-soft"
                 id="image-new"
                 onChange={handleFileChange}
                 ref={fileInputRef}
@@ -481,7 +481,7 @@ export function ServiceForm({
           </div>
         ) : (
           // PRO, serviço existente
-          <div className="grid gap-3">
+          <div className="grid min-w-0 gap-3">
             {displayImage ? (
               <div className="relative overflow-hidden rounded-xl border border-paper-soft">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -503,10 +503,10 @@ export function ServiceForm({
               </div>
             )}
 
-            <div className="grid gap-1">
+            <div className="grid min-w-0 gap-1 overflow-hidden">
               <input
                 accept="image/jpeg,image/png,image/webp"
-                className="text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink hover:file:bg-paper-soft"
+                className="w-full min-w-0 max-w-full text-sm text-ink file:mr-3 file:rounded-lg file:border-0 file:bg-paper file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-ink hover:file:bg-paper-soft"
                 disabled={imageBusy}
                 id={`image-${service.id}`}
                 onChange={handleFileChange}

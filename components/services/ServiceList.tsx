@@ -18,7 +18,7 @@ export function ServiceList({ services, isPro = false }: ServiceListProps) {
   }
 
   return (
-    <div className="grid gap-2">
+    <div className="grid min-w-0 gap-2">
       {services.map((service) => (
         <ServiceItem isPro={isPro} key={service.id} service={service} />
       ))}

@@ -54,7 +54,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
   });
 
   return (
-    <div className="p-4 sm:p-6 md:p-8">
+    <div className="min-w-0 overflow-x-hidden p-4 sm:p-6 md:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
         Serviços
       </p>
@@ -99,21 +99,21 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid w-full gap-8">
-          <section>
+        <div className="mt-8 grid w-full min-w-0 gap-8">
+          <section className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
               Novo serviço
             </p>
-            <div className="mt-4">
+            <div className="mt-4 min-w-0">
               <ServiceForm isPro={profile.plan === "PRO"} />
             </div>
           </section>
 
-          <section>
+          <section className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
               Serviços cadastrados
             </p>
-            <div className="mt-4">
+            <div className="mt-4 min-w-0">
               <ServiceList
                 isPro={profile.plan === "PRO"}
                 services={profile.services.map((s) => ({

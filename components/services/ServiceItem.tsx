@@ -34,14 +34,14 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
 
   return (
     <article
-      className={`rounded-xl border bg-white shadow-card transition-opacity ${
+      className={`min-w-0 overflow-hidden rounded-xl border bg-white shadow-card transition-opacity ${
         service.isActive ? "border-paper-soft" : "border-paper-soft opacity-60"
       }`}
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="grid w-full grid-cols-[minmax(0,1fr)_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50"
+        className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50"
       >
         <div className="flex min-w-0 items-center gap-3">
           {/* Thumbnail */}
@@ -69,7 +69,7 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
                 {pricingTypeLabel[service.pricingType]}
               </span>
               {formattedPrice ? (
-                <span className="shrink-0 text-xs text-ink-muted">{formattedPrice}</span>
+                <span className="min-w-0 break-words text-xs text-ink-muted">{formattedPrice}</span>
               ) : null}
               {!service.isActive ? (
                 <span className="shrink-0 text-xs text-ink-muted">· Oculto</span>
@@ -90,7 +90,7 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
       </button>
 
       {expanded ? (
-        <div className="border-t border-paper-soft p-4 sm:p-5">
+        <div className="min-w-0 border-t border-paper-soft p-4 sm:p-5">
           <ServiceForm
             embedded
             isPro={isPro}
