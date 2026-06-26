@@ -31,19 +31,9 @@ export const quoteRequestSchema = z.object({
   ),
   customerPhone: optionalPhone,
   serviceId: optionalText.pipe(z.string().cuid().nullable()),
-  description: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
-    .pipe(
-      z.union([
-        z.null(),
-        z
-          .string()
-          .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
-          .max(1200, "Use no máximo 1200 caracteres.")
-      ])
-    ),
+  description: optionalText.pipe(
+    z.string().max(1200, "Use no máximo 1200 caracteres.").nullable()
+  ),
   desiredDate: optionalText.pipe(
     z
       .string()

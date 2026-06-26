@@ -56,8 +56,8 @@ describe("quoteRequestSchema", () => {
     ).toBe(false);
   });
 
-  it("rejeita descrição com menos de 10 caracteres", () => {
-    expect(quoteRequestSchema.safeParse({ ...valid, description: "Curto" }).success).toBe(false);
+  it("aceita descrição curta (ex: observação em reserva Pix)", () => {
+    expect(quoteRequestSchema.safeParse({ ...valid, description: "Curto" }).success).toBe(true);
   });
 
   it("rejeita descrição com mais de 1200 caracteres", () => {
@@ -87,7 +87,9 @@ describe("quoteRequestSchema", () => {
     if (result.success) expect(result.data.description).toBeNull();
   });
 
-  it("rejeita description com menos de 10 caracteres quando preenchida", () => {
-    expect(quoteRequestSchema.safeParse({ ...valid, description: "Curta" }).success).toBe(false);
+  it("aceita description curta quando preenchida (observações opcionais em reserva Pix)", () => {
+    const result = quoteRequestSchema.safeParse({ ...valid, description: "Curta" });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.description).toBe("Curta");
   });
 });
