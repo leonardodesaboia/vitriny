@@ -46,7 +46,6 @@ export async function createQuoteRequestNote(formData: FormData) {
   });
 
   revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
 }
 
 export async function updateQuoteRequestNote(formData: FormData) {
@@ -73,7 +72,6 @@ export async function updateQuoteRequestNote(formData: FormData) {
   });
 
   revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
 }
 
 export async function deleteQuoteRequestNote(formData: FormData) {
