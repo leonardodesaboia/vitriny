@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
 import { ProposalItemsFields } from "@/components/proposals/ProposalItemsFields";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
-import { createProposal } from "@/lib/actions/proposals";
+import { createProposal, type ProposalFormState } from "@/lib/actions/proposals";
 
 type PricingMode = "SIMPLE" | "ITEMIZED";
 
@@ -24,6 +24,10 @@ type ProposalFormProps = {
 export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
   const hasInitialItems = (initialValues?.items?.length ?? 0) > 0;
   const [mode, setMode] = useState<PricingMode>(hasInitialItems ? "ITEMIZED" : "SIMPLE");
+  const [state, formAction, isPending] = useActionState<ProposalFormState, FormData>(
+    createProposal,
+    undefined
+  );
   const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD no timezone do navegador
 
   const initialItems = initialValues?.items?.map((item) => ({
@@ -33,7 +37,12 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
   }));
 
   return (
-    <form action={createProposal} className="mt-8 grid gap-6">
+    <form action={formAction} className="mt-8 grid gap-6">
+      {state?.error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {state.error}
+        </p>
+      ) : null}
       <input name="requestId" type="hidden" value={requestId} />
       <input name="pricingMode" type="hidden" value={mode} />
 
@@ -153,10 +162,11 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
       </div>
 
       <button
-        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover md:w-fit"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 md:w-fit"
+        disabled={isPending}
         type="submit"
       >
-        Enviar proposta
+        {isPending ? "Enviando..." : "Enviar proposta"}
       </button>
     </form>
   );

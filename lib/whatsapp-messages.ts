@@ -11,13 +11,6 @@ export function proposalReadyMessage(
   return `Oi, ${customerName}! Sua proposta já está pronta 😊\nVocê pode acessar, revisar e aprovar por aqui:\n${proposalUrl}`;
 }
 
-export function proposalFollowUpMessage(
-  customerName: string,
-  proposalUrl: string
-): string {
-  return `Oi, ${customerName}! Passando só para saber se você conseguiu ver a proposta 😊\nEla ainda está disponível neste link:\n${proposalUrl}`;
-}
-
 export function proposalApprovedMessage(customerName: string): string {
   return `Oi, ${customerName}! Vi que a proposta foi aprovada. Obrigado! 😊\nVou seguir com os próximos detalhes por aqui.`;
 }

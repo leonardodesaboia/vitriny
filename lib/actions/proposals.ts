@@ -74,13 +74,17 @@ function parseProposalForm(formData: FormData) {
   });
 }
 
-export async function createProposal(formData: FormData) {
+export type ProposalFormState = { error: string } | undefined;
+
+export async function createProposal(
+  _prevState: ProposalFormState,
+  formData: FormData
+): Promise<ProposalFormState> {
   const userId = await requireAuth();
   const parsed = parseProposalForm(formData);
 
   if (!parsed.success) {
-    const requestId = String(formData.get("requestId") ?? "");
-    redirect(`/dashboard/propostas/nova?requestId=${requestId}&error=invalid`);
+    return { error: "Revise os campos e tente novamente." };
   }
 
   const profile = await prisma.providerProfile.findUnique({
@@ -105,11 +109,11 @@ export async function createProposal(formData: FormData) {
   }
 
   if (quoteRequest.proposal) {
-    redirect(`/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=exists`);
+    return { error: "Já existe uma proposta para este pedido." };
   }
 
   if (quoteRequest.service?.pricingType === "FIXED") {
-    redirect(`/dashboard/propostas/nova?requestId=${quoteRequest.id}&error=fixed-price`);
+    return { error: "Pedidos com preço fixo não precisam de proposta." };
   }
 
   let totalAmount: Prisma.Decimal;

@@ -273,6 +273,46 @@ export default async function PublicProposalPage({
               </div>
             </div>
 
+            {/* Scheduling details */}
+            {(proposal.quoteRequest.desiredDate ||
+              proposal.quoteRequest.desiredTime ||
+              proposal.quoteRequest.location) ? (
+              <div className="mt-4 grid gap-3 rounded-xl border border-paper-soft bg-paper p-5 sm:grid-cols-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                    Data desejada
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-ink">
+                    {proposal.quoteRequest.desiredDate
+                      ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
+                          new Date(proposal.quoteRequest.desiredDate + "T12:00:00Z")
+                        )
+                      : <span className="text-ink-muted">Não informado</span>}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                    Horário / período
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-ink">
+                    {proposal.quoteRequest.desiredTime ?? (
+                      <span className="text-ink-muted">Não informado</span>
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                    Local
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-ink">
+                    {proposal.quoteRequest.location ?? (
+                      <span className="text-ink-muted">Não informado</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
             {/* Items table */}
             {proposal.items.length > 0 ? (
               <div className="mt-8">

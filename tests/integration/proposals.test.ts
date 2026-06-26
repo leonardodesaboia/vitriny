@@ -38,7 +38,7 @@ const validForm = (requestId: string) =>
 describe("createProposal (integração)", () => {
   it("persiste proposta com status SENT e itens corretos", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "/dashboard/pedidos"
     );
 
@@ -56,7 +56,7 @@ describe("createProposal (integração)", () => {
 
   it("calcula totalAmount corretamente com base nos itens", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "/dashboard/pedidos"
     );
 
@@ -76,7 +76,7 @@ describe("createProposal (integração)", () => {
     });
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(form)).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, form)).rejects.toThrow("/dashboard/pedidos");
 
     const proposal = await testDb.proposal.findFirst({ where: { quoteRequestId } });
     expect(Number(proposal?.totalAmount)).toBe(400);
@@ -84,7 +84,7 @@ describe("createProposal (integração)", () => {
 
   it("atualiza status do pedido para PROPOSAL_SENT", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "/dashboard/pedidos"
     );
 
@@ -94,7 +94,7 @@ describe("createProposal (integração)", () => {
 
   it("registra histórico do pedido com transição para PROPOSAL_SENT", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "/dashboard/pedidos"
     );
 
@@ -110,14 +110,14 @@ describe("createProposal (integração)", () => {
     const qr2 = await seedQuoteRequest(profileId);
 
     const { createProposal: create1 } = await import("@/lib/actions/proposals");
-    await expect(create1(validForm(quoteRequestId))).rejects.toThrow("/dashboard/pedidos");
+    await expect(create1(undefined, validForm(quoteRequestId))).rejects.toThrow("/dashboard/pedidos");
 
     vi.resetModules();
     const { auth } = await import("@/auth");
     vi.mocked(auth).mockResolvedValue({ user: { id: userId } } as never);
 
     const { createProposal: create2 } = await import("@/lib/actions/proposals");
-    await expect(create2(validForm(qr2.id))).rejects.toThrow("/dashboard/pedidos");
+    await expect(create2(undefined, validForm(qr2.id))).rejects.toThrow("/dashboard/pedidos");
 
     const proposals = await testDb.proposal.findMany({ where: { providerId: profileId } });
     expect(proposals).toHaveLength(2);
@@ -140,7 +140,7 @@ describe("createProposal (integração)", () => {
     }
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "limit-monthly-proposals"
     );
 
@@ -169,7 +169,7 @@ describe("createProposal (integração)", () => {
     }
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validForm(quoteRequestId))).rejects.toThrow(
+    await expect(createProposal(undefined, validForm(quoteRequestId))).rejects.toThrow(
       "/dashboard/pedidos"
     );
 
@@ -179,14 +179,14 @@ describe("createProposal (integração)", () => {
 
   it("rejeita segundo envio para pedido que já tem proposta", async () => {
     const { createProposal: firstCreate } = await import("@/lib/actions/proposals");
-    await expect(firstCreate(validForm(quoteRequestId))).rejects.toThrow("/dashboard/pedidos");
+    await expect(firstCreate(undefined, validForm(quoteRequestId))).rejects.toThrow("/dashboard/pedidos");
 
     vi.resetModules();
     const { auth } = await import("@/auth");
     vi.mocked(auth).mockResolvedValue({ user: { id: userId } } as never);
 
     const { createProposal: secondCreate } = await import("@/lib/actions/proposals");
-    await expect(secondCreate(validForm(quoteRequestId))).rejects.toThrow("error=exists");
+    expect(await secondCreate(undefined, validForm(quoteRequestId))).toEqual({ error: expect.any(String) });
 
     const count = await testDb.proposal.count({ where: { quoteRequestId } });
     expect(count).toBe(1);
