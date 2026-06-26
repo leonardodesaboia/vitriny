@@ -7,8 +7,7 @@ import {
   OnboardingChecklist,
   type OnboardingStep
 } from "@/components/onboarding/OnboardingChecklist";
-import { CopyLinkButton } from "@/components/ui/CopyLinkButton";
-import { WhatsAppButton } from "@/components/whatsapp/WhatsAppButton";
+import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { profileLinkMessage } from "@/lib/whatsapp-messages";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Card } from "@/components/ui/Card";
@@ -86,7 +85,7 @@ export default async function DashboardPage() {
       label: "Copiar ou acessar link público",
       description:
         "Compartilhe o link do seu perfil com clientes para receber pedidos.",
-      done: profile?.isPublished ?? false,
+      done: false,
       isCopyStep: true,
       actionLabel: "Copiar link"
     },
@@ -135,53 +134,13 @@ export default async function DashboardPage() {
       </div>
 
       {profile?.isPublished && profile.slug ? (
-        <section className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-                Seu link público
-              </p>
-              <p className="mt-1 text-sm text-ink-muted">
-                Compartilhe com clientes para receber pedidos de orçamento.
-              </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <CopyLinkButton
-                url={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`}
-              />
-              <a
-                href={`/u/${profile.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-              >
-                Abrir
-              </a>
-            </div>
-          </div>
-          <div className="mt-4 rounded-lg border border-paper-soft bg-paper px-4 py-3">
-            <p className="truncate text-sm font-medium text-ink">
-              {`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`}
-            </p>
-          </div>
-
-          <div className="mt-4 border-t border-paper-soft pt-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              Mensagens prontas para WhatsApp
-            </p>
-            <p className="mt-1 text-xs text-ink-muted">
-              Copie o texto abaixo e cole no WhatsApp para divulgar seu link de orçamento.
-            </p>
-            <div className="mt-2">
-              <WhatsAppButton
-                label="Compartilhar link de orçamento"
-                message={profileLinkMessage(
-                  `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`
-                )}
-              />
-            </div>
-          </div>
-        </section>
+        <PublicLinkCard
+          message={profileLinkMessage(
+            `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`
+          )}
+          storageScope={session.user.id}
+          url={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`}
+        />
       ) : null}
 
       <OnboardingChecklist

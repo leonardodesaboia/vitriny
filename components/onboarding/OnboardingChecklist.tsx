@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
+
+import {
+  markPublicLinkUsed,
+  ONBOARDING_PUBLIC_LINK_KEY,
+  onboardingStorageKey
+} from "@/components/onboarding/onboarding-storage";
 
 export type OnboardingStep = {
   id: string;
@@ -21,12 +27,16 @@ interface OnboardingChecklistProps {
 
 const STORAGE_KEY = "orcafacil-onboarding-dismissed";
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function subscribe(_callback: () => void) {
-  return () => {};
+function subscribe(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("orcafacil:onboarding-updated", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("orcafacil:onboarding-updated", callback);
+  };
 }
-function getSnapshot(storageScope: string) {
-  return localStorage.getItem(`${STORAGE_KEY}:${storageScope}`) === "1";
+function getStoredFlag(key: string, storageScope: string) {
+  return localStorage.getItem(onboardingStorageKey(key, storageScope)) === "1";
 }
 function getServerSnapshot() {
   return false;
@@ -39,20 +49,33 @@ export function OnboardingChecklist({
 }: OnboardingChecklistProps) {
   const storedDismissed = useSyncExternalStore(
     subscribe,
-    () => getSnapshot(storageScope),
+    () => getStoredFlag(STORAGE_KEY, storageScope),
+    getServerSnapshot
+  );
+  const publicLinkUsed = useSyncExternalStore(
+    subscribe,
+    () => getStoredFlag(ONBOARDING_PUBLIC_LINK_KEY, storageScope),
     getServerSnapshot
   );
   const [localDismissed, setLocalDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const dismissed = storedDismissed || localDismissed;
-  const completedCount = steps.filter((s) => s.done).length;
-  const allDone = completedCount === steps.length;
-  const nextStep = steps.find((s) => !s.done);
-  const progressPercent = Math.round((completedCount / steps.length) * 100);
+  const displaySteps = useMemo(
+    () =>
+      steps.map((step) =>
+        step.isCopyStep ? { ...step, done: step.done || publicLinkUsed } : step
+      ),
+    [publicLinkUsed, steps]
+  );
+  const completedCount = displaySteps.filter((s) => s.done).length;
+  const allDone = completedCount === displaySteps.length;
+  const nextStep = displaySteps.find((s) => !s.done);
+  const progressPercent = Math.round((completedCount / displaySteps.length) * 100);
 
   function handleDismiss() {
-    localStorage.setItem(`${STORAGE_KEY}:${storageScope}`, "1");
+    localStorage.setItem(onboardingStorageKey(STORAGE_KEY, storageScope), "1");
+    window.dispatchEvent(new Event("orcafacil:onboarding-updated"));
     setLocalDismissed(true);
   }
 
@@ -60,8 +83,13 @@ export function OnboardingChecklist({
     if (!slug) return;
     const url = `${window.location.origin}/u/${slug}`;
     await navigator.clipboard.writeText(url);
+    markPublicLinkUsed(storageScope);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  function handleOpenPublicLink() {
+    markPublicLinkUsed(storageScope);
   }
 
   if (dismissed || allDone) return null;
@@ -74,7 +102,7 @@ export function OnboardingChecklist({
             Primeiros passos
           </h2>
           <p className="text-xs text-ink-muted">
-            {completedCount} de {steps.length} concluídos
+            {completedCount} de {displaySteps.length} concluídos
           </p>
         </div>
         <button
@@ -109,7 +137,7 @@ export function OnboardingChecklist({
       </div>
 
       <ul className="divide-y divide-paper-soft px-6 pb-2 pt-2">
-        {steps.map((step) => {
+        {displaySteps.map((step) => {
           const isNext = step.id === nextStep?.id;
 
           return (
@@ -195,6 +223,7 @@ export function OnboardingChecklist({
                           href={`/u/${slug}`}
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={handleOpenPublicLink}
                           className="inline-flex min-h-8 items-center justify-center rounded-md border border-paper-soft px-3 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
                         >
                           Abrir

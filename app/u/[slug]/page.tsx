@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { prisma } from "@/lib/prisma";
+import { getPublicThemePreset } from "@/lib/theme-presets";
 import { formatPhoneBR, phoneToTelHref } from "@/lib/utils/phone";
 
 type PublicProviderProfilePageProps = {
@@ -26,6 +27,10 @@ export default async function PublicProviderProfilePage({
       state: true,
       isPublished: true,
       plan: true,
+      themePreset: true,
+      pixKey: true,
+      pixHolderName: true,
+      pixCity: true,
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -35,6 +40,7 @@ export default async function PublicProviderProfilePage({
           description: true,
           basePrice: true,
           pricingType: true,
+          fixedServiceCheckoutMode: true,
           imageUrl: true
         }
       }
@@ -61,20 +67,21 @@ export default async function PublicProviderProfilePage({
   ].filter(Boolean) as { label: string; value: string; href: string | null }[];
 
   const hasServices = profile.services.length > 0;
+  const theme = getPublicThemePreset(profile.plan, profile.themePreset);
 
   return (
-    <main className="min-h-screen bg-paper text-ink">
+    <main className={`min-h-screen ${theme.page}`}>
       {/* Hero */}
-      <div className="grain relative bg-leaf px-6 pb-16 pt-14">
+      <div className={theme.hero}>
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
+          <p className={theme.heroEyebrow}>
             Prestador de serviço{location ? ` · ${location}` : ""}
           </p>
-          <h1 className="mt-3 font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
+          <h1 className={theme.heroTitle}>
             {profile.businessName}
           </h1>
           {profile.description ? (
-            <p className="mt-5 max-w-2xl text-base leading-7 text-white/80">
+            <p className={theme.heroDescription}>
               {profile.description}
             </p>
           ) : null}
@@ -89,20 +96,20 @@ export default async function PublicProviderProfilePage({
             {contacts.map((c) => (
               <div
                 key={c.label}
-                className="rounded-xl border border-paper-soft bg-white p-4 shadow-card"
+                className={theme.contactCard}
               >
-                <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                <p className={theme.contactLabel}>
                   {c.label}
                 </p>
                 {c.href ? (
                   <a
                     href={c.href}
-                    className="mt-1 block text-sm font-semibold text-leaf transition hover:underline"
+                    className={theme.contactValue}
                   >
                     {c.value}
                   </a>
                 ) : (
-                  <p className="mt-1 text-sm font-semibold text-ink">{c.value}</p>
+                  <p className={theme.serviceTitle}>{c.value}</p>
                 )}
               </div>
             ))}
@@ -112,29 +119,32 @@ export default async function PublicProviderProfilePage({
         {/* Services */}
         {hasServices ? (
           <div className="mt-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+            <p className={theme.sectionEyebrow}>
               Serviços disponíveis
             </p>
-            <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
+            <h2 className={theme.sectionTitle}>
               O que ofereço
             </h2>
             <PublicServicesGrid
               services={profile.services.map((s) => ({
                 ...s,
                 basePrice: s.basePrice?.toString() ?? null,
-                imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null
+                imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null,
+                pixConfigured:
+                  !!(profile.pixKey && profile.pixHolderName && profile.pixCity)
               }))}
               slug={slug}
+              theme={theme}
             />
           </div>
         ) : null}
 
                 {/* How it works */}
         <div className="mt-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+          <p className={theme.sectionEyebrow}>
             Como funciona
           </p>
-          <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
+          <h2 className={theme.sectionTitle}>
             Simples e rápido
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
@@ -157,20 +167,20 @@ export default async function PublicProviderProfilePage({
             ].map((s) => (
               <div
                 key={s.step}
-                className="rounded-xl border border-paper-soft bg-white p-5 shadow-card"
+                className={theme.stepCard}
               >
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf">
+                <span className={theme.stepMarker}>
                   {s.step}
                 </span>
-                <h3 className="mt-3 text-sm font-bold text-ink">{s.title}</h3>
-                <p className="mt-1 text-sm leading-6 text-ink-muted">{s.description}</p>
+                <h3 className={`${theme.serviceTitle} mt-3`}>{s.title}</h3>
+                <p className={theme.serviceDescription}>{s.description}</p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Powered by */}
-        <p className="mt-8 text-center text-xs text-ink-muted/60">
+        <p className={theme.poweredBy}>
           Powered by{" "}
           <span className="font-semibold text-ink-muted">OrçaFácil</span>
         </p>

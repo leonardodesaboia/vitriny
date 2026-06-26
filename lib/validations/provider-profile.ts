@@ -2,6 +2,14 @@ import { z } from "zod";
 
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
 
+const providerThemePresetSchema = z.enum([
+  "DEFAULT",
+  "CLEAN",
+  "BEAUTY",
+  "CREATIVE",
+  "PREMIUM"
+]);
+
 const optionalText = z
   .preprocess((value) => (value == null ? "" : value), z.string())
   .transform((value) => value.trim())
@@ -60,7 +68,8 @@ export const providerProfileSchema = z
     ),
     pixCity: optionalText.pipe(
       z.string().max(80, "Use no máximo 80 caracteres.").nullable()
-    )
+    ),
+    themePreset: providerThemePresetSchema.default("DEFAULT")
   })
   .superRefine((data, ctx) => {
     const hasPixKey = Boolean(data.pixKey);

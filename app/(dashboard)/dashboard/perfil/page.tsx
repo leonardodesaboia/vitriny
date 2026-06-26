@@ -12,7 +12,7 @@ type ProviderProfilePageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do perfil.",
-  slug: "Este slug já está em uso."
+  slug: "Este endereço público já está em uso."
 };
 
 export default async function ProviderProfilePage({

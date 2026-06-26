@@ -85,6 +85,7 @@ model ProviderProfile {
   city         String?
   state        String?
   plan         PlanTier @default(FREE)
+  themePreset  ProviderThemePreset @default(DEFAULT)
   stripeCustomerId     String?             @unique
   stripeSubscriptionId String?             @unique
   stripePriceId        String?
@@ -113,8 +114,9 @@ model Service {
   description               String?
   basePrice                 Decimal?           @db.Decimal(10, 2)
   isActive                  Boolean            @default(true)
-  pricingType               ServicePricingType @default(CUSTOM)
-  requiresSchedulingDetails Boolean            @default(false)
+  pricingType               ServicePricingType       @default(CUSTOM)
+  fixedServiceCheckoutMode  FixedServiceCheckoutMode @default(REQUEST_ONLY)
+  requiresSchedulingDetails Boolean                  @default(false)
   imageUrl                  String?
   imageStorageKey           String?
   createdAt                 DateTime           @default(now())
@@ -132,12 +134,15 @@ model QuoteRequest {
   customerEmail String?
   customerPhone String?
   description   String?
-  desiredDate   String?
-  desiredTime   String?
-  location      String?
-  status        QuoteRequestStatus @default(NEW)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  desiredDate               String?
+  desiredTime               String?
+  location                  String?
+  status                    QuoteRequestStatus @default(NEW)
+  fixedServiceAmount        Decimal?           @db.Decimal(10, 2)
+  pixReservationRequestedAt DateTime?
+  pixReservationPaidAt      DateTime?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   provider      ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
   service       Service?                    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
@@ -289,6 +294,14 @@ enum PlanTier {
   PRO
 }
 
+enum ProviderThemePreset {
+  DEFAULT
+  CLEAN
+  BEAUTY
+  CREATIVE
+  PREMIUM
+}
+
 enum SubscriptionStatus {
   ACTIVE
   TRIALING
@@ -303,4 +316,9 @@ enum SubscriptionStatus {
 enum ServicePricingType {
   FIXED
   CUSTOM
+}
+
+enum FixedServiceCheckoutMode {
+  REQUEST_ONLY
+  ALLOW_PIX_RESERVATION
 }

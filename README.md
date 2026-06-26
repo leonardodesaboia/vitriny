@@ -42,6 +42,7 @@ MVP funcional implementado:
 - histórico de status da proposta na página pública;
 - notas internas do pedido no painel;
 - templates de proposta no dashboard;
+- tela de assinatura com faturas carregadas em segundo plano, sem travar o dashboard;
 - planos e limites de uso sem checkout real.
 
 ## Fora do MVP
@@ -77,6 +78,18 @@ Limites do plano `FREE`:
 O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizadas em `lib/plan-limits.ts`.
 
 Importante: o Pix do cliente final é manual. O OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
+
+## Feature PRO: Presets visuais da página pública
+
+Usuários no plano PRO podem escolher um preset visual para a página pública do prestador em `/u/[slug]`: `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE` ou `PREMIUM`.
+
+Usuários FREE sempre exibem publicamente o tema `DEFAULT`. Se um usuário PRO escolher um preset e depois voltar para FREE, o preset permanece salvo no banco, mas a página pública renderiza `DEFAULT` enquanto o plano não for PRO.
+
+As regras e classes ficam centralizadas em `lib/theme-presets.ts`. Não há editor visual livre, CSS customizado, upload de banner ou drag-and-drop nesta etapa.
+
+## Feature de billing
+
+A página `/dashboard/billing` carrega o resumo do plano imediatamente e busca as faturas da Stripe depois, via `/api/billing/invoices`. Isso mantém a navegação responsiva mesmo quando a listagem da Stripe demora.
 
 ## Feature PRO: Imagem por serviço
 

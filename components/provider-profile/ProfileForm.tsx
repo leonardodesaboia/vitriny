@@ -3,9 +3,12 @@
 import { useActionState, useState } from "react";
 import type { ProviderProfile } from "@prisma/client";
 
-import { saveProviderProfile } from "@/lib/actions/provider-profile";
+import {
+  saveProviderProfile,
+  type ProviderProfileFormState
+} from "@/lib/actions/provider-profile";
 import { PhoneInput } from "@/components/ui/PhoneInput";
-import type { ActionResult } from "@/types";
+import { THEME_PRESET_OPTIONS } from "@/lib/theme-presets";
 
 type ProfileFormProps = {
   profile: ProviderProfile | null;
@@ -29,16 +32,30 @@ function SectionHeader({ label, description }: { label: string; description?: st
 }
 
 export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
-  const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
-    saveProviderProfile,
+  const [slug, setSlug] = useState(profile?.slug ?? "");
+  const [isPublished, setIsPublished] = useState(profile?.isPublished ?? false);
+  const [state, formAction, isPending] = useActionState<
+    ProviderProfileFormState,
+    FormData
+  >(
+    async (previousState, formData) => {
+      const result = await saveProviderProfile(previousState, formData);
+      if (result?.values) {
+        setSlug(result.values.slug);
+        setIsPublished(result.values.isPublished);
+      }
+      return result;
+    },
     undefined
   );
 
-  const [slug, setSlug] = useState(profile?.slug ?? "");
-  const [isPublished, setIsPublished] = useState(profile?.isPublished ?? false);
+  const values = state?.values;
+  const formKey = values ? `profile-error-${state.submittedAt}` : "profile";
+  const currentThemePreset = values?.themePreset ?? profile?.themePreset ?? "DEFAULT";
+  const isPro = profile?.plan === "PRO";
 
   return (
-    <form action={formAction} className="mt-6 grid gap-6">
+    <form action={formAction} className="mt-6 grid gap-6" key={formKey}>
       {state && "error" in state ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">{state.error}</p>
@@ -58,7 +75,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </label>
           <input
             className={inputClass}
-            defaultValue={profile?.businessName ?? ""}
+            defaultValue={values?.businessName ?? profile?.businessName ?? ""}
             id="businessName"
             name="businessName"
             placeholder="Ex: Studio da Ana, Pinturas Silva"
@@ -77,7 +94,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </span>
             <input
               className="min-h-11 w-full rounded-lg border border-paper-soft bg-white pl-8 pr-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
-              defaultValue={profile?.slug ?? ""}
+              defaultValue={values?.slug ?? profile?.slug ?? ""}
               id="slug"
               name="slug"
               onChange={(e) => setSlug(e.target.value.toLowerCase())}
@@ -93,7 +110,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 ↗
               </span>
               Seu link público:{" "}
-              <span className="font-semibold text-ink">orçafacil/u/{slug}</span>
+              <span className="font-semibold text-ink">orcafacil/u/{slug}</span>
             </p>
           ) : (
             <p className="text-xs text-ink-muted">
@@ -110,7 +127,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </label>
           <textarea
             className="min-h-28 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
-            defaultValue={profile?.description ?? ""}
+            defaultValue={values?.description ?? profile?.description ?? ""}
             id="description"
             name="description"
             placeholder="Conte um pouco sobre o seu negócio, especialidades e diferenciais…"
@@ -133,7 +150,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </label>
             <PhoneInput
               className={inputClass}
-              defaultValue={profile?.phone ?? ""}
+              defaultValue={values?.phone ?? profile?.phone ?? ""}
               id="phone"
               name="phone"
             />
@@ -146,7 +163,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </label>
             <input
               className={inputClass}
-              defaultValue={profile?.email ?? userEmail ?? ""}
+              defaultValue={values?.email ?? profile?.email ?? userEmail ?? ""}
               id="email"
               name="email"
               placeholder="contato@seunegocio.com"
@@ -163,7 +180,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </label>
             <input
               className={inputClass}
-              defaultValue={profile?.city ?? ""}
+              defaultValue={values?.city ?? profile?.city ?? ""}
               id="city"
               name="city"
               placeholder="São Paulo"
@@ -178,7 +195,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             </label>
             <input
               className={inputClass}
-              defaultValue={profile?.state ?? ""}
+              defaultValue={values?.state ?? profile?.state ?? ""}
               id="state"
               name="state"
               placeholder="SP"
@@ -239,80 +256,145 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
         </div>
       </label>
 
+      {/* ── Aparência ─────────────────────────────── */}
+      <SectionHeader
+        label="Aparência da página"
+        description="Escolha um preset visual simples para sua página pública."
+      />
+
+      <div className="grid gap-4 rounded-xl border border-paper-soft bg-paper p-5">
+        {!isPro ? (
+          <>
+            <input name="themePreset" type="hidden" value={currentThemePreset} />
+            <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+              <p className="text-sm font-semibold text-amber-800">
+                Personalização visual está disponível no plano PRO.
+              </p>
+              <p className="mt-1 text-xs leading-5 text-amber-800/80">
+                O tema padrão está ativo na página pública enquanto seu plano for
+                FREE.
+              </p>
+            </div>
+            <div className="rounded-xl border border-paper-soft bg-white p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-16 overflow-hidden rounded-lg border border-paper-soft">
+                  <span className="flex-1 bg-paper" />
+                  <span className="flex-1 bg-leaf" />
+                  <span className="flex-1 bg-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-ink">Padrão</p>
+                  <p className="text-xs text-ink-muted">
+                    Neutro e universal, combina com qualquer prestador.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {THEME_PRESET_OPTIONS.map((preset) => (
+              <label
+                className="cursor-pointer rounded-xl border border-paper-soft bg-white p-4 transition has-[:checked]:border-leaf has-[:checked]:ring-2 has-[:checked]:ring-leaf/20"
+                key={preset.id}
+              >
+                <input
+                  className="sr-only"
+                  defaultChecked={currentThemePreset === preset.id}
+                  name="themePreset"
+                  type="radio"
+                  value={preset.id}
+                />
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-16 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
+                    <span className={`flex-1 ${preset.preview.background}`} />
+                    <span className={`flex-1 ${preset.preview.accent}`} />
+                    <span className={`flex-1 ${preset.preview.surface}`} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-ink">{preset.name}</p>
+                    <p className="mt-1 text-xs leading-5 text-ink-muted">
+                      {preset.description}
+                    </p>
+                  </div>
+                </div>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* ── Dados Pix ──────────────────────────────── */}
       <SectionHeader
         label="Dados Pix para recebimento de entrada"
         description="Preenchendo aqui, o cliente verá as instruções de pagamento ao aprovar uma proposta com entrada configurado."
       />
 
-      <div className="grid gap-5 rounded-xl border border-paper-soft bg-paper p-5">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <label className={labelClass} htmlFor="pixKey">
-              Chave Pix
-            </label>
-            <input
-              className={inputClass}
-              defaultValue={profile?.pixKey ?? ""}
-              id="pixKey"
-              name="pixKey"
-              placeholder="CPF, e-mail, telefone ou chave aleatória"
-              type="text"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className={labelClass} htmlFor="pixKeyType">
-              Tipo da chave
-            </label>
-            <select
-              className={inputClass}
-              defaultValue={profile?.pixKeyType ?? ""}
-              id="pixKeyType"
-              name="pixKeyType"
-            >
-              <option value="">Selecione</option>
-              <option value="CPF">CPF</option>
-              <option value="CNPJ">CNPJ</option>
-              <option value="E-mail">E-mail</option>
-              <option value="Telefone">Telefone</option>
-              <option value="Chave aleatória">Chave aleatória</option>
-            </select>
-          </div>
+      <div className="grid gap-5 rounded-xl border border-paper-soft bg-paper p-5 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="pixKey">
+            Chave Pix
+          </label>
+          <input
+            className={inputClass}
+            defaultValue={values?.pixKey ?? profile?.pixKey ?? ""}
+            id="pixKey"
+            name="pixKey"
+            placeholder="CPF, e-mail, telefone ou chave aleatória"
+            type="text"
+          />
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <div className="grid gap-2">
-            <label className={labelClass} htmlFor="pixHolderName">
-              Nome do titular
-            </label>
-            <input
-              className={inputClass}
-              defaultValue={profile?.pixHolderName ?? ""}
-              id="pixHolderName"
-              name="pixHolderName"
-              placeholder="Nome como aparece na conta Pix"
-              type="text"
-            />
-          </div>
-
-          <div className="grid gap-2">
-            <label className={labelClass} htmlFor="pixCity">
-              Cidade do Pix
-            </label>
-            <input
-              className={inputClass}
-              defaultValue={profile?.pixCity ?? ""}
-              id="pixCity"
-              name="pixCity"
-              placeholder="Ex: São Paulo"
-              type="text"
-            />
-            <p className="text-xs text-ink-muted">
-              Usada para gerar o Pix copia e cola e o QR Code.
-            </p>
-          </div>
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="pixKeyType">
+            Tipo da chave
+          </label>
+          <select
+            className={inputClass}
+            defaultValue={values?.pixKeyType ?? profile?.pixKeyType ?? ""}
+            id="pixKeyType"
+            name="pixKeyType"
+          >
+            <option value="">Selecione</option>
+            <option value="CPF">CPF</option>
+            <option value="CNPJ">CNPJ</option>
+            <option value="E-mail">E-mail</option>
+            <option value="Telefone">Telefone</option>
+            <option value="Chave aleatória">Chave aleatória</option>
+          </select>
         </div>
+
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="pixHolderName">
+            Nome do titular
+          </label>
+          <input
+            className={inputClass}
+            defaultValue={values?.pixHolderName ?? profile?.pixHolderName ?? ""}
+            id="pixHolderName"
+            name="pixHolderName"
+            placeholder="Nome como aparece na conta Pix"
+            type="text"
+          />
+        </div>
+
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="pixCity">
+            Cidade do Pix
+          </label>
+          <input
+            className={inputClass}
+            defaultValue={values?.pixCity ?? profile?.pixCity ?? ""}
+            id="pixCity"
+            name="pixCity"
+            placeholder="Ex: São Paulo"
+            type="text"
+          />
+        </div>
+
+        <p className="text-xs text-ink-muted sm:col-span-2">
+          A cidade do Pix é usada para gerar o Pix copia e cola e o QR Code.
+        </p>
       </div>
 
       {/* ── Ação ───────────────────────────────────── */}
