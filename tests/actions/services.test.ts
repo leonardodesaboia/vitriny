@@ -115,10 +115,11 @@ describe("updateService", () => {
     db.service.update.mockResolvedValue({});
   });
 
-  it("atualiza serviço e redireciona em caso de sucesso", async () => {
+  it("atualiza serviço e retorna serviceId em caso de sucesso", async () => {
     const { updateService } = await import("@/lib/actions/services");
-    await expect(updateService(undefined, validForm())).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, validForm());
 
+    expect(result).toEqual({ serviceId: "service-1" });
     expect(db.service.update).toHaveBeenCalledOnce();
   });
 
@@ -172,8 +173,9 @@ describe("updateService", () => {
     db.service.update.mockResolvedValue({});
 
     const { updateService } = await import("@/lib/actions/services");
-    await expect(updateService(undefined, validForm())).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, validForm());
 
+    expect(result).toEqual({ serviceId: "service-1" });
     expect(db.service.count).not.toHaveBeenCalled();
   });
 });

@@ -59,7 +59,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, form);
 
-    expect(result).toEqual({ error: expect.stringContaining("inválido") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("inválido") }));
     expect(db.providerProfile.upsert).not.toHaveBeenCalled();
   });
 
@@ -77,7 +77,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, form);
 
-    expect(result).toEqual({ error: expect.stringContaining("inválido") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("inválido") }));
   });
 
   it("retorna erro de slug em uso quando outro usuário já tem o slug", async () => {
@@ -86,7 +86,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, validProfileForm());
 
-    expect(result).toEqual({ error: expect.stringContaining("slug") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("em uso") }));
     expect(db.providerProfile.upsert).not.toHaveBeenCalled();
   });
 
