@@ -50,6 +50,24 @@ export async function createService(
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
+  if (parsed.data.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION") {
+    const profilePix = await prisma.providerProfile.findUnique({
+      where: { id: profile.id },
+      select: { pixKey: true, pixHolderName: true, pixCity: true }
+    });
+    const pixConfigured = !!(
+      profilePix?.pixKey &&
+      profilePix?.pixHolderName &&
+      profilePix?.pixCity
+    );
+    if (!pixConfigured) {
+      return {
+        error:
+          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+      };
+    }
+  }
+
   if (parsed.data.isActive) {
     const activeServicesCount = await prisma.service.count({
       where: { providerId: profile.id, isActive: true }
@@ -96,6 +114,24 @@ export async function updateService(
   const parsed = parseServiceForm(formData);
   if (!parsed.success) {
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
+  }
+
+  if (parsed.data.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION") {
+    const profilePix = await prisma.providerProfile.findUnique({
+      where: { id: profile.id },
+      select: { pixKey: true, pixHolderName: true, pixCity: true }
+    });
+    const pixConfigured = !!(
+      profilePix?.pixKey &&
+      profilePix?.pixHolderName &&
+      profilePix?.pixCity
+    );
+    if (!pixConfigured) {
+      return {
+        error:
+          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+      };
+    }
   }
 
   const service = await prisma.service.findFirst({

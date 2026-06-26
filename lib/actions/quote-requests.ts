@@ -105,6 +105,12 @@ export async function createQuoteRequest(
     !!service?.basePrice &&
     pixConfigured;
 
+  const isDirectPixPayment =
+    !pixReservation &&
+    service?.pricingType === "FIXED" &&
+    !!service?.basePrice &&
+    pixConfigured;
+
   const monthRange = getCurrentMonthRange();
   const created = await prisma.$transaction(async (tx) => {
     const monthlyRequestsCount = await tx.quoteRequest.count({
@@ -139,6 +145,9 @@ export async function createQuoteRequest(
               fixedServiceAmount: service!.basePrice,
               pixReservationRequestedAt: new Date()
             }
+          : {}),
+        ...(isDirectPixPayment
+          ? { fixedServiceAmount: service!.basePrice }
           : {}),
         statusHistory: {
           create: {
@@ -182,6 +191,10 @@ export async function createQuoteRequest(
 
   if (isPixReservation) {
     redirect(`/u/${slug}/reserva/${created.id}`);
+  }
+
+  if (isDirectPixPayment) {
+    redirect(`/u/${slug}/pagamento/${created.id}`);
   }
 
   redirect(`/u/${slug}/orcamento?success=1`);
