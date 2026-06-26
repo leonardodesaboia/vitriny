@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState, useState } from "react";
 
-import { createQuoteRequest } from "@/lib/actions/quote-requests";
+import { createQuoteRequest, type QuoteRequestFormState } from "@/lib/actions/quote-requests";
+import { DateInput } from "@/components/ui/DateInput";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import type { ServiceSummary } from "@/types";
 
@@ -20,6 +21,7 @@ type QuoteRequestFormProps = {
   services: ServiceSummary[];
   selectedServiceId?: string | null;
   selectedService?: SelectedService | null;
+  isPixReservation?: boolean;
 };
 
 const inputClass =
@@ -38,9 +40,14 @@ export function QuoteRequestForm({
   slug,
   services,
   selectedServiceId,
-  selectedService
+  selectedService,
+  isPixReservation = false
 }: QuoteRequestFormProps) {
-  const action = createQuoteRequest.bind(null, slug);
+  const boundAction = createQuoteRequest.bind(null, slug);
+  const [state, formAction, isPending] = useActionState<QuoteRequestFormState, FormData>(
+    boundAction,
+    undefined
+  );
 
   const [currentServiceId, setCurrentServiceId] = useState<string>(
     selectedServiceId ?? ""
@@ -56,7 +63,28 @@ export function QuoteRequestForm({
   const showScheduling = activeService?.requiresSchedulingDetails === true;
 
   return (
-    <form action={action} className="mt-8 grid gap-5">
+    <form action={formAction} className="mt-8 grid gap-5">
+      {isPixReservation ? (
+        <input name="pixReservation" type="hidden" value="1" />
+      ) : null}
+      {state?.error ? (
+        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          {state.error}
+        </p>
+      ) : null}
+      {isPixReservation && selectedService?.basePrice ? (
+        <div className="rounded-xl border border-leaf/30 bg-mint/30 p-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+            Valor da reserva
+          </p>
+          <p className="mt-1 font-fraunces text-3xl font-bold text-ink">
+            {formatMoney(selectedService.basePrice)}
+          </p>
+          <p className="mt-1 text-xs text-ink-muted">
+            Você realizará o pagamento via Pix após preencher seus dados.
+          </p>
+        </div>
+      ) : null}
       {selectedService ? (
         <div className="rounded-xl border border-paper-soft bg-white p-4">
           <input name="serviceId" type="hidden" value={selectedService.id} />
@@ -142,34 +170,30 @@ export function QuoteRequestForm({
       ) : null}
 
       {showScheduling ? (
-        <div className="grid gap-4 rounded-xl border border-paper-soft bg-paper p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-            Detalhes do agendamento{" "}
-            <span className="font-normal normal-case tracking-normal">(opcional)</span>
-          </p>
-
+        <>
           <div className="grid gap-5 sm:grid-cols-2">
             <div className="grid gap-2">
               <label className={labelClass} htmlFor="desiredDate">
-                Data desejada
+                Data desejada *
               </label>
-              <input
+              <DateInput
                 className={inputClass}
                 id="desiredDate"
                 name="desiredDate"
-                type="date"
+                required
               />
             </div>
 
             <div className="grid gap-2">
               <label className={labelClass} htmlFor="desiredTime">
-                Horário ou período desejado
+                Horário ou período desejado *
               </label>
               <input
                 className={inputClass}
                 id="desiredTime"
                 name="desiredTime"
                 placeholder="Ex: manhã, 14h, tarde"
+                required
                 type="text"
                 maxLength={100}
               />
@@ -178,18 +202,19 @@ export function QuoteRequestForm({
 
           <div className="grid gap-2">
             <label className={labelClass} htmlFor="location">
-              Local, bairro ou cidade
+              Local, bairro ou cidade *
             </label>
             <input
               className={inputClass}
               id="location"
               name="location"
               placeholder="Ex: Centro, São Paulo"
+              required
               type="text"
               maxLength={200}
             />
           </div>
-        </div>
+        </>
       ) : null}
 
       <div className="grid gap-2">
@@ -212,10 +237,17 @@ export function QuoteRequestForm({
       </div>
 
       <button
-        className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+        className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 disabled:opacity-50"
+        disabled={isPending}
         type="submit"
       >
-        {isFixed ? "Solicitar serviço" : "Enviar pedido"}
+        {isPending
+          ? "Enviando..."
+          : isPixReservation
+            ? "Continuar para pagamento Pix →"
+            : isFixed
+              ? "Solicitar serviço"
+              : "Enviar pedido"}
       </button>
     </form>
   );

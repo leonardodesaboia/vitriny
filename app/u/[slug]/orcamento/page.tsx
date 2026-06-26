@@ -13,6 +13,7 @@ type PublicQuoteRequestPageProps = {
     error?: string;
     serviceId?: string;
     success?: string;
+    modo?: string;
   }>;
 };
 
@@ -20,6 +21,7 @@ const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   service: "O serviço selecionado não está disponível.",
   unavailable: "Este perfil não está disponível para pedidos.",
+  "scheduling-required": "Preencha data, horário e local para este serviço.",
   "limit-monthly-quote-requests":
     PUBLIC_LIMIT_ERROR_MESSAGES["limit-monthly-quote-requests"]
 };
@@ -36,6 +38,9 @@ export default async function PublicQuoteRequestPage({
     select: {
       businessName: true,
       isPublished: true,
+      pixKey: true,
+      pixHolderName: true,
+      pixCity: true,
       services: {
         where: { isActive: true },
         orderBy: { name: "asc" },
@@ -44,6 +49,7 @@ export default async function PublicQuoteRequestPage({
           name: true,
           description: true,
           pricingType: true,
+          fixedServiceCheckoutMode: true,
           basePrice: true,
           requiresSchedulingDetails: true
         }
@@ -63,6 +69,18 @@ export default async function PublicQuoteRequestPage({
     ? profile.services.find((s) => s.id === selectedServiceId) ?? null
     : null;
 
+  const pixConfigured = !!(
+    profile.pixKey &&
+    profile.pixHolderName &&
+    profile.pixCity
+  );
+
+  const isPixReservation =
+    query.modo === "reserva" &&
+    selectedService?.pricingType === "FIXED" &&
+    selectedService?.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" &&
+    pixConfigured;
+
   return (
     <main className="min-h-screen bg-paper px-6 py-12 text-ink">
       <div className="mx-auto max-w-lg">
@@ -77,15 +95,19 @@ export default async function PublicQuoteRequestPage({
         {/* Header */}
         <div className="mt-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            {selectedService?.pricingType === "FIXED"
-              ? "Solicitação de serviço"
-              : "Pedido de orçamento"}
+            {isPixReservation
+              ? "Reserva com Pix"
+              : selectedService?.pricingType === "FIXED"
+                ? "Solicitação de serviço"
+                : "Pedido de orçamento"}
           </p>
           <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
             {profile.businessName}
           </h1>
           <p className="mt-3 text-sm leading-6 text-ink-muted">
-            Envie as informações iniciais para que o prestador avalie seu pedido.
+            {isPixReservation
+              ? "Preencha seus dados e realize o pagamento via Pix para reservar este serviço."
+              : "Envie as informações iniciais para que o prestador avalie seu pedido."}
           </p>
         </div>
 
@@ -123,6 +145,7 @@ export default async function PublicQuoteRequestPage({
               </div>
             ) : null}
             <QuoteRequestForm
+              isPixReservation={isPixReservation}
               selectedServiceId={selectedServiceId}
               selectedService={
                 selectedService
@@ -141,6 +164,7 @@ export default async function PublicQuoteRequestPage({
                 name: s.name,
                 description: s.description,
                 pricingType: s.pricingType,
+                fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
                 basePrice: s.basePrice?.toString() ?? null,
                 requiresSchedulingDetails: s.requiresSchedulingDetails
               }))}

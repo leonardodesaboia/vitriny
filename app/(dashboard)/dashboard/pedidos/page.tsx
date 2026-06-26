@@ -44,6 +44,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
               id: true,
               name: true,
               pricingType: true,
+              fixedServiceCheckoutMode: true,
               basePrice: true
             }
           },
@@ -51,7 +52,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             select: { id: true, publicToken: true, status: true, depositAmount: true, depositPaidAt: true }
           },
           statusHistory: {
-            orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "asc" },
             select: {
               id: true,
               fromStatus: true,
@@ -77,7 +78,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           }
         }
       },
-      services: { select: { id: true, name: true, pricingType: true, basePrice: true, requiresSchedulingDetails: true } }
+      services: { select: { id: true, name: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true } }
     }
   });
 

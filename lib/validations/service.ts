@@ -32,6 +32,9 @@ export const serviceSchema = z
       z.string().max(600, "Use no máximo 600 caracteres.").nullable()
     ),
     pricingType: z.enum(["FIXED", "CUSTOM"]),
+    fixedServiceCheckoutMode: z
+      .enum(["REQUEST_ONLY", "ALLOW_PIX_RESERVATION"])
+      .default("REQUEST_ONLY"),
     basePrice: optionalPrice,
     isActive: z.boolean(),
     requiresSchedulingDetails: z.boolean().default(false)

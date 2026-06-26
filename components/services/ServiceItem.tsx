@@ -41,36 +41,40 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center gap-3 p-4 text-left transition hover:bg-paper/50"
+        className="grid w-full grid-cols-[minmax(0,1fr)_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50"
       >
-        {/* Thumbnail */}
-        {service.imageUrl ? (
-          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt={service.name}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              src={service.imageUrl}
-            />
-          </div>
-        ) : null}
+        <div className="flex min-w-0 items-center gap-3">
+          {/* Thumbnail */}
+          {service.imageUrl ? (
+            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt={service.name}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                src={service.imageUrl}
+              />
+            </div>
+          ) : null}
 
-        {/* Name + badges */}
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink">{service.name}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-semibold ${pricingTypeBadge[service.pricingType]}`}
-            >
-              {pricingTypeLabel[service.pricingType]}
-            </span>
-            {formattedPrice ? (
-              <span className="text-xs text-ink-muted">{formattedPrice}</span>
-            ) : null}
-            {!service.isActive ? (
-              <span className="text-xs text-ink-muted">· Oculto</span>
-            ) : null}
+          {/* Name + badges */}
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold text-ink" title={service.name}>
+              {service.name}
+            </p>
+            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${pricingTypeBadge[service.pricingType]}`}
+              >
+                {pricingTypeLabel[service.pricingType]}
+              </span>
+              {formattedPrice ? (
+                <span className="shrink-0 text-xs text-ink-muted">{formattedPrice}</span>
+              ) : null}
+              {!service.isActive ? (
+                <span className="shrink-0 text-xs text-ink-muted">· Oculto</span>
+              ) : null}
+            </div>
           </div>
         </div>
 

@@ -7,6 +7,7 @@ export type QuoteRequestWithRelations = Prisma.QuoteRequestGetPayload<{
         id: true;
         name: true;
         pricingType: true;
+        fixedServiceCheckoutMode: true;
         basePrice: true;
       };
     };

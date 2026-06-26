@@ -44,6 +44,7 @@ describe("createQuoteRequest", () => {
     await expect(
       createQuoteRequest(
         "orcafacil",
+        undefined,
         makeFormData({
           customerName: "Maria",
           customerEmail: "maria@example.com",

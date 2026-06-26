@@ -10,6 +10,8 @@ import { prisma } from "@/lib/prisma";
 type ServicesPageProps = {
   searchParams: Promise<{
     error?: string;
+    success?: string;
+    image_error?: string;
   }>;
 };
 
@@ -43,6 +45,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           basePrice: true,
           isActive: true,
           pricingType: true,
+          fixedServiceCheckoutMode: true,
           requiresSchedulingDetails: true,
           imageUrl: true
         }
@@ -62,6 +65,18 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
         Cadastre os serviços que serão exibidos no seu perfil público e usados nos pedidos de orçamento.
       </p>
 
+      {params.success === "saved" && !params.image_error ? (
+        <p className="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          Serviço salvo com sucesso!
+        </p>
+      ) : null}
+
+      {params.image_error ? (
+        <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+          Serviço salvo, mas o envio da imagem falhou. Edite o serviço para reenviar.
+        </p>
+      ) : null}
+
       {params.error ? (
         <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
           {errorMessages[params.error] ?? "Não foi possível salvar o serviço."}
@@ -69,31 +84,32 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
       ) : null}
 
       {!profile ? (
-        <div className="mt-8 rounded-xl border border-paper-soft bg-paper p-6">
-          <h2 className="font-fraunces text-xl font-bold text-ink">Crie seu perfil primeiro</h2>
-          <p className="mt-2 text-sm leading-6 text-ink-muted">
-            Serviços pertencem ao perfil do prestador. Crie o perfil antes de
-            cadastrar serviços.
+        <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
+          <h2 className="font-fraunces text-xl font-bold text-ink">
+            Crie seu perfil primeiro
+          </h2>
+          <p className="mt-2 text-sm text-ink-muted">
+            Serviços ficam vinculados ao perfil do prestador.
           </p>
           <Link
-            className="mt-5 inline-flex min-h-11 items-center justify-center rounded-lg bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
             Criar perfil
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid max-w-2xl gap-8">
-          <div>
+        <div className="mt-8 grid w-full gap-8">
+          <section>
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
               Novo serviço
             </p>
             <div className="mt-4">
               <ServiceForm isPro={profile.plan === "PRO"} />
             </div>
-          </div>
+          </section>
 
-          <div>
+          <section>
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
               Serviços cadastrados
             </p>
@@ -107,12 +123,13 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
                   basePrice: s.basePrice?.toString() ?? null,
                   isActive: s.isActive,
                   pricingType: s.pricingType,
+                  fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
                   requiresSchedulingDetails: s.requiresSchedulingDetails,
                   imageUrl: s.imageUrl ?? null
                 }))}
               />
             </div>
-          </div>
+          </section>
         </div>
       )}
     </div>

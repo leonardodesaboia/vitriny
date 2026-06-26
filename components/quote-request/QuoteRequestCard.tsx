@@ -18,6 +18,7 @@ import {
   proposalRejectedMessage
 } from "@/lib/whatsapp-messages";
 import { markDepositPaid } from "@/lib/actions/proposals";
+import { markPixReservationPaid } from "@/lib/actions/quote-requests";
 import { WhatsAppButton } from "@/components/whatsapp/WhatsAppButton";
 import { formatPhoneBR, phoneToTelHref } from "@/lib/utils/phone";
 import type { QuoteRequestWithRelations } from "@/types";
@@ -35,12 +36,17 @@ type SerializedService = {
   id: string;
   name: string;
   pricingType: "FIXED" | "CUSTOM";
+  fixedServiceCheckoutMode: "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION";
   basePrice: string | null;
 };
 
-export type SerializedQuoteRequest = Omit<QuoteRequestWithRelations, "proposal" | "service"> & {
+export type SerializedQuoteRequest = Omit<
+  QuoteRequestWithRelations,
+  "proposal" | "service" | "fixedServiceAmount"
+> & {
   proposal: SerializedProposal | null;
   service: SerializedService | null;
+  fixedServiceAmount: string | null;
 };
 
 type Props = {
@@ -172,6 +178,11 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             {quoteRequest.service?.pricingType === "FIXED" ? (
               <span className="hidden shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf sm:inline-flex">
                 Preço fixo
+              </span>
+            ) : null}
+            {quoteRequest.pixReservationRequestedAt ? (
+              <span className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold sm:inline-flex ${quoteRequest.pixReservationPaidAt ? "border-mint bg-mint text-leaf" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
+                {quoteRequest.pixReservationPaidAt ? "Reserva Pix confirmada" : "Reserva Pix pendente"}
               </span>
             ) : null}
           </div>
@@ -501,6 +512,46 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                   </p>
                 </div>
               )}
+
+              {/* Pix reservation section */}
+              {quoteRequest.pixReservationRequestedAt ? (
+                <div className="rounded-xl border border-paper-soft bg-paper p-4 sm:p-5">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+                    Reserva Pix
+                  </p>
+                  {quoteRequest.fixedServiceAmount ? (
+                    <p className="mt-1 font-fraunces text-xl font-bold text-ink">
+                      {new Intl.NumberFormat("pt-BR", {
+                        style: "currency",
+                        currency: "BRL"
+                      }).format(Number(quoteRequest.fixedServiceAmount))}
+                    </p>
+                  ) : null}
+                  {quoteRequest.pixReservationPaidAt ? (
+                    <div className="mt-3 flex items-center gap-2 rounded-lg border border-mint bg-mint/40 px-3 py-2">
+                      <span className="text-xs font-semibold text-leaf">
+                        ✓ Pix confirmado em{" "}
+                        {formatDateShort(quoteRequest.pixReservationPaidAt)}
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center">
+                      <span className="text-xs font-semibold text-amber-700">
+                        Aguardando confirmação do Pix
+                      </span>
+                      <form action={markPixReservationPaid}>
+                        <input type="hidden" name="requestId" value={quoteRequest.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
+                        >
+                          Confirmar recebimento
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
 

@@ -16,12 +16,17 @@ import { requireProviderProfile } from "@/lib/actions/auth-guard";
 import type { ActionResult } from "@/types";
 
 function parseServiceForm(formData: FormData) {
+  const pricingType = formData.get("pricingType");
   return serviceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
     isActive: formData.get("isActive") === "on",
-    pricingType: formData.get("pricingType"),
+    pricingType,
+    fixedServiceCheckoutMode:
+      pricingType === "FIXED"
+        ? (formData.get("fixedServiceCheckoutMode") ?? "REQUEST_ONLY")
+        : "REQUEST_ONLY",
     requiresSchedulingDetails: formData.get("requiresSchedulingDetails") === "on"
   });
 }
@@ -63,6 +68,7 @@ export async function createService(
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,
+      fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
       requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
     },
     select: { id: true }
@@ -119,12 +125,13 @@ export async function updateService(
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,
+      fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
       requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
     }
   });
 
   revalidatePath("/dashboard/servicos");
-  redirect("/dashboard/servicos");
+  return { serviceId: service.id };
 }
 
 export async function deleteService(formData: FormData) {

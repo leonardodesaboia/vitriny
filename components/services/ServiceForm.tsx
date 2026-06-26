@@ -15,30 +15,42 @@ type ServiceFormProps = {
   embedded?: boolean;
 };
 
-type ImageStatus = "idle" | "uploading" | "removing";
+type ImageStatus = "idle" | "removing";
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-widest text-leaf">{children}</p>
+    <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+      {children}
+    </p>
   );
 }
 
-export function ServiceForm({ service, isPro = false, onCancel, embedded = false }: ServiceFormProps) {
+export function ServiceForm({
+  service,
+  isPro = false,
+  onCancel,
+  embedded = false,
+}: ServiceFormProps) {
   const router = useRouter();
   const action = service ? updateService : createService;
   const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
     action,
-    undefined
+    undefined,
   );
   const [pricingType, setPricingType] = useState<"FIXED" | "CUSTOM">(
-    service?.pricingType ?? "CUSTOM"
+    service?.pricingType ?? "CUSTOM",
   );
+  const [checkoutMode, setCheckoutMode] = useState<
+    "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION"
+  >(service?.fixedServiceCheckoutMode ?? "REQUEST_ONLY");
   const [isActive, setIsActive] = useState(service?.isActive ?? true);
   const [requiresScheduling, setRequiresScheduling] = useState(
-    service?.requiresSchedulingDetails ?? false
+    service?.requiresSchedulingDetails ?? false,
   );
 
-  const [imageUrl, setImageUrl] = useState<string | null>(service?.imageUrl ?? null);
+  const [imageUrl, setImageUrl] = useState<string | null>(
+    service?.imageUrl ?? null,
+  );
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imageStatus, setImageStatus] = useState<ImageStatus>("idle");
@@ -46,27 +58,67 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
     type: "error" | "success";
     text: string;
   } | null>(null);
+  const [savedSuccess, setSavedSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isEditing = !!service;
 
-  // After a new service is created (state.serviceId), upload pending image then navigate
   useEffect(() => {
     if (!state || !("serviceId" in state)) return;
     const { serviceId } = state;
+    const fileToUpload = selectedFile;
 
-    if (selectedFile) {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null); // eslint-disable-line react-hooks/set-state-in-effect
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+
+    if (fileToUpload) {
       const form = new FormData();
-      form.set("image", selectedFile);
+      form.set("image", fileToUpload);
 
       fetch(`/api/services/${serviceId}/image`, { method: "POST", body: form })
         .then((res) => res.json())
-        .catch(() => null)
-        .finally(() => {
-          router.push("/dashboard/servicos");
-          router.refresh();
+        .then((data: { imageUrl?: string; error?: string }) => {
+          if (isEditing) {
+            if (data?.imageUrl) setImageUrl(data.imageUrl);
+            if (data?.error) {
+              setImageMessage({
+                type: "error",
+                text: "Serviço salvo, mas a imagem falhou. Tente reenviar.",
+              });
+            } else {
+              setImageMessage(null);
+              setSavedSuccess(true);
+            }
+            router.refresh();
+          } else {
+            const param = data?.error
+              ? `?success=saved&image_error=1`
+              : `?success=saved`;
+            router.push(`/dashboard/servicos${param}`);
+            router.refresh();
+          }
+        })
+        .catch(() => {
+          if (isEditing) {
+            setImageMessage({
+              type: "error",
+              text: "Serviço salvo, mas a imagem falhou. Tente reenviar.",
+            });
+            router.refresh();
+          } else {
+            router.push("/dashboard/servicos?success=saved&image_error=1");
+            router.refresh();
+          }
         });
     } else {
-      router.push("/dashboard/servicos");
-      router.refresh();
+      if (isEditing) {
+        setSavedSuccess(true);
+        router.refresh();
+      } else {
+        router.push("/dashboard/servicos?success=saved");
+        router.refresh();
+      }
     }
   }, [state]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -79,39 +131,6 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
     setImageMessage(null);
   }
 
-  async function handleUpload() {
-    if (!selectedFile || !service?.id) return;
-    setImageStatus("uploading");
-    setImageMessage(null);
-
-    const form = new FormData();
-    form.set("image", selectedFile);
-
-    try {
-      const res = await fetch(`/api/services/${service.id}/image`, {
-        method: "POST",
-        body: form
-      });
-      const data = (await res.json()) as { imageUrl?: string; error?: string };
-
-      if (!res.ok) {
-        setImageMessage({ type: "error", text: data.error ?? "Erro ao enviar imagem." });
-        return;
-      }
-
-      setImageUrl(data.imageUrl ?? null);
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-      setPreviewUrl(null);
-      setSelectedFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
-      setImageMessage({ type: "success", text: "Imagem enviada com sucesso." });
-    } catch {
-      setImageMessage({ type: "error", text: "Erro de conexão. Tente novamente." });
-    } finally {
-      setImageStatus("idle");
-    }
-  }
-
   async function handleRemove() {
     if (!service?.id || !imageUrl) return;
     setImageStatus("removing");
@@ -119,12 +138,15 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
 
     try {
       const res = await fetch(`/api/services/${service.id}/image`, {
-        method: "DELETE"
+        method: "DELETE",
       });
       const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok) {
-        setImageMessage({ type: "error", text: data.error ?? "Erro ao remover imagem." });
+        setImageMessage({
+          type: "error",
+          text: data.error ?? "Erro ao remover imagem.",
+        });
         return;
       }
 
@@ -135,7 +157,10 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
       if (fileInputRef.current) fileInputRef.current.value = "";
       setImageMessage(null);
     } catch {
-      setImageMessage({ type: "error", text: "Erro de conexão. Tente novamente." });
+      setImageMessage({
+        type: "error",
+        text: "Erro de conexão. Tente novamente.",
+      });
     } finally {
       setImageStatus("idle");
     }
@@ -150,14 +175,27 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
       action={formAction}
       className={`grid gap-5 ${embedded ? "" : "rounded-xl border border-paper-soft bg-white p-4 sm:p-5 shadow-card"}`}
     >
-      {service ? <input name="serviceId" type="hidden" value={service.id} /> : null}
+      {service ? (
+        <input name="serviceId" type="hidden" value={service.id} />
+      ) : null}
       <input name="pricingType" type="hidden" value={pricingType} />
+      <input
+        name="fixedServiceCheckoutMode"
+        type="hidden"
+        value={pricingType === "FIXED" ? checkoutMode : "REQUEST_ONLY"}
+      />
       <input name="isActive" type="hidden" value={isActive ? "on" : ""} />
       <input
         name="requiresSchedulingDetails"
         type="hidden"
         value={requiresScheduling ? "on" : ""}
       />
+
+      {savedSuccess ? (
+        <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+          Serviço salvo com sucesso!
+        </p>
+      ) : null}
 
       {errorState ? (
         <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
@@ -180,11 +218,13 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
             className="min-h-11 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.name ?? ""}
             id={`name-${service?.id ?? "new"}`}
+            maxLength={120}
             name="name"
             placeholder="Ex: Pintura residencial, Corte de cabelo"
             required
             type="text"
           />
+          <p className="text-xs text-ink-muted">Máximo 120 caracteres.</p>
         </div>
 
         <div className="grid gap-2">
@@ -199,9 +239,11 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
             className="min-h-24 rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.description ?? ""}
             id={`description-${service?.id ?? "new"}`}
+            maxLength={600}
             name="description"
             placeholder="Descreva o serviço, o que está incluso, diferenciais…"
           />
+          <p className="text-xs text-ink-muted">Máximo 600 caracteres.</p>
         </div>
       </div>
 
@@ -213,7 +255,10 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
           <div className="flex rounded-xl border border-paper-soft bg-paper p-1">
             <button
               type="button"
-              onClick={() => setPricingType("CUSTOM")}
+              onClick={() => {
+                setPricingType("CUSTOM");
+                setCheckoutMode("REQUEST_ONLY");
+              }}
               className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
                 pricingType === "CUSTOM"
                   ? "bg-white shadow-sm text-ink"
@@ -241,6 +286,49 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
           </p>
         </div>
 
+        {pricingType === "FIXED" ? (
+          <button
+            type="button"
+            onClick={() =>
+              setCheckoutMode((m) =>
+                m === "REQUEST_ONLY" ? "ALLOW_PIX_RESERVATION" : "REQUEST_ONLY",
+              )
+            }
+            className={`flex w-full cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+              checkoutMode === "ALLOW_PIX_RESERVATION"
+                ? "border-leaf/40 bg-mint/30"
+                : "border-paper-soft bg-paper"
+            }`}
+          >
+            <div className="relative mt-0.5 h-6 w-11 shrink-0">
+              <div
+                className={`h-6 w-11 rounded-full transition-colors duration-200 ${
+                  checkoutMode === "ALLOW_PIX_RESERVATION"
+                    ? "bg-leaf"
+                    : "bg-stone-300"
+                }`}
+              />
+              <div
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                  checkoutMode === "ALLOW_PIX_RESERVATION"
+                    ? "translate-x-5"
+                    : "translate-x-0.5"
+                }`}
+              />
+            </div>
+            <div className="grid gap-0.5">
+              <span className="text-sm font-semibold text-ink">
+                Permitir pagamento via Pix
+              </span>
+              <span className="text-xs leading-5 text-ink-muted">
+                {checkoutMode === "ALLOW_PIX_RESERVATION"
+                  ? "O cliente poderá pagar via Pix pelo link. O pagamento é feito diretamente para você e a confirmação continua sendo manual."
+                  : "O cliente apenas envia uma solicitação. Sem opção de pagamento antecipado."}
+              </span>
+            </div>
+          </button>
+        ) : null}
+
         <div className="grid gap-2">
           <label
             className="text-sm font-semibold text-ink"
@@ -250,7 +338,9 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
             {pricingType === "FIXED" ? (
               <span className="ml-1 text-red-500">*</span>
             ) : (
-              <span className="ml-1 font-normal text-ink-muted">(opcional)</span>
+              <span className="ml-1 font-normal text-ink-muted">
+                (opcional)
+              </span>
             )}
           </label>
           <CurrencyInput
@@ -369,7 +459,9 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
               </div>
             ) : (
               <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-paper-soft bg-paper">
-                <p className="text-xs text-ink-muted">Nenhuma imagem selecionada</p>
+                <p className="text-xs text-ink-muted">
+                  Nenhuma imagem selecionada
+                </p>
               </div>
             )}
             <div className="grid gap-1">
@@ -382,12 +474,13 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
                 type="file"
               />
               <p className="text-xs text-ink-muted">
-                JPEG, PNG ou WebP · máximo 2 MB · enviada automaticamente ao salvar
+                JPEG, PNG ou WebP · máximo 2 MB · enviada automaticamente ao
+                salvar
               </p>
             </div>
           </div>
         ) : (
-          // PRO, serviço existente — UI completa de upload/remoção
+          // PRO, serviço existente
           <div className="grid gap-3">
             {displayImage ? (
               <div className="relative overflow-hidden rounded-xl border border-paper-soft">
@@ -400,7 +493,7 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
                 />
                 {previewUrl ? (
                   <span className="absolute left-2 top-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
-                    Prévia — ainda não enviada
+                    Será salva ao salvar
                   </span>
                 ) : null}
               </div>
@@ -420,32 +513,22 @@ export function ServiceForm({ service, isPro = false, onCancel, embedded = false
                 ref={fileInputRef}
                 type="file"
               />
-              <p className="text-xs text-ink-muted">JPEG, PNG ou WebP · máximo 2 MB</p>
+              <p className="text-xs text-ink-muted">
+                JPEG, PNG ou WebP · máximo 2 MB · enviada automaticamente ao
+                salvar
+              </p>
             </div>
 
-            <div className="flex flex-wrap gap-2">
-              {selectedFile ? (
-                <button
-                  className="inline-flex min-h-9 items-center justify-center rounded-lg bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50"
-                  disabled={imageBusy}
-                  onClick={handleUpload}
-                  type="button"
-                >
-                  {imageStatus === "uploading" ? "Enviando..." : "Enviar imagem"}
-                </button>
-              ) : null}
-
-              {imageUrl ? (
-                <button
-                  className="inline-flex min-h-9 items-center justify-center rounded-lg border border-red-200 bg-white px-4 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:opacity-50"
-                  disabled={imageBusy}
-                  onClick={handleRemove}
-                  type="button"
-                >
-                  {imageStatus === "removing" ? "Removendo..." : "Remover imagem"}
-                </button>
-              ) : null}
-            </div>
+            {imageUrl && !previewUrl ? (
+              <button
+                className="inline-flex min-h-9 w-fit items-center justify-center rounded-lg border border-red-200 bg-white px-4 text-xs font-semibold text-red-600 transition hover:border-red-300 hover:text-red-700 disabled:opacity-50"
+                disabled={imageBusy}
+                onClick={handleRemove}
+                type="button"
+              >
+                {imageStatus === "removing" ? "Removendo..." : "Remover imagem"}
+              </button>
+            ) : null}
 
             {imageMessage ? (
               <p

@@ -1,7 +1,10 @@
+export type FixedServiceCheckoutMode = "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION";
+
 export type ServiceSummary = {
   id: string;
   name: string;
   pricingType: "FIXED" | "CUSTOM";
+  fixedServiceCheckoutMode: FixedServiceCheckoutMode;
   basePrice: string | null;
   requiresSchedulingDetails: boolean;
 };
@@ -11,8 +14,10 @@ export type PublicService = {
   name: string;
   description: string | null;
   pricingType: "FIXED" | "CUSTOM";
+  fixedServiceCheckoutMode: FixedServiceCheckoutMode;
   basePrice: string | null;
   imageUrl: string | null;
+  pixConfigured: boolean;
 };
 
 export type ServiceForClient = {
@@ -20,6 +25,7 @@ export type ServiceForClient = {
   name: string;
   description: string | null;
   pricingType: "FIXED" | "CUSTOM";
+  fixedServiceCheckoutMode: FixedServiceCheckoutMode;
   basePrice: string | null;
   isActive: boolean;
   requiresSchedulingDetails: boolean;

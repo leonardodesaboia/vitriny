@@ -20,7 +20,15 @@ function appUrl(path: string) {
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 
-export async function createQuoteRequest(slug: string, formData: FormData) {
+export type QuoteRequestFormState = { error: string } | undefined;
+
+export async function createQuoteRequest(
+  slug: string,
+  _prevState: QuoteRequestFormState,
+  formData: FormData
+): Promise<QuoteRequestFormState> {
+  const pixReservation = formData.get("pixReservation") === "1";
+
   const parsed = quoteRequestSchema.safeParse({
     customerName: formData.get("customerName"),
     customerEmail: formData.get("customerEmail"),
@@ -33,7 +41,7 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
   });
 
   if (!parsed.success) {
-    redirect(`/u/${slug}/orcamento?error=invalid`);
+    return { error: "Preencha todos os campos obrigatórios corretamente." };
   }
 
   const profile = await prisma.providerProfile.findUnique({
@@ -46,6 +54,9 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
       isPublished: true,
       businessName: true,
       email: true,
+      pixKey: true,
+      pixHolderName: true,
+      pixCity: true,
       user: {
         select: {
           email: true
@@ -67,7 +78,10 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
       },
       select: {
         id: true,
-        name: true
+        name: true,
+        pricingType: true,
+        fixedServiceCheckoutMode: true,
+        basePrice: true
       }
     })
     : null;
@@ -77,6 +91,19 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
       redirect(`/u/${slug}/orcamento?error=service`);
     }
   }
+
+  const pixConfigured = !!(
+    profile.pixKey &&
+    profile.pixHolderName &&
+    profile.pixCity
+  );
+
+  const isPixReservation =
+    pixReservation &&
+    service?.pricingType === "FIXED" &&
+    service?.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" &&
+    !!service?.basePrice &&
+    pixConfigured;
 
   const monthRange = getCurrentMonthRange();
   const created = await prisma.$transaction(async (tx) => {
@@ -107,6 +134,12 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
         desiredTime: parsed.data.desiredTime,
         location: parsed.data.location,
         status: "NEW",
+        ...(isPixReservation
+          ? {
+              fixedServiceAmount: service!.basePrice,
+              pixReservationRequestedAt: new Date()
+            }
+          : {}),
         statusHistory: {
           create: {
             toStatus: "NEW",
@@ -147,7 +180,44 @@ export async function createQuoteRequest(slug: string, formData: FormData) {
     }
   }
 
+  if (isPixReservation) {
+    redirect(`/u/${slug}/reserva/${created.id}`);
+  }
+
   redirect(`/u/${slug}/orcamento?success=1`);
+}
+
+export async function markPixReservationPaid(formData: FormData) {
+  const { profile } = await requireProviderProfile();
+  if (!profile) redirect("/dashboard/pedidos?error=profile");
+
+  const requestId = String(formData.get("requestId") ?? "");
+  if (!requestId) redirect("/dashboard/pedidos?error=not-found");
+
+  const quoteRequest = await prisma.quoteRequest.findFirst({
+    where: { id: requestId, providerId: profile.id },
+    select: {
+      id: true,
+      pixReservationRequestedAt: true,
+      pixReservationPaidAt: true
+    }
+  });
+
+  if (!quoteRequest || !quoteRequest.pixReservationRequestedAt) {
+    redirect("/dashboard/pedidos?error=not-found");
+  }
+
+  if (quoteRequest.pixReservationPaidAt) {
+    redirect("/dashboard/pedidos");
+  }
+
+  await prisma.quoteRequest.update({
+    where: { id: quoteRequest.id },
+    data: { pixReservationPaidAt: new Date() }
+  });
+
+  revalidatePath("/dashboard/pedidos");
+  redirect("/dashboard/pedidos");
 }
 
 export async function updateQuoteRequestDescription(
