@@ -1,10 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import type { QuoteRequestStatusActor } from "@prisma/client";
 
-import { updateQuoteRequestDescription } from "@/lib/actions/quote-requests";
 import {
   createQuoteRequestNote,
   deleteQuoteRequestNote
@@ -121,15 +120,6 @@ function splitServiceFromDescription(
 
 export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [expanded, setExpanded] = useState(false);
-  const [editingNote, setEditingNote] = useState(false);
-  const [noteState, noteAction, notePending] = useActionState(
-    async (previousState: Awaited<ReturnType<typeof updateQuoteRequestDescription>>, formData: FormData) => {
-      const result = await updateQuoteRequestDescription(previousState, formData);
-      if (!result || !("error" in result)) setEditingNote(false);
-      return result;
-    },
-    undefined
-  );
 
   const legacyService = splitServiceFromDescription(
     quoteRequest.description ?? "",
@@ -157,47 +147,41 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="grid min-h-[104px] w-full grid-cols-[36px_minmax(0,1fr)_20px] items-start gap-3 p-4 text-left transition hover:bg-paper/50 sm:min-h-[88px] sm:grid-cols-[40px_minmax(0,1fr)_auto] sm:items-center sm:gap-4 sm:p-5"
+        className="grid h-32 w-full grid-cols-[36px_minmax(0,1fr)_20px] items-start gap-3 p-4 text-left transition hover:bg-paper/50 sm:grid-cols-[40px_minmax(0,1fr)_auto] sm:gap-4 sm:p-5"
+        title={`Abrir pedido de ${quoteRequest.customerName}`}
       >
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf sm:h-10 sm:w-10">
           {getInitials(quoteRequest.customerName)}
         </div>
 
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-1 font-fraunces text-base font-bold text-ink">
-            {quoteRequest.customerName}
-          </p>
-          <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
-            {/* Badge visível só no mobile */}
+          <div className="mb-1 flex items-center gap-1.5 overflow-hidden">
             <span
-              className={`sm:hidden rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge[quoteRequest.status] ?? "bg-paper-soft text-ink-muted"}`}
+              className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${statusBadge[quoteRequest.status] ?? "bg-paper-soft text-ink-muted"}`}
             >
               {statusLabels[quoteRequest.status]}
             </span>
-            {serviceLabel ? (
-              <span className="line-clamp-1 min-w-0 max-w-full text-xs text-ink-muted sm:max-w-[260px]">
-                · {serviceLabel}
-              </span>
-            ) : null}
+            <span className="shrink-0 text-xs text-ink-muted">
+              {formatDateShort(quoteRequest.createdAt)}
+            </span>
             {quoteRequest.service?.pricingType === "FIXED" ? (
-              <span className="shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf">
+              <span className="hidden shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf sm:inline-flex">
                 Preço fixo
               </span>
             ) : null}
-            <span className="line-clamp-1 min-w-0 max-w-full text-xs text-ink-muted sm:shrink-0">
-              {formatDateShort(quoteRequest.createdAt)}
-              {customerPhoneDisplay ? ` · ${customerPhoneDisplay}` : ""}
-            </span>
           </div>
+          <p
+            className="line-clamp-3 font-fraunces text-base font-bold leading-snug text-ink sm:line-clamp-2"
+            title={quoteRequest.customerName}
+          >
+            {quoteRequest.customerName}
+          </p>
+          <p className="mt-1 line-clamp-1 text-xs text-ink-muted">
+            {serviceLabel ?? "Serviço não informado"}
+          </p>
         </div>
 
-        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
-          {/* Badge visível só no desktop */}
-          <span
-            className={`hidden sm:inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusBadge[quoteRequest.status] ?? "bg-paper-soft text-ink-muted"}`}
-          >
-            {statusLabels[quoteRequest.status]}
-          </span>
+        <div className="flex h-full shrink-0 items-center justify-end gap-2 sm:gap-3">
           <svg
             className={`h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
             fill="none"
@@ -212,6 +196,15 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
       {/* Expanded content */}
       {expanded ? (
         <div className="border-t border-paper-soft bg-white p-4 sm:p-6">
+          <div className="mb-4 rounded-xl border border-paper-soft bg-paper px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+              Cliente
+            </p>
+            <p className="mt-1 break-words font-fraunces text-xl font-bold leading-snug text-ink">
+              {quoteRequest.customerName}
+            </p>
+          </div>
+
           {/* Contact + service grid */}
           <div className="grid gap-3 md:grid-cols-3">
             <div className="min-w-0 rounded-lg border border-paper-soft bg-paper px-4 py-3">
@@ -300,58 +293,16 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             </div>
           ) : null}
 
-          {/* Nota do cliente — sempre visível, editável */}
+          {/* Nota do cliente */}
           <div className="mt-5 rounded-xl border border-paper-soft bg-white p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                Nota do cliente
-              </p>
-              {!editingNote ? (
-                <button
-                  type="button"
-                  onClick={() => setEditingNote(true)}
-                  className="text-xs font-semibold text-leaf transition hover:underline"
-                >
-                  Editar
-                </button>
-              ) : null}
-            </div>
-            {editingNote ? (
-              <form action={noteAction} className="mt-2">
-                <input type="hidden" name="requestId" value={quoteRequest.id} />
-                <textarea
-                  name="description"
-                  defaultValue={cleanDescription ?? ""}
-                  className="min-h-24 w-full rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
-                  placeholder="Adicione uma nota sobre este pedido..."
-                />
-                {noteState && "error" in noteState ? (
-                  <p className="mt-1 text-xs text-red-600">{noteState.error}</p>
-                ) : null}
-                <div className="mt-2 flex flex-col gap-2 sm:flex-row">
-                  <button
-                    type="submit"
-                    disabled={notePending}
-                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 sm:w-auto"
-                  >
-                    {notePending ? "Salvando..." : "Salvar"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingNote(false)}
-                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-stone-300 sm:w-auto"
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <p className="mt-2 max-h-40 overflow-auto whitespace-pre-line break-words text-sm leading-6 text-ink">
-                {cleanDescription ?? (
-                  <span className="text-ink-muted">Nenhuma nota adicionada.</span>
-                )}
-              </p>
-            )}
+            <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+              Nota do cliente
+            </p>
+            <p className="mt-2 max-h-40 overflow-auto whitespace-pre-line break-words text-sm leading-6 text-ink">
+              {cleanDescription ?? (
+                <span className="text-ink-muted">Nenhuma nota adicionada.</span>
+              )}
+            </p>
           </div>
 
           {/* Proposal section */}
