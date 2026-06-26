@@ -38,7 +38,7 @@ docs/
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
-- `lib/theme-presets.ts`: presets e classes estáticas da página pública do prestador.
+- `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
 - `prisma/schema.prisma`: modelo de dados.
 - `types/`: tipos compartilhados entre actions e componentes.
 - `tests/`: testes automatizados (unit, actions, integration, e2e).

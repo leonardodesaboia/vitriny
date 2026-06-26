@@ -47,9 +47,9 @@ Fluxo alternativo — Reserva Pix (serviços FIXED):
 
 - Acesse `/dashboard/perfil`.
 - Preencha `businessName`, endereço do perfil, contatos, aparência da página, dados Pix se quiser receber entrada, e marque `isPublished`.
-- Em plano FREE, a aparência pública usa o tema padrão. Em plano PRO, escolha um preset visual e salve.
+- Em plano FREE, a aplicação usa o tema padrão. Em plano PRO, escolha um preset visual e salve.
 - Salve.
-- Esperado: dashboard mostra perfil e link `/u/[slug]`.
+- Esperado: dashboard mostra perfil e link `/u/[slug]`; dashboard do profissional e fluxo público do cliente usam o mesmo tema global de cor e fonte.
 
 ### 3. Serviços
 
@@ -89,6 +89,7 @@ Como verificar no banco:
 
 - Acesse `/dashboard/pedidos`.
 - Esperado: pedido aparece na lista.
+- Use os filtros de status (`Todos`, `Novo`, `Em análise`, `Proposta enviada`, `Fechado`) para validar a listagem filtrada.
 - Altere status para `REVIEWING` ou `CLOSED`.
 
 ### 7. Proposta

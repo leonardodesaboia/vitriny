@@ -79,13 +79,13 @@ O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizada
 
 Importante: o Pix do cliente final é manual. O OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
 
-## Feature PRO: Presets visuais da página pública
+## Feature PRO: Tema visual da aplicação
 
-Usuários no plano PRO podem escolher um preset visual para a página pública do prestador em `/u/[slug]`: `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE` ou `PREMIUM`.
+Usuários no plano PRO podem escolher um tema visual para a aplicação: dashboard do profissional e fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido, reserva/pagamento Pix e proposta pública em `/proposta/[publicToken]`. Os temas disponíveis são `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`.
 
-Usuários FREE sempre exibem publicamente o tema `DEFAULT`. Se um usuário PRO escolher um preset e depois voltar para FREE, o preset permanece salvo no banco, mas a página pública renderiza `DEFAULT` enquanto o plano não for PRO.
+Usuários FREE sempre usam o tema `DEFAULT`. Se um usuário PRO escolher um tema e depois voltar para FREE, o valor permanece salvo no banco, mas a aplicação renderiza `DEFAULT` enquanto o plano não for PRO.
 
-As regras e classes ficam centralizadas em `lib/theme-presets.ts`. Não há editor visual livre, CSS customizado, upload de banner ou drag-and-drop nesta etapa.
+Os temas alteram apenas tokens globais de cor e fonte via CSS variables. Eles não trocam layout, espaçamento ou classes específicas de cada componente. As regras ficam centralizadas em `lib/theme-presets.ts` e `app/globals.css`. Não há editor visual livre, CSS customizado, upload de banner ou drag-and-drop nesta etapa.
 
 ## Feature de billing
 

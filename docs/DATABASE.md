@@ -53,7 +53,7 @@ Campos importantes:
 
 - `slug`: URL pública em `/u/[slug]`.
 - `plan`: plano comercial (`FREE` ou `PRO`) usado para limites de uso.
-- `themePreset`: preset visual salvo para a página pública. O valor default é `DEFAULT`.
+- `themePreset`: preset visual salvo para dashboard do profissional e fluxo público do cliente. O valor default é `DEFAULT`.
 - `isPublished`: controla se o perfil aparece publicamente.
 - `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para pagamento manual de entrada em propostas aprovadas.
 
@@ -215,8 +215,9 @@ Ambos usam Decimal.
 - `BEAUTY`
 - `CREATIVE`
 - `PREMIUM`
+- `BOLD`
 
-O preset só é aplicado publicamente quando `ProviderProfile.plan === "PRO"`. Para `FREE`, `/u/[slug]` usa `DEFAULT` mesmo que outro valor esteja salvo.
+O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o dashboard do profissional e o fluxo público do cliente usam `DEFAULT` mesmo que outro valor esteja salvo. O preset controla tokens globais de cor e fonte, não estilos individuais de componentes.
 
 ### ServicePricingType
 
