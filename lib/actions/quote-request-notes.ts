@@ -49,6 +49,33 @@ export async function createQuoteRequestNote(formData: FormData) {
   redirect("/dashboard/pedidos");
 }
 
+export async function updateQuoteRequestNote(formData: FormData) {
+  const { profile } = await requireProviderProfile();
+  const noteId = String(formData.get("noteId") ?? "");
+  const content = String(formData.get("content") ?? "");
+
+  if (!profile) redirect("/dashboard/pedidos?error=profile");
+  if (!noteId) redirect("/dashboard/pedidos?error=invalid");
+
+  const parsed = quoteRequestNoteSchema.shape.content.safeParse(content);
+  if (!parsed.success) redirect("/dashboard/pedidos?error=invalid");
+
+  const note = await prisma.quoteRequestInternalNote.findFirst({
+    where: { id: noteId, quoteRequest: { providerId: profile.id } },
+    select: { id: true }
+  });
+
+  if (!note) redirect("/dashboard/pedidos?error=not-found");
+
+  await prisma.quoteRequestInternalNote.update({
+    where: { id: note.id },
+    data: { content: parsed.data }
+  });
+
+  revalidatePath("/dashboard/pedidos");
+  redirect("/dashboard/pedidos");
+}
+
 export async function deleteQuoteRequestNote(formData: FormData) {
   const { profile } = await requireProviderProfile();
   const noteId = String(formData.get("noteId") ?? "");

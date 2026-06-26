@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { QuoteRequestStatusActor } from "@prisma/client";
 
 import {
   createQuoteRequestNote,
-  deleteQuoteRequestNote
+  deleteQuoteRequestNote,
+  updateQuoteRequestNote
 } from "@/lib/actions/quote-request-notes";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import {
   buildWaUrl,
   pixDepositMessage,
@@ -120,6 +122,9 @@ function splitServiceFromDescription(
 
 export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [deletePending, startDeleteTransition] = useTransition();
 
   const legacyService = splitServiceFromDescription(
     quoteRequest.description ?? "",
@@ -171,7 +176,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             ) : null}
           </div>
           <p
-            className="line-clamp-3 font-fraunces text-base font-bold leading-snug text-ink sm:line-clamp-2"
+            className="truncate font-fraunces text-base font-bold leading-snug text-ink"
             title={quoteRequest.customerName}
           >
             {quoteRequest.customerName}
@@ -296,7 +301,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
           {/* Nota do cliente */}
           <div className="mt-5 rounded-xl border border-paper-soft bg-white p-4">
             <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-              Nota do cliente
+              Descrição do pedido
             </p>
             <p className="mt-2 max-h-40 overflow-auto whitespace-pre-line break-words text-sm leading-6 text-ink">
               {cleanDescription ?? (
@@ -543,24 +548,61 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                     key={note.id}
                     className="rounded-lg border border-paper-soft bg-paper px-4 py-3"
                   >
-                    <p className="max-h-36 overflow-auto whitespace-pre-line break-words text-sm leading-6 text-ink">
-                      {note.content}
-                    </p>
-                    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="break-words text-xs text-ink-muted">
-                        {note.author.name ?? note.author.email ?? "Prestador"} ·{" "}
-                        {formatDate(note.createdAt)}
-                      </span>
-                      <form action={deleteQuoteRequestNote}>
-                        <input name="noteId" type="hidden" value={note.id} />
-                        <button
-                          className="text-xs font-semibold text-red-500 transition hover:text-red-700"
-                          type="submit"
-                        >
-                          Excluir
-                        </button>
+                    {editingNoteId === note.id ? (
+                      <form action={updateQuoteRequestNote} onSubmit={() => setEditingNoteId(null)}>
+                        <input type="hidden" name="noteId" value={note.id} />
+                        <textarea
+                          name="content"
+                          defaultValue={note.content}
+                          maxLength={1000}
+                          required
+                          className="min-h-20 w-full rounded-md border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none focus:border-leaf"
+                        />
+                        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                          <button
+                            type="submit"
+                            className="inline-flex min-h-9 w-full items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
+                          >
+                            Salvar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingNoteId(null)}
+                            className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-stone-300 sm:w-auto"
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </form>
-                    </div>
+                    ) : (
+                      <>
+                        <p className="max-h-36 overflow-auto whitespace-pre-line break-words text-sm leading-6 text-ink">
+                          {note.content}
+                        </p>
+                        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <span className="break-words text-xs text-ink-muted">
+                            {note.author.name ?? note.author.email ?? "Prestador"} ·{" "}
+                            {formatDate(note.createdAt)}
+                          </span>
+                          <div className="flex gap-3">
+                            <button
+                              type="button"
+                              onClick={() => setEditingNoteId(note.id)}
+                              className="text-xs font-semibold text-leaf transition hover:underline"
+                            >
+                              Editar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setNoteToDelete(note.id)}
+                              className="text-xs font-semibold text-red-500 transition hover:text-red-700"
+                            >
+                              Excluir
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -597,6 +639,29 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
           </div>
         </div>
       ) : null}
+
+      <ConfirmModal
+        open={noteToDelete !== null}
+        title="Excluir nota"
+        description="Esta nota será removida permanentemente. Esta ação não pode ser desfeita."
+        eyebrow="Notas internas"
+        confirmLabel="Excluir"
+        cancelLabel="Cancelar"
+        variant="danger"
+        pending={deletePending}
+        pendingLabel="Excluindo..."
+        onClose={() => setNoteToDelete(null)}
+        onConfirm={() => {
+          if (!noteToDelete) return;
+          const id = noteToDelete;
+          setNoteToDelete(null);
+          startDeleteTransition(async () => {
+            const formData = new FormData();
+            formData.set("noteId", id);
+            await deleteQuoteRequestNote(formData);
+          });
+        }}
+      />
     </article>
   );
 }
