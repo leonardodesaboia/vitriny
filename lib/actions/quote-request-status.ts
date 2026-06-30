@@ -12,16 +12,12 @@ export async function updateQuoteRequestStatus(formData: FormData) {
   const requestId = String(formData.get("requestId") ?? "");
   const parsed = quoteRequestStatusSchema.safeParse(formData.get("status"));
 
+  if (!profile) {
+    redirect("/dashboard/pedidos?error=profile");
+  }
+
   if (!requestId || !parsed.success) {
     redirect("/dashboard/pedidos?error=invalid");
-  }
-
-  if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
-  }
-
-  if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
   }
 
   const quoteRequest = await prisma.quoteRequest.findFirst({

@@ -4,17 +4,27 @@ import { quoteRequestSchema } from "@/lib/validations/quote-request";
 describe("quoteRequestSchema", () => {
   const valid = {
     customerName: "Maria Oliveira",
-    customerEmail: "",
+    customerEmail: "maria@example.com",
     customerPhone: "",
     serviceId: "",
     description: "Preciso de pintura no quarto e sala da minha casa."
   };
 
-  it("aceita dados válidos sem campos opcionais", () => {
+  it("exige pelo menos e-mail ou telefone", () => {
+    const result = quoteRequestSchema.safeParse({
+      ...valid,
+      customerEmail: "",
+      customerPhone: ""
+    });
+
+    expect(result.success).toBe(false);
+  });
+
+  it("aceita dados válidos somente com e-mail como contato", () => {
     const result = quoteRequestSchema.safeParse(valid);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.customerEmail).toBeNull();
+      expect(result.data.customerEmail).toBe("maria@example.com");
       expect(result.data.customerPhone).toBeNull();
       expect(result.data.serviceId).toBeNull();
     }
@@ -56,7 +66,21 @@ describe("quoteRequestSchema", () => {
     ).toBe(false);
   });
 
-  it("aceita descrição curta (ex: observação em reserva Pix)", () => {
+  it("rejeita data inexistente no calendário", () => {
+    expect(
+      quoteRequestSchema.safeParse({ ...valid, desiredDate: "2026-02-31" })
+        .success
+    ).toBe(false);
+  });
+
+  it("aceita data real em ano bissexto", () => {
+    expect(
+      quoteRequestSchema.safeParse({ ...valid, desiredDate: "2028-02-29" })
+        .success
+    ).toBe(true);
+  });
+
+  it("aceita descrição curta (ex: observação em pagamento Pix)", () => {
     expect(quoteRequestSchema.safeParse({ ...valid, description: "Curto" }).success).toBe(true);
   });
 
@@ -87,7 +111,7 @@ describe("quoteRequestSchema", () => {
     if (result.success) expect(result.data.description).toBeNull();
   });
 
-  it("aceita description curta quando preenchida (observações opcionais em reserva Pix)", () => {
+  it("aceita description curta quando preenchida (observações opcionais em pagamento Pix)", () => {
     const result = quoteRequestSchema.safeParse({ ...valid, description: "Curta" });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.description).toBe("Curta");

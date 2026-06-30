@@ -12,7 +12,10 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
 import type { ActionResult } from "@/types";
-import { quoteRequestSchema } from "@/lib/validations/quote-request";
+import {
+  quoteRequestSchema,
+  validateQuoteRequestForService
+} from "@/lib/validations/quote-request";
 import { sendQuoteRequestReceivedEmail } from "@/lib/email";
 
 function appUrl(path: string) {
@@ -27,8 +30,6 @@ export async function createQuoteRequest(
   _prevState: QuoteRequestFormState,
   formData: FormData
 ): Promise<QuoteRequestFormState> {
-  const pixReservation = formData.get("pixReservation") === "1";
-
   const parsed = quoteRequestSchema.safeParse({
     customerName: formData.get("customerName"),
     customerEmail: formData.get("customerEmail"),
@@ -41,7 +42,11 @@ export async function createQuoteRequest(
   });
 
   if (!parsed.success) {
-    return { error: "Preencha todos os campos obrigatórios corretamente." };
+    return {
+      error:
+        parsed.error.issues[0]?.message ??
+        "Preencha todos os campos obrigatórios corretamente."
+    };
   }
 
   const profile = await prisma.providerProfile.findUnique({
@@ -81,7 +86,8 @@ export async function createQuoteRequest(
         name: true,
         pricingType: true,
         fixedServiceCheckoutMode: true,
-        basePrice: true
+        basePrice: true,
+        requiresSchedulingDetails: true
       }
     })
     : null;
@@ -92,24 +98,24 @@ export async function createQuoteRequest(
     }
   }
 
+  const businessRuleError = validateQuoteRequestForService(parsed.data, service);
+  if (businessRuleError) return { error: businessRuleError };
+
   const pixConfigured = !!(
     profile.pixKey &&
     profile.pixHolderName &&
     profile.pixCity
   );
 
-  const isPixReservation =
-    pixReservation &&
+  const requiresPixPayment =
     service?.pricingType === "FIXED" &&
-    service?.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" &&
-    !!service?.basePrice &&
-    pixConfigured;
+    service.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT";
 
-  const isDirectPixPayment =
-    !pixReservation &&
-    service?.pricingType === "FIXED" &&
-    !!service?.basePrice &&
-    pixConfigured;
+  if (requiresPixPayment && (!service.basePrice || !pixConfigured)) {
+    redirect(`/u/${slug}/orcamento?error=payment-unavailable`);
+  }
+
+  const isPixPayment = requiresPixPayment && !!service.basePrice && pixConfigured;
 
   const monthRange = getCurrentMonthRange();
   const created = await prisma.$transaction(async (tx) => {
@@ -140,14 +146,11 @@ export async function createQuoteRequest(
         desiredTime: parsed.data.desiredTime,
         location: parsed.data.location,
         status: "NEW",
-        ...(isPixReservation
+        ...(isPixPayment
           ? {
               fixedServiceAmount: service!.basePrice,
               pixReservationRequestedAt: new Date()
             }
-          : {}),
-        ...(isDirectPixPayment
-          ? { fixedServiceAmount: service!.basePrice }
           : {}),
         statusHistory: {
           create: {
@@ -189,12 +192,8 @@ export async function createQuoteRequest(
     }
   }
 
-  if (isPixReservation) {
+  if (isPixPayment) {
     redirect(`/u/${slug}/reserva/${created.id}`);
-  }
-
-  if (isDirectPixPayment) {
-    redirect(`/u/${slug}/pagamento/${created.id}`);
   }
 
   redirect(`/u/${slug}/orcamento?success=1`);
