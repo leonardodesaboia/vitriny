@@ -28,6 +28,9 @@ const getProfile = cache(async (slug: string) => {
       isPublished: true,
       plan: true,
       themePreset: true,
+      pixKey: true,
+      pixHolderName: true,
+      pixCity: true,
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -87,15 +90,7 @@ export default async function PublicProviderProfilePage({
 
   if (!profile || !profile.isPublished) notFound();
 
-  const pixConfigured =
-    (await prisma.providerProfile.count({
-      where: {
-        slug,
-        pixKey: { not: null },
-        pixHolderName: { not: null },
-        pixCity: { not: null }
-      }
-    })) > 0;
+  const pixConfigured = !!(profile.pixKey && profile.pixHolderName && profile.pixCity);
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const profilePhoneDisplay = formatPhoneBR(profile.phone);
