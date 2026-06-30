@@ -4,6 +4,12 @@ import type { QuoteRequestStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { QuoteRequestList } from "@/components/quote-request/QuoteRequestList";
+import {
+  DASHBOARD_REQUEST_VIEW_LABELS,
+  matchesDashboardRequestView,
+  parseDashboardRequestView
+} from "@/lib/dashboard";
+import { getCurrentMonthRange } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type RequestsPageProps = {
@@ -11,6 +17,7 @@ type RequestsPageProps = {
     error?: string;
     notice?: string;
     status?: string;
+    view?: string;
     warning?: string;
   }>;
 };
@@ -77,7 +84,14 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             }
           },
           proposal: {
-            select: { id: true, publicToken: true, status: true, depositAmount: true, depositPaidAt: true }
+            select: {
+              depositAmount: true,
+              depositPaidAt: true,
+              id: true,
+              publicToken: true,
+              respondedAt: true,
+              status: true
+            }
           },
           statusHistory: {
             orderBy: { createdAt: "asc" },
@@ -113,6 +127,8 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
   const totalRequests = profile?.quoteRequests.length ?? 0;
   const newRequests = profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
   const activeStatus = parseStatusFilter(params.status);
+  const activeView = parseDashboardRequestView(params.view);
+  const monthRange = getCurrentMonthRange();
   const requestCounts = Object.fromEntries(
     statusFilters.map((filter) => [
       filter.value,
@@ -122,7 +138,11 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
     ])
   ) as Record<QuoteRequestStatus | "ALL", number>;
   const filteredRequests =
-    activeStatus === "ALL"
+    activeView
+      ? (profile?.quoteRequests.filter((request) =>
+          matchesDashboardRequestView(request, activeView, monthRange)
+        ) ?? [])
+      : activeStatus === "ALL"
       ? (profile?.quoteRequests ?? [])
       : (profile?.quoteRequests.filter((request) => request.status === activeStatus) ?? []);
 
@@ -182,13 +202,27 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
         </div>
       ) : (
         <div className="mt-8 min-w-0">
+          {activeView ? (
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-leaf/20 bg-mint px-4 py-3">
+              <p className="text-sm font-semibold text-leaf">
+                Visão: {DASHBOARD_REQUEST_VIEW_LABELS[activeView]}
+              </p>
+              <Link
+                className="text-xs font-semibold text-leaf underline-offset-4 hover:underline"
+                href="/dashboard/pedidos"
+              >
+                Limpar filtro
+              </Link>
+            </div>
+          ) : null}
+
           <div className="mb-5 overflow-x-auto pb-1">
             <nav
               aria-label="Filtrar pedidos por status"
               className="flex min-w-max gap-2"
             >
               {statusFilters.map((filter) => {
-                const active = filter.value === activeStatus;
+                const active = !activeView && filter.value === activeStatus;
                 const href =
                   filter.value === "ALL"
                     ? "/dashboard/pedidos"
@@ -221,12 +255,16 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
 
           <QuoteRequestList
             emptyDescription={
-              activeStatus === "ALL"
+              activeView
+                ? `Nenhum pedido encontrado em “${DASHBOARD_REQUEST_VIEW_LABELS[activeView]}”.`
+                : activeStatus === "ALL"
                 ? undefined
                 : `Nenhum pedido com status "${statusLabel[activeStatus]}".`
             }
             emptyTitle={
-              activeStatus === "ALL"
+              activeView
+                ? "Nenhuma pendência nesta visão"
+                : activeStatus === "ALL"
                 ? undefined
                 : "Nenhum pedido neste filtro"
             }
