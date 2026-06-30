@@ -1,6 +1,8 @@
+import type { FixedServiceCheckoutMode } from "@/types/service";
+
 type ServiceInput = {
   pricingType: "FIXED" | "CUSTOM";
-  fixedServiceCheckoutMode: "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT" | null | undefined;
+  fixedServiceCheckoutMode: FixedServiceCheckoutMode | null | undefined;
 };
 
 type Step = {
@@ -18,7 +20,7 @@ export function getHowItWorksContent(services: ServiceInput[]): {
   const hasPixRequired = services.some(
     (s) =>
       s.pricingType === "FIXED" &&
-      s.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT"
+      s.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION"
   );
   const hasRequestOnly = services.some(
     (s) =>
