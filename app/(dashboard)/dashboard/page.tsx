@@ -4,13 +4,20 @@ import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import {
+  DashboardMetricGrid,
+  type DashboardMetric
+} from "@/components/dashboard/DashboardMetricGrid";
+import { DashboardPendingActions } from "@/components/dashboard/DashboardPendingActions";
+import { DashboardRecentActivity } from "@/components/dashboard/DashboardRecentActivity";
+import {
   OnboardingChecklist,
   type OnboardingStep
 } from "@/components/onboarding/OnboardingChecklist";
 import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { profileLinkMessage } from "@/lib/whatsapp-messages";
-import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 import { Card } from "@/components/ui/Card";
+import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
+import { buildOnboardingOutcomeStep } from "@/lib/dashboard";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
@@ -23,35 +30,111 @@ export default async function DashboardPage() {
   const monthRange = getCurrentMonthRange();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    include: {
-      quoteRequests: { select: { id: true, status: true, createdAt: true } },
-      proposals: { select: { id: true, status: true, createdAt: true } },
-      proposalTemplates: { select: { id: true } },
-      services: { select: { id: true, isActive: true } }
+    select: {
+      _count: {
+        select: {
+          proposalTemplates: true,
+          proposals: true
+        }
+      },
+      businessName: true,
+      id: true,
+      isPublished: true,
+      plan: true,
+      services: {
+        select: {
+          isActive: true,
+          pricingType: true
+        }
+      },
+      slug: true
     }
   });
 
-  const totalPedidos = profile?.quoteRequests.length ?? 0;
-  const novosPedidos =
-    profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
-  const propostasEnviadas =
-    profile?.proposals.filter((p) => p.status === "SENT").length ?? 0;
-  const propostasAprovadas =
-    profile?.proposals.filter((p) => p.status === "APPROVED").length ?? 0;
-  const limits = profile ? getPlanLimits(profile.plan) : null;
-  const monthlyQuoteRequests =
-    profile?.quoteRequests.filter(
-      (request) =>
-        request.createdAt >= monthRange.start && request.createdAt < monthRange.end
-    ).length ?? 0;
-  const monthlyProposals =
-    profile?.proposals.filter(
-      (proposal) =>
-        proposal.createdAt >= monthRange.start && proposal.createdAt < monthRange.end
-    ).length ?? 0;
+  const [
+    monthlyQuoteRequests,
+    openQuoteRequests,
+    newQuoteRequests,
+    waitingProposals,
+    approvedProposalsThisMonth,
+    monthlyProposals,
+    pendingPixReservations,
+    pendingProposalDeposits,
+    fixedRequestCount
+  ] = profile
+    ? await prisma.$transaction([
+        prisma.quoteRequest.count({
+          where: {
+            createdAt: { gte: monthRange.start, lt: monthRange.end },
+            providerId: profile.id
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: {
+            providerId: profile.id,
+            status: { not: "CLOSED" }
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: { providerId: profile.id, status: "NEW" }
+        }),
+        prisma.proposal.count({
+          where: { providerId: profile.id, status: "SENT" }
+        }),
+        prisma.proposal.count({
+          where: {
+            providerId: profile.id,
+            respondedAt: { gte: monthRange.start, lt: monthRange.end },
+            status: "APPROVED"
+          }
+        }),
+        prisma.proposal.count({
+          where: {
+            createdAt: { gte: monthRange.start, lt: monthRange.end },
+            providerId: profile.id
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: {
+            pixReservationPaidAt: null,
+            pixReservationRequestedAt: { not: null },
+            providerId: profile.id
+          }
+        }),
+        prisma.proposal.count({
+          where: {
+            depositAmount: { gt: 0 },
+            depositPaidAt: null,
+            providerId: profile.id,
+            status: "APPROVED"
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: {
+            providerId: profile.id,
+            service: { pricingType: "FIXED" }
+          }
+        })
+      ])
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0];
 
-  const activeServicesCount =
-    profile?.services.filter((s) => s.isActive).length ?? 0;
+  const recentActivity = profile
+    ? await getRecentDashboardActivity(profile.id)
+    : [];
+
+  const limits = profile ? getPlanLimits(profile.plan) : null;
+  const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
+  const activeServicesCount = activeServices.length;
+  const onboardingOutcomeStep = buildOnboardingOutcomeStep({
+    fixedRequestCount,
+    hasActiveCustomService: activeServices.some(
+      (service) => service.pricingType === "CUSTOM"
+    ),
+    hasActiveFixedService: activeServices.some(
+      (service) => service.pricingType === "FIXED"
+    ),
+    proposalCount: profile?._count.proposals ?? 0
+  });
 
   const onboardingSteps: OnboardingStep[] = [
     {
@@ -89,36 +172,66 @@ export default async function DashboardPage() {
       isCopyStep: true,
       actionLabel: "Copiar link"
     },
+    onboardingOutcomeStep
+  ];
+
+  const metrics: DashboardMetric[] = [
     {
-      id: "request",
-      label: "Receber primeiro pedido de orçamento",
-      description:
-        "Quando um cliente preencher o formulário no seu perfil, o pedido aparece aqui.",
-      done: (profile?.quoteRequests.length ?? 0) > 0,
-      href: "/dashboard/pedidos",
-      actionLabel: "Ver pedidos"
+      description: "Criados no mês atual",
+      href: "/dashboard/pedidos?view=MONTH",
+      label: "Pedidos no mês",
+      value: monthlyQuoteRequests
     },
     {
-      id: "proposal",
-      label: "Criar primeira proposta",
-      description:
-        "Responda um pedido com uma proposta detalhada e envie o link para o cliente aprovar.",
-      done: (profile?.proposals.length ?? 0) > 0,
-      href: "/dashboard/pedidos",
-      actionLabel: "Ir para pedidos"
+      description: "Novos, em análise ou com proposta",
+      href: "/dashboard/pedidos?view=OPEN",
+      label: "Pedidos em aberto",
+      value: openQuoteRequests
+    },
+    {
+      description: "Aguardando resposta do cliente",
+      href: "/dashboard/pedidos?status=PROPOSAL_SENT",
+      label: "Propostas aguardando",
+      value: waitingProposals
+    },
+    {
+      description: "Respondidas no mês atual",
+      href: "/dashboard/pedidos?view=APPROVED_MONTH",
+      label: "Aprovadas no mês",
+      value: approvedProposalsThisMonth
     }
   ];
 
-  const metrics = [
-    { label: "Pedidos totais", value: totalPedidos },
-    { label: "Pedidos novos", value: novosPedidos },
-    { label: "Propostas enviadas", value: propostasEnviadas },
-    { label: "Propostas aprovadas", value: propostasAprovadas }
+  const pendingActions = [
+    {
+      count: newQuoteRequests,
+      description: "Revise os pedidos que acabaram de chegar.",
+      href: "/dashboard/pedidos?status=NEW",
+      label: "Novos pedidos"
+    },
+    {
+      count: waitingProposals,
+      description: "Acompanhe propostas que aguardam o cliente.",
+      href: "/dashboard/pedidos?status=PROPOSAL_SENT",
+      label: "Propostas aguardando resposta"
+    },
+    {
+      count: pendingPixReservations,
+      description: "Confirme os recebimentos informados pelos clientes.",
+      href: "/dashboard/pedidos?view=PIX_RESERVATION",
+      label: "Pagamentos Pix para confirmar"
+    },
+    {
+      count: pendingProposalDeposits,
+      description: "Marque as entradas recebidas nas propostas aprovadas.",
+      href: "/dashboard/pedidos?view=DEPOSIT",
+      label: "Entradas Pix para confirmar"
+    }
   ];
 
   return (
-    <div className="p-8">
-      <div className="flex items-start justify-between">
+    <div className="min-w-0 p-4 sm:p-6 md:p-8">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
             Dashboard
@@ -149,25 +262,18 @@ export default async function DashboardPage() {
         storageScope={session.user.id}
       />
 
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {metrics.map((m) => (
-          <Card key={m.label} className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-              {m.label}
-            </p>
-            <p className="mt-2 font-fraunces text-4xl font-bold text-ink">
-              <AnimatedCounter value={m.value} />
-            </p>
-          </Card>
-        ))}
-      </div>
+      <DashboardPendingActions actions={pendingActions} />
+
+      <DashboardMetricGrid metrics={metrics} />
+
+      <DashboardRecentActivity activities={recentActivity} />
 
       {profile && limits ? (
         <PlanUsageCard
           plan={profile.plan}
           usage={[
             {
-              current: profile.services.filter((service) => service.isActive).length,
+              current: activeServicesCount,
               limit: limits.activeServices,
               resource: "activeServices"
             },
@@ -182,7 +288,7 @@ export default async function DashboardPage() {
               resource: "monthlyProposals"
             },
             {
-              current: profile.proposalTemplates.length,
+              current: profile._count.proposalTemplates,
               limit: limits.proposalTemplates,
               resource: "proposalTemplates"
             }
