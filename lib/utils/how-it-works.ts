@@ -20,7 +20,7 @@ export function getHowItWorksContent(services: ServiceInput[]): {
   const hasPixRequired = services.some(
     (s) =>
       s.pricingType === "FIXED" &&
-      s.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION"
+      s.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT"
   );
   const hasRequestOnly = services.some(
     (s) =>

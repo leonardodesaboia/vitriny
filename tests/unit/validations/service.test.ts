@@ -104,6 +104,17 @@ describe("serviceSchema", () => {
     ).toBe(false);
   });
 
+  it("aceita REQUIRE_PIX_PAYMENT como modo de checkout", () => {
+    expect(
+      serviceSchema.safeParse({
+        ...valid,
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT",
+        basePrice: "200.00"
+      }).success
+    ).toBe(true);
+  });
+
   it("FIXED rejeita quando basePrice está vazio", () => {
     const result = serviceSchema.safeParse({
       ...valid,

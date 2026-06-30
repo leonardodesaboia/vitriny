@@ -21,7 +21,7 @@ type QuoteRequestFormProps = {
   services: ServiceSummary[];
   selectedServiceId?: string | null;
   selectedService?: SelectedService | null;
-  isPixReservation?: boolean;
+  requiresPixPayment?: boolean;
 };
 
 const inputClass =
@@ -41,7 +41,7 @@ export function QuoteRequestForm({
   services,
   selectedServiceId,
   selectedService,
-  isPixReservation = false
+  requiresPixPayment = false
 }: QuoteRequestFormProps) {
   const boundAction = createQuoteRequest.bind(null, slug);
   const [state, formAction, isPending] = useActionState<QuoteRequestFormState, FormData>(
@@ -64,9 +64,6 @@ export function QuoteRequestForm({
 
   return (
     <form action={formAction} className="mt-8 grid gap-5">
-      {isPixReservation ? (
-        <input name="pixReservation" type="hidden" value="1" />
-      ) : null}
       {state?.error ? (
         <p
           role="alert"
@@ -75,7 +72,7 @@ export function QuoteRequestForm({
           {state.error}
         </p>
       ) : null}
-      {isPixReservation && selectedService?.basePrice ? (
+      {requiresPixPayment && selectedService?.basePrice ? (
         <div className="rounded-xl border border-leaf/30 bg-mint/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
             Valor da reserva
@@ -246,7 +243,7 @@ export function QuoteRequestForm({
       >
         {isPending
           ? "Enviando..."
-          : isPixReservation
+          : requiresPixPayment
             ? "Continuar para pagamento Pix →"
             : isFixed
               ? "Solicitar serviço"

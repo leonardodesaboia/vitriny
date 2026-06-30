@@ -30,9 +30,9 @@ describe("getHowItWorksContent", () => {
     expect(steps[2].title).toBe("Prestador entra em contato");
   });
 
-  it("retorna fluxo PIX quando há apenas FIXED/ALLOW_PIX_RESERVATION", () => {
+  it("retorna fluxo PIX quando há apenas FIXED/REQUIRE_PIX_PAYMENT", () => {
     const { title, steps } = getHowItWorksContent([
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" }
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps).toHaveLength(3);
@@ -55,7 +55,7 @@ describe("getHowItWorksContent", () => {
   it("retorna fluxo FIXED (não PIX) para perfil com ambos os modos FIXED", () => {
     const { title, steps } = getHowItWorksContent([
       { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" },
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" }
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps).toHaveLength(3);

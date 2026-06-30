@@ -81,10 +81,9 @@ export default async function PublicQuoteRequestPage({
     profile.pixCity
   );
 
-  const isPixReservation =
-    query.modo === "reserva" &&
+  const requiresPixPayment =
     selectedService?.pricingType === "FIXED" &&
-    selectedService?.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" &&
+    selectedService?.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT" &&
     pixConfigured;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
 
@@ -102,8 +101,8 @@ export default async function PublicQuoteRequestPage({
         {/* Header */}
         <div className="mt-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            {isPixReservation
-              ? "Reserva com Pix"
+            {requiresPixPayment
+              ? "Pagamento com Pix"
               : selectedService?.pricingType === "FIXED"
                 ? "Solicitação de serviço"
                 : "Pedido de orçamento"}
@@ -112,8 +111,8 @@ export default async function PublicQuoteRequestPage({
             {profile.businessName}
           </h1>
           <p className="mt-3 text-sm leading-6 text-ink-muted">
-            {isPixReservation
-              ? "Preencha seus dados e realize o pagamento via Pix para reservar este serviço."
+            {requiresPixPayment
+              ? "Preencha seus dados. O pagamento via Pix é obrigatório para concluir a solicitação."
               : "Envie as informações iniciais para que o prestador avalie seu pedido."}
           </p>
         </div>
@@ -167,7 +166,7 @@ export default async function PublicQuoteRequestPage({
               </div>
             ) : null}
             <QuoteRequestForm
-              isPixReservation={isPixReservation}
+              requiresPixPayment={requiresPixPayment}
               selectedServiceId={selectedServiceId}
               selectedService={
                 selectedService
