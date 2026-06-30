@@ -62,9 +62,9 @@ describe("getHowItWorksContent", () => {
     expect(steps[2].title).toBe("Prestador entra em contato");
   });
 
-  it("retorna fluxo PIX quando há apenas FIXED/REQUIRE_PIX_PAYMENT", () => {
+  it("retorna fluxo PIX quando há apenas FIXED/ALLOW_PIX_RESERVATION", () => {
     const { title, steps } = getHowItWorksContent([
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Preencha seus dados");
@@ -85,7 +85,7 @@ describe("getHowItWorksContent", () => {
   it("retorna fluxo FIXED (não PIX) para perfil com ambos os modos FIXED", () => {
     const { title, steps } = getHowItWorksContent([
       { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" },
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Escolha o serviço");
@@ -108,7 +108,7 @@ Esperado: FAIL com `Cannot find module '@/lib/utils/how-it-works'`.
 
 type ServiceInput = {
   pricingType: "FIXED" | "CUSTOM";
-  fixedServiceCheckoutMode: "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT" | null | undefined;
+  fixedServiceCheckoutMode: "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION" | null | undefined;
 };
 
 type Step = {
@@ -126,7 +126,7 @@ export function getHowItWorksContent(services: ServiceInput[]): {
   const hasPixRequired = services.some(
     (s) =>
       s.pricingType === "FIXED" &&
-      s.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT"
+      s.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION"
   );
   const hasRequestOnly = services.some(
     (s) =>
@@ -372,7 +372,7 @@ export function PublicServicesGrid({
                 </p>
               )}
               {service.pricingType === "FIXED" &&
-              service.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT" ? (
+              service.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" ? (
                 service.pixConfigured ? (
                   <Link
                     href={`/u/${slug}/orcamento?serviceId=${service.id}&modo=pagamento`}

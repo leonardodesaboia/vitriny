@@ -127,7 +127,7 @@ export default async function PublicQuoteRequestPage({
 
         {/* Success state */}
         {query.success ? (
-          <div className="mt-8 rounded-xl border border-mint bg-mint/40 p-6">
+          <div aria-live="polite" className="mt-8 rounded-xl border border-mint bg-mint/40 p-6">
             <p className="font-fraunces text-xl font-bold text-leaf">
               Pedido enviado!
             </p>

@@ -68,7 +68,10 @@ export function QuoteRequestForm({
         <input name="pixReservation" type="hidden" value="1" />
       ) : null}
       {state?.error ? (
-        <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+        <p
+          role="alert"
+          className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+        >
           {state.error}
         </p>
       ) : null}
