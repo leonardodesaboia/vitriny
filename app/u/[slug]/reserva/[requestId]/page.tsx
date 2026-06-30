@@ -11,6 +11,7 @@ import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
+import { isPixPaymentExpired } from "@/lib/utils/date";
 
 type PixReservationPageProps = {
   params: Promise<{
@@ -94,6 +95,9 @@ export default async function PixReservationPage({ params }: PixReservationPageP
   });
 
   const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
+  const expired =
+    !alreadyPaid &&
+    isPixPaymentExpired(quoteRequest.pixReservationRequestedAt);
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
   const whatsappNumber = profile.phone
     ? phoneToWhatsAppNumber(profile.phone)
@@ -134,6 +138,21 @@ export default async function PixReservationPage({ params }: PixReservationPageP
             </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
               O prestador confirmou o recebimento do Pix. Sua solicitação está confirmada.
+            </p>
+            <Link
+              className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+              href={`/u/${slug}`}
+            >
+              Voltar ao perfil
+            </Link>
+          </div>
+        ) : expired ? (
+          <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
+            <p className="font-fraunces text-xl font-bold text-red-700">
+              Código Pix expirado
+            </p>
+            <p className="mt-2 text-sm leading-6 text-ink-muted">
+              O prazo para realizar este pagamento encerrou. Faça uma nova solicitação se ainda precisar do serviço.
             </p>
             <Link
               className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"

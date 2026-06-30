@@ -21,6 +21,7 @@ import { markDepositPaid } from "@/lib/actions/proposals";
 import { markPixReservationPaid } from "@/lib/actions/quote-requests";
 import { WhatsAppButton } from "@/components/whatsapp/WhatsAppButton";
 import { formatPhoneBR, phoneToTelHref } from "@/lib/utils/phone";
+import { isPixPaymentExpired } from "@/lib/utils/date";
 import type { QuoteRequestWithRelations } from "@/types";
 
 // Decimal fields serialized to string before crossing the Server→Client boundary
@@ -181,8 +182,20 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               </span>
             ) : null}
             {quoteRequest.pixReservationRequestedAt ? (
-              <span className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold sm:inline-flex ${quoteRequest.pixReservationPaidAt ? "border-mint bg-mint text-leaf" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
-                {quoteRequest.pixReservationPaidAt ? "Pagamento Pix confirmado" : "Pagamento Pix pendente"}
+              <span
+                className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold sm:inline-flex ${
+                  quoteRequest.pixReservationPaidAt
+                    ? "border-mint bg-mint text-leaf"
+                    : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
+                      ? "border-red-200 bg-red-50 text-red-700"
+                      : "border-amber-200 bg-amber-50 text-amber-700"
+                }`}
+              >
+                {quoteRequest.pixReservationPaidAt
+                  ? "Pagamento Pix confirmado"
+                  : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
+                    ? "Pix expirado"
+                    : "Pagamento Pix pendente"}
               </span>
             ) : null}
           </div>
@@ -533,6 +546,15 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                         ✓ Pix confirmado em{" "}
                         {formatDateShort(quoteRequest.pixReservationPaidAt)}
                       </span>
+                    </div>
+                  ) : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt) ? (
+                    <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+                      <span className="text-xs font-semibold text-red-700">
+                        Pix expirado — o cliente não realizou o pagamento no prazo.
+                      </span>
+                      <p className="mt-1 text-xs text-ink-muted">
+                        Você pode encerrar este pedido via alteração de status.
+                      </p>
                     </div>
                   ) : (
                     <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center">
