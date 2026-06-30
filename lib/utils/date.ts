@@ -32,3 +32,10 @@ function localDateToISO(date: Date) {
 export function isISODateBeforeToday(value: string, referenceDate = new Date()) {
   return isValidISODate(value) && value < localDateToISO(referenceDate);
 }
+
+export const PIX_PAYMENT_EXPIRY_HOURS = 48;
+
+export function isPixPaymentExpired(requestedAt: Date, now = new Date()) {
+  const expiryMs = PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000;
+  return now.getTime() - requestedAt.getTime() > expiryMs;
+}
