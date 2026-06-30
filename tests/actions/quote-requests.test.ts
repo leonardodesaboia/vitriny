@@ -6,7 +6,8 @@ vi.mock("@/lib/actions/auth-guard", () => ({
   requireProviderProfile: vi.fn()
 }));
 vi.mock("@/lib/email", () => ({
-  sendQuoteRequestReceivedEmail: vi.fn()
+  sendQuoteRequestReceivedEmail: vi.fn(),
+  sendQuoteRequestConfirmationToCustomerEmail: vi.fn()
 }));
 
 let db: PrismaMock;
@@ -342,6 +343,70 @@ describe("createQuoteRequest", () => {
     ).rejects.toThrow("/u/orcafacil/orcamento?error=payment-unavailable");
 
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia pedido quando limite mensal FREE foi atingido", async () => {
+    db.quoteRequest.count.mockResolvedValue(10);
+
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    await expect(
+      createQuoteRequest(
+        "orcafacil",
+        undefined,
+        makeFormData({
+          customerName: "Maria",
+          customerEmail: "maria@example.com",
+          description: "Preciso pintar a sala."
+        })
+      )
+    ).rejects.toThrow("error=limit-monthly-quote-requests");
+
+    expect(db.quoteRequest.create).not.toHaveBeenCalled();
+  });
+
+  it("envia e-mail de confirmação ao cliente quando e-mail foi informado", async () => {
+    const { sendQuoteRequestConfirmationToCustomerEmail } = await import("@/lib/email");
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    await expect(
+      createQuoteRequest(
+        "orcafacil",
+        undefined,
+        makeFormData({
+          customerName: "Carlos",
+          customerEmail: "carlos@example.com",
+          description: "Preciso pintar a sala."
+        })
+      )
+    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+
+    expect(sendQuoteRequestConfirmationToCustomerEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "carlos@example.com",
+        businessName: "OrçaFácil Serviços",
+        isPixPayment: false
+      })
+    );
+  });
+
+  it("não envia e-mail de confirmação quando cliente não informou e-mail", async () => {
+    const { sendQuoteRequestConfirmationToCustomerEmail } = await import("@/lib/email");
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    await expect(
+      createQuoteRequest(
+        "orcafacil",
+        undefined,
+        makeFormData({
+          customerName: "Carlos",
+          customerPhone: "11999999999",
+          description: "Preciso pintar a sala."
+        })
+      )
+    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+
+    expect(sendQuoteRequestConfirmationToCustomerEmail).not.toHaveBeenCalled();
   });
 });
 

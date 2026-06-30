@@ -143,4 +143,48 @@ describe("notificações da aplicação", () => {
       })
     );
   });
+
+  it("confirma pedido normal ao cliente com link do perfil", async () => {
+    const { sendQuoteRequestConfirmationToCustomerEmail } = await import("@/lib/email");
+
+    await sendQuoteRequestConfirmationToCustomerEmail({
+      to: "cliente@example.com",
+      customerName: "Carlos",
+      businessName: "Pinturas João",
+      serviceName: "Pintura residencial",
+      isPixPayment: false,
+      profileUrl: "https://app.test/u/joao",
+      pixReservaUrl: null
+    });
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "cliente@example.com",
+        subject: "Pedido recebido — Pinturas João",
+        html: expect.stringContaining("https://app.test/u/joao")
+      })
+    );
+    const html = sendEmail.mock.calls[0]?.[0]?.html as string;
+    expect(html).toContain("Carlos");
+    expect(html).toContain("Pintura residencial");
+    expect(html).toContain("Pinturas João");
+  });
+
+  it("confirma pedido Pix ao cliente com link da reserva", async () => {
+    const { sendQuoteRequestConfirmationToCustomerEmail } = await import("@/lib/email");
+
+    await sendQuoteRequestConfirmationToCustomerEmail({
+      to: "cliente@example.com",
+      customerName: "Ana",
+      businessName: "Studio Beleza",
+      serviceName: null,
+      isPixPayment: true,
+      profileUrl: "https://app.test/u/studio",
+      pixReservaUrl: "https://app.test/u/studio/reserva/req-1"
+    });
+
+    const html = sendEmail.mock.calls[0]?.[0]?.html as string;
+    expect(html).toContain("https://app.test/u/studio/reserva/req-1");
+    expect(html).toContain("pagamento Pix");
+  });
 });
