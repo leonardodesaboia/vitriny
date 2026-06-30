@@ -16,7 +16,10 @@ import {
   quoteRequestSchema,
   validateQuoteRequestForService
 } from "@/lib/validations/quote-request";
-import { sendQuoteRequestReceivedEmail } from "@/lib/email";
+import {
+  sendQuoteRequestConfirmationToCustomerEmail,
+  sendQuoteRequestReceivedEmail
+} from "@/lib/email";
 
 function appUrl(path: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
@@ -186,6 +189,25 @@ export async function createQuoteRequest(
       });
     } catch (error) {
       console.error("Falha ao enviar e-mail de novo pedido.", {
+        error,
+        quoteRequestId: created.id
+      });
+    }
+  }
+
+  if (parsed.data.customerEmail) {
+    try {
+      await sendQuoteRequestConfirmationToCustomerEmail({
+        to: parsed.data.customerEmail,
+        customerName: created.customerName,
+        businessName: profile.businessName,
+        serviceName: service?.name,
+        isPixPayment,
+        profileUrl: appUrl(`/u/${slug}`),
+        pixReservaUrl: isPixPayment ? appUrl(`/u/${slug}/reserva/${created.id}`) : null
+      });
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de confirmação ao cliente.", {
         error,
         quoteRequestId: created.id
       });

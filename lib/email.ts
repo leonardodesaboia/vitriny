@@ -31,6 +31,16 @@ type ProposalResponseEmailInput = {
   proposalUrl: string;
 };
 
+type QuoteRequestConfirmationEmailInput = {
+  to: string;
+  customerName: string;
+  businessName: string;
+  serviceName?: string | null;
+  isPixPayment: boolean;
+  profileUrl: string;
+  pixReservaUrl?: string | null;
+};
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -191,6 +201,41 @@ export async function sendProposalSentEmail({
       paragraph(`${businessName} enviou uma proposta para você no valor de ${totalAmount}.`),
       emailButton("Ver e responder proposta", proposalUrl)
     ].join("")
+  });
+}
+
+export async function sendQuoteRequestConfirmationToCustomerEmail({
+  to,
+  customerName,
+  businessName,
+  serviceName,
+  isPixPayment,
+  profileUrl,
+  pixReservaUrl
+}: QuoteRequestConfirmationEmailInput) {
+  const serviceLabel = serviceName ? ` para o serviço ${serviceName}` : "";
+
+  const body = isPixPayment
+    ? [
+        paragraph(`Olá, ${customerName}.`),
+        paragraph(
+          `Sua solicitação${serviceLabel} foi registrada por ${businessName}. Complete o pagamento Pix para confirmar sua reserva.`
+        ),
+        pixReservaUrl ? emailButton("Completar pagamento Pix", pixReservaUrl) : ""
+      ].join("")
+    : [
+        paragraph(`Olá, ${customerName}.`),
+        paragraph(
+          `Sua solicitação${serviceLabel} foi recebida por ${businessName}. O prestador avaliará em breve e retornará pelo contato informado.`
+        ),
+        emailButton("Ver perfil do prestador", profileUrl)
+      ].join("");
+
+  await sendAppEmail({
+    to,
+    subject: `Pedido recebido — ${businessName}`,
+    preview: `Sua solicitação foi recebida por ${businessName}.`,
+    html: body
   });
 }
 
