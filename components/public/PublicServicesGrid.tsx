@@ -143,7 +143,7 @@ export function PublicServicesGrid({
         Não encontrou o que procura?{" "}
         <Link
           href={`/u/${slug}/orcamento`}
-          className="font-semibold text-leaf transition hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber"
+          className="font-semibold text-leaf transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         >
           Envie sua solicitação →
         </Link>
