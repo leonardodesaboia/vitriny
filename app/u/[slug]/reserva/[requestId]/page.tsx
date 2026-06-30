@@ -1,10 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false }
+};
 
 import { CopyPixButton } from "./CopyPixButton";
 import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
+import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
 
 type PixReservationPageProps = {
   params: Promise<{
@@ -33,7 +39,8 @@ export default async function PixReservationPage({ params }: PixReservationPageP
       themePreset: true,
       pixKey: true,
       pixHolderName: true,
-      pixCity: true
+      pixCity: true,
+      phone: true
     }
   });
 
@@ -88,9 +95,12 @@ export default async function PixReservationPage({ params }: PixReservationPageP
 
   const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
+  const whatsappNumber = profile.phone
+    ? phoneToWhatsAppNumber(profile.phone)
+    : null;
 
   return (
-    <main className="min-h-screen bg-paper px-6 py-12 text-ink font-jakarta" data-brand-theme={theme.id}>
+    <main className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6" data-brand-theme={theme.id}>
       <div className="mx-auto max-w-lg">
         <Link
           className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
@@ -101,7 +111,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
 
         <div className="mt-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            Reserva via Pix
+            Pagamento antecipado via Pix
           </p>
           <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
             {quoteRequest.service.name}
@@ -123,7 +133,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               Pagamento confirmado!
             </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              O prestador confirmou o recebimento do Pix. Seu serviço está reservado.
+              O prestador confirmou o recebimento do Pix. Sua solicitação está confirmada.
             </p>
             <Link
               className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
@@ -175,14 +185,24 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               <ol className="mt-2 grid gap-1.5 pl-4">
                 {[
                   "Realize o pagamento via Pix usando o QR Code ou o código acima.",
-                  "Após o pagamento, o prestador receberá uma notificação e confirmará manualmente.",
-                  "Guarde esta página ou anote o código para acompanhar sua reserva."
+                  "Após pagar, avise o prestador e envie o comprovante.",
+                  "O prestador confirmará manualmente o recebimento nesta página."
                 ].map((step, i) => (
                   <li key={i} className="list-decimal text-xs leading-5 text-ink-muted">
                     {step}
                   </li>
                 ))}
               </ol>
+              {whatsappNumber ? (
+                <a
+                  className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao serviço ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Avisar prestador no WhatsApp
+                </a>
+              ) : null}
             </div>
           </div>
         )}

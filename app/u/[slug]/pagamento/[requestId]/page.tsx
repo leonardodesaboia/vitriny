@@ -1,11 +1,17 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false }
+};
 
 import { CopyButton } from "@/components/ui/CopyButton";
 import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
+import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
 
 type PixPaymentPageProps = {
   params: Promise<{
@@ -34,7 +40,8 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
       themePreset: true,
       pixKey: true,
       pixHolderName: true,
-      pixCity: true
+      pixCity: true,
+      phone: true
     }
   });
 
@@ -46,7 +53,6 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
       id: true,
       customerName: true,
       fixedServiceAmount: true,
-      pixReservationPaidAt: true,
       service: {
         select: {
           name: true,
@@ -84,15 +90,24 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
     description: quoteRequest.service.name
   });
 
-  const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
+  const whatsappNumber = profile.phone
+    ? phoneToWhatsAppNumber(profile.phone)
+    : null;
 
   return (
     <main className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6" data-brand-theme={theme.id}>
       <div className="mx-auto max-w-3xl">
+        <Link
+          className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
+          href={`/u/${slug}`}
+        >
+          ← Voltar ao perfil
+        </Link>
+
         <div className="rounded-2xl border border-paper-soft bg-white shadow-card">
           {/* Green header */}
-          <div className="grain flex items-start justify-between gap-4 rounded-t-2xl bg-leaf px-8 py-6">
+          <div className="grain flex flex-wrap items-start justify-between gap-4 rounded-t-2xl bg-leaf px-5 py-6 sm:px-8">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
                 Pagamento via Pix
@@ -104,18 +119,12 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
                 {profile.businessName}
               </p>
             </div>
-            <span
-              className={`mt-1 flex-shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
-                alreadyPaid
-                  ? "bg-mint text-leaf"
-                  : "bg-amber-soft text-amber"
-              }`}
-            >
-              {alreadyPaid ? "Pago" : "Aguardando Pix"}
+            <span className="mt-1 flex-shrink-0 rounded-full bg-amber-soft px-3 py-1 text-xs font-semibold text-amber">
+              Pagamento manual
             </span>
           </div>
 
-          <div className="p-8">
+          <div className="p-5 sm:p-8">
             {/* Client + amount summary */}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-paper-soft bg-paper p-5">
@@ -136,29 +145,12 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
               </div>
             </div>
 
-            {alreadyPaid ? (
-              <div className="mt-6 rounded-xl border border-mint bg-mint/40 p-6">
-                <p className="font-fraunces text-xl font-bold text-leaf">
-                  Pagamento confirmado!
-                </p>
-                <p className="mt-2 text-sm leading-6 text-ink-muted">
-                  O prestador confirmou o recebimento. Seu pedido está confirmado.
-                </p>
-                <Link
-                  className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                  href={`/u/${slug}`}
-                >
-                  Voltar ao perfil
-                </Link>
-              </div>
-            ) : (
-              <>
-                {/* Pix payment section */}
-                <div className="mt-6 overflow-hidden rounded-xl border border-amber-200">
+            {/* Pix payment section kept for links created before required Pix mode. */}
+            <div className="mt-6 overflow-hidden rounded-xl border border-amber-200">
                   <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 px-5 py-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                        Entrada (sinal)
+                        Valor do serviço
                       </p>
                       <p className="mt-1 font-fraunces text-3xl font-bold text-amber-800">
                         {formatMoney(amount)}
@@ -242,18 +234,17 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
                       </p>
                     </div>
                   </div>
-                </div>
+            </div>
 
-                {/* Status history placeholder — instructions */}
-                <div className="mt-6 rounded-xl border border-paper-soft bg-white p-5">
+            <div className="mt-6 rounded-xl border border-paper-soft bg-white p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
                     Próximos passos
                   </p>
                   <ol className="mt-4 grid gap-3">
                     {[
                       "Realize o pagamento via Pix usando o QR Code ou o código acima.",
-                      "Após o pagamento, o prestador receberá uma notificação e confirmará manualmente.",
-                      "Envie o comprovante no Whatsapp"
+                      "Após pagar, avise o prestador e envie o comprovante.",
+                      "A confirmação é combinada diretamente com o prestador; o OrçaFácil não acompanha o status deste link antigo."
                     ].map((step, i) => (
                       <li
                         key={i}
@@ -263,15 +254,23 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
                       </li>
                     ))}
                   </ol>
+                  {whatsappNumber ? (
+                    <a
+                      className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                      href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao serviço ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Avisar prestador no WhatsApp
+                    </a>
+                  ) : null}
                 </div>
-              </>
-            )}
           </div>
         </div>
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-ink-muted">
-          Proposta gerada via{" "}
+          Pagamento gerado via{" "}
           <span className="font-fraunces font-semibold text-leaf">OrçaFácil</span>
         </p>
       </div>
