@@ -41,7 +41,7 @@ export function ServiceForm({
     service?.pricingType ?? "CUSTOM",
   );
   const [checkoutMode, setCheckoutMode] = useState<
-    "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION"
+    "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT"
   >(service?.fixedServiceCheckoutMode ?? "REQUEST_ONLY");
   const [isActive, setIsActive] = useState(service?.isActive ?? true);
   const [requiresScheduling, setRequiresScheduling] = useState(
@@ -291,11 +291,11 @@ export function ServiceForm({
             type="button"
             onClick={() =>
               setCheckoutMode((m) =>
-                m === "REQUEST_ONLY" ? "ALLOW_PIX_RESERVATION" : "REQUEST_ONLY",
+                m === "REQUEST_ONLY" ? "REQUIRE_PIX_PAYMENT" : "REQUEST_ONLY",
               )
             }
             className={`flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
-              checkoutMode === "ALLOW_PIX_RESERVATION"
+              checkoutMode === "REQUIRE_PIX_PAYMENT"
                 ? "border-leaf/40 bg-mint/30"
                 : "border-paper-soft bg-paper"
             }`}
@@ -303,14 +303,14 @@ export function ServiceForm({
             <div className="relative mt-0.5 h-6 w-11 shrink-0">
               <div
                 className={`h-6 w-11 rounded-full transition-colors duration-200 ${
-                  checkoutMode === "ALLOW_PIX_RESERVATION"
+                  checkoutMode === "REQUIRE_PIX_PAYMENT"
                     ? "bg-leaf"
                     : "bg-stone-300"
                 }`}
               />
               <div
                 className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  checkoutMode === "ALLOW_PIX_RESERVATION"
+                  checkoutMode === "REQUIRE_PIX_PAYMENT"
                     ? "translate-x-5"
                     : "translate-x-0.5"
                 }`}
@@ -318,11 +318,11 @@ export function ServiceForm({
             </div>
             <div className="grid min-w-0 gap-0.5">
               <span className="break-words text-sm font-semibold text-ink">
-                Permitir pagamento via Pix
+                Exigir pagamento antecipado via Pix
               </span>
               <span className="break-words text-xs leading-5 text-ink-muted">
-                {checkoutMode === "ALLOW_PIX_RESERVATION"
-                  ? "O cliente poderá pagar via Pix pelo link. O pagamento é feito diretamente para você e a confirmação continua sendo manual."
+                {checkoutMode === "REQUIRE_PIX_PAYMENT"
+                  ? "O cliente precisará pagar via Pix para concluir a solicitação. O pagamento é feito diretamente para você e a confirmação continua sendo manual."
                   : "O cliente apenas envia uma solicitação. Sem opção de pagamento antecipado."}
               </span>
             </div>

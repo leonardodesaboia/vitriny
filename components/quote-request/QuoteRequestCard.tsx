@@ -36,7 +36,7 @@ type SerializedService = {
   id: string;
   name: string;
   pricingType: "FIXED" | "CUSTOM";
-  fixedServiceCheckoutMode: "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION";
+  fixedServiceCheckoutMode: "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT";
   basePrice: string | null;
 };
 
@@ -182,7 +182,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             ) : null}
             {quoteRequest.pixReservationRequestedAt ? (
               <span className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold sm:inline-flex ${quoteRequest.pixReservationPaidAt ? "border-mint bg-mint text-leaf" : "border-amber-200 bg-amber-50 text-amber-700"}`}>
-                {quoteRequest.pixReservationPaidAt ? "Reserva Pix confirmada" : "Reserva Pix pendente"}
+                {quoteRequest.pixReservationPaidAt ? "Pagamento Pix confirmado" : "Pagamento Pix pendente"}
               </span>
             ) : null}
           </div>
@@ -517,7 +517,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               {quoteRequest.pixReservationRequestedAt ? (
                 <div className="rounded-xl border border-paper-soft bg-paper p-4 sm:p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-                    Reserva Pix
+                    Pagamento antecipado via Pix
                   </p>
                   {quoteRequest.fixedServiceAmount ? (
                     <p className="mt-1 font-fraunces text-xl font-bold text-ink">

@@ -50,7 +50,7 @@ export async function createService(
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
-  if (parsed.data.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION") {
+  if (parsed.data.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT") {
     const profilePix = await prisma.providerProfile.findUnique({
       where: { id: profile.id },
       select: { pixKey: true, pixHolderName: true, pixCity: true }
@@ -116,7 +116,7 @@ export async function updateService(
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
-  if (parsed.data.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION") {
+  if (parsed.data.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT") {
     const profilePix = await prisma.providerProfile.findUnique({
       where: { id: profile.id },
       select: { pixKey: true, pixHolderName: true, pixCity: true }
