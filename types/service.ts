@@ -1,4 +1,4 @@
-export type FixedServiceCheckoutMode = "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION";
+export type FixedServiceCheckoutMode = "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT";
 
 export type ServiceSummary = {
   id: string;

@@ -321,5 +321,5 @@ enum ServicePricingType {
 
 enum FixedServiceCheckoutMode {
   REQUEST_ONLY
-  ALLOW_PIX_RESERVATION
+  REQUIRE_PIX_PAYMENT
 }

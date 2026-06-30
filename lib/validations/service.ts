@@ -33,7 +33,7 @@ export const serviceSchema = z
     ),
     pricingType: z.enum(["FIXED", "CUSTOM"]),
     fixedServiceCheckoutMode: z
-      .enum(["REQUEST_ONLY", "ALLOW_PIX_RESERVATION"])
+      .enum(["REQUEST_ONLY", "REQUIRE_PIX_PAYMENT"])
       .default("REQUEST_ONLY"),
     basePrice: optionalPrice,
     isActive: z.boolean(),
