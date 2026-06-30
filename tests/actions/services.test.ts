@@ -96,6 +96,58 @@ describe("createService", () => {
     expect(result).toEqual({ serviceId: "new-service-2" });
     expect(db.service.create).toHaveBeenCalledOnce();
   });
+
+  it("cria serviço FIXED com pagamento Pix obrigatório quando o perfil tem Pix", async () => {
+    db.providerProfile.findUnique
+      .mockResolvedValueOnce(makeProfile())
+      .mockResolvedValueOnce({
+        pixKey: "11999999999",
+        pixHolderName: "OrçaFácil Serviços",
+        pixCity: "Fortaleza"
+      });
+    db.service.count.mockResolvedValue(0);
+    db.service.create.mockResolvedValue({ id: "new-service-pix" });
+
+    const form = makeFormData({
+      name: "Pintura residencial",
+      description: "",
+      basePrice: "500,00",
+      isActive: "on",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    const result = await createService(undefined, form);
+
+    expect(result).toEqual({ serviceId: "new-service-pix" });
+    expect(db.service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+        })
+      })
+    );
+  });
+
+  it("impede pagamento Pix obrigatório quando o perfil não tem Pix", async () => {
+    db.providerProfile.findUnique
+      .mockResolvedValueOnce(makeProfile())
+      .mockResolvedValueOnce({ pixKey: null, pixHolderName: null, pixCity: null });
+
+    const form = makeFormData({
+      name: "Pintura residencial",
+      description: "",
+      basePrice: "500,00",
+      isActive: "on",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    const result = await createService(undefined, form);
+
+    expect(result).toEqual({ error: expect.stringContaining("Configure sua chave Pix") });
+    expect(db.service.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateService", () => {

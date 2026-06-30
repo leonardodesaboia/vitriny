@@ -82,6 +82,28 @@ describe("serviceSchema", () => {
     }
   });
 
+  it("aceita pagamento Pix obrigatório para serviço FIXED", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT",
+      basePrice: "200.00"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejeita o modo legado de reserva Pix", () => {
+    expect(
+      serviceSchema.safeParse({
+        ...valid,
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION",
+        basePrice: "200.00"
+      }).success
+    ).toBe(false);
+  });
+
   it("FIXED rejeita quando basePrice está vazio", () => {
     const result = serviceSchema.safeParse({
       ...valid,

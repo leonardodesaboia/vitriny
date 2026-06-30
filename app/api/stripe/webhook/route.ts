@@ -77,7 +77,7 @@ async function handleStripeEvent(event: Stripe.Event) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
 
-      await prisma.providerProfile.update({
+      await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
         data: {
           stripeSubscriptionId: null,
