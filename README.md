@@ -1,10 +1,10 @@
-# OrçaFácil
+# Vitriny
 
-OrçaFácil é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+Vitriny é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
 
 ## Visão geral
 
-O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O OrçaFácil centraliza esse fluxo em um painel simples.
+O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O Vitriny centraliza esse fluxo em um painel simples.
 
 Público-alvo:
 
@@ -29,11 +29,11 @@ MVP funcional implementado:
 
 - landing page;
 - login/logout;
-- dashboard protegido;
+- dashboard protegido com onboarding por tipo de serviço, métricas mensais, pendências operacionais e atividade recente;
 - perfil do prestador;
 - cadastro de serviços;
 - página pública do prestador em `/u/[slug]`;
-- pedido público de orçamento em `/u/[slug]/orcamento`;
+- pedido público de orçamento em `/u/[slug]/orcamento`, com serviço pré-selecionado, contato obrigatório e validação server-side por tipo de serviço;
 - painel de pedidos recebidos;
 - criação de proposta;
 - página pública da proposta em `/proposta/[publicToken]`;
@@ -42,26 +42,32 @@ MVP funcional implementado:
 - histórico de status da proposta na página pública;
 - notas internas do pedido no painel;
 - templates de proposta no dashboard;
-- planos e limites de uso sem checkout real.
+- filtro de pedidos por status em `/dashboard/pedidos`;
+- visões rápidas de pedidos abertas pela dashboard: mês atual, pedidos em aberto, propostas aprovadas, pagamentos Pix e entradas pendentes;
+- serviços com preço fixo ou sob orçamento, agendamento opcional e imagem para PRO;
+- Pix manual para entrada de proposta e pagamento antecipado obrigatório de serviço fixo;
+- download autenticado da proposta em PDF após aprovação ou recusa;
+- personalização global de cores e fontes para usuários PRO;
+- tela de assinatura com faturas carregadas em segundo plano, sem travar o dashboard;
+- assinatura recorrente PRO via Stripe Checkout embutido e webhook assinado.
 
 ## Fora do MVP
 
 Não implementar ainda sem validação:
 
-- pagamento real;
-- Pix;
+- pagamento automático ou gateway Pix;
 - WhatsApp API;
 - assinatura digital;
-- PDF avançado;
+- editor avançado de PDF;
 - IA para sugerir preço;
 - aplicativo mobile;
 - multiempresa complexo;
 - marketplace;
-- checkout, cobrança recorrente e planos pagos reais.
+- pagamento automatizado do cliente final.
 
 ## Planos e limites de uso
 
-O produto já possui estrutura de plano no código para preparar monetização futura, sem pagamento real.
+O produto possui planos com limites de uso, assinatura PRO via Stripe e Pix manual para pagamentos do cliente final.
 
 Planos:
 
@@ -77,7 +83,63 @@ Limites do plano `FREE`:
 
 O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizadas em `lib/plan-limits.ts`.
 
-Importante: checkout, Pix, gateways de pagamento e cobrança recorrente ainda não foram implementados. A migration `add_provider_plan` ainda deve ser criada antes de usar o campo `ProviderProfile.plan` em um banco real.
+Importante: o Pix do cliente final é manual. O Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
+
+## Feature PRO: Tema visual da aplicação
+
+Usuários no plano PRO podem escolher um tema visual para a aplicação: dashboard do profissional e fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido, pagamento Pix e proposta pública em `/proposta/[publicToken]`. Os temas disponíveis são `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`.
+
+Usuários FREE sempre usam o tema `DEFAULT`. Se um usuário PRO escolher um tema e depois voltar para FREE, o valor permanece salvo no banco, mas a aplicação renderiza `DEFAULT` enquanto o plano não for PRO.
+
+Os temas alteram apenas tokens globais de cor e fonte via CSS variables. Eles não trocam layout, espaçamento ou classes específicas de cada componente. As regras ficam centralizadas em `lib/theme-presets.ts` e `app/globals.css`. Não há editor visual livre, CSS customizado, upload de banner ou drag-and-drop nesta etapa.
+
+## Feature de billing
+
+A página `/dashboard/billing` permite assinar, cancelar e reativar o PRO, atualizar a forma de pagamento e abrir o portal da Stripe. O resumo do plano carrega imediatamente e as faturas são buscadas depois via `/api/billing/invoices`, sem bloquear a página. O webhook `/api/stripe/webhook` mantém plano e status da assinatura sincronizados.
+
+## Feature PRO: Imagem por serviço
+
+Usuários no plano PRO podem adicionar 1 imagem por serviço (JPEG, PNG ou WebP, máximo 2 MB). A imagem é exibida no card do serviço na página pública `/u/[slug]`.
+
+O storage usa MinIO (compatível com S3 via `@aws-sdk/client-s3`). As credenciais ficam exclusivamente server-side — nunca expostas ao browser.
+
+### Como rodar MinIO localmente com Docker
+
+```bash
+docker run -d \
+  --name minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e MINIO_ROOT_USER=minioadmin \
+  -e MINIO_ROOT_PASSWORD=minioadmin \
+  quay.io/minio/minio server /data --console-address ":9001"
+```
+
+Acesse o console em `http://localhost:9001` (usuário: `minioadmin`, senha: `minioadmin`).
+
+### Criar bucket e permitir leitura pública
+
+1. Acesse o console MinIO em `http://localhost:9001`
+2. Vá em **Buckets → Create Bucket**
+3. Nome: `vitriny` (deve bater com `S3_BUCKET_NAME`)
+4. Vá em **Buckets → vitriny → Access Policy**
+5. Selecione **Public** (ou defina a policy como `s3:GetObject` para todos)
+
+> **Importante:** Se o bucket não for público, o upload funciona mas as imagens não aparecerão no browser. O `imageUrl` armazenado no banco usa `S3_PUBLIC_BASE_URL`, que precisa ser acessível pelo navegador do cliente final.
+
+### Variáveis MinIO
+
+```env
+S3_ENDPOINT="http://localhost:9000"          # usado pelo SDK (interno)
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="minioadmin"
+S3_SECRET_ACCESS_KEY="minioadmin"
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="http://localhost:9000/vitriny"  # URL pública no imageUrl
+S3_FORCE_PATH_STYLE="true"                   # obrigatório para MinIO
+```
+
+> Em produção, `S3_ENDPOINT` aponta para o MinIO interno e `S3_PUBLIC_BASE_URL` aponta para o domínio público (ex: `https://files.seudominio.com/vitriny`).
 
 ## Como rodar localmente
 
@@ -117,12 +179,25 @@ Acesse `http://localhost:3000`.
 ## Variáveis de ambiente
 
 ```env
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/vitriny"
 AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
 AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="seu-google-client-id"
 AUTH_GOOGLE_SECRET="seu-google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
+EMAIL_FROM="Vitriny <contato@seu-dominio.com>"
+STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_PRO_PRICE_ID="price_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_..."
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
+S3_ENDPOINT="http://localhost:9000"
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="minioadmin"
+S3_SECRET_ACCESS_KEY="minioadmin"
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="http://localhost:9000/vitriny"
+S3_FORCE_PATH_STYLE="true"
 ```
 
 Para gerar `AUTH_SECRET`:
@@ -158,19 +233,10 @@ docker compose down
 
 Schema principal: `prisma/schema.prisma`.
 
-Migrations existentes:
+As migrations versionadas ficam em `prisma/migrations/`. O diretório é a fonte de verdade; não mantenha uma lista manual duplicada neste arquivo.
 
-- `prisma/migrations/20260622204845_init/migration.sql`
-- `prisma/migrations/20260622205244_add_auth/migration.sql`
-- `prisma/migrations/20260623000000_add_quote_request_service_relation/migration.sql`
-- `prisma/migrations/20260623001000_add_quote_request_status_history/migration.sql`
-- `prisma/migrations/20260623002000_add_proposal_status_history/migration.sql`
-- `prisma/migrations/20260623003000_add_quote_request_internal_notes/migration.sql`
-- `prisma/migrations/20260623004000_add_proposal_templates/migration.sql`
-
-Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service` e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
-Históricos de status, notas internas e templates de proposta já aparecem no front nas áreas correspondentes.
-O schema possui `PlanTier` e `ProviderProfile.plan`, mas a migration `add_provider_plan` ainda não foi criada nesta etapa.
+Observação técnica: `QuoteRequest` possui relação opcional com `Service` via `serviceId`. A UI de pedidos já usa `quoteRequest.service`, pré-seleciona o serviço quando o cliente vem de um card e mantém compatibilidade com o prefixo legado na descrição para pedidos antigos.
+Históricos de status, notas internas, templates de proposta, billing, Pix, imagens de serviço e temas globais já possuem migrations versionadas.
 
 Comandos:
 
@@ -191,6 +257,7 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
+   Quando o serviço fixo exige pagamento antecipado, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`. `/u/[slug]/pagamento/[requestId]` permanece apenas para links legados.
 9. Prestador vê o pedido em `/dashboard/pedidos`.
 10. Prestador cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.
@@ -202,12 +269,25 @@ npx prisma validate
 Variáveis necessárias em produção:
 
 ```env
-DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
+DATABASE_URL="postgresql://usuario:senha@host:5432/vitriny"
 AUTH_SECRET="segredo-forte"
 AUTH_URL="https://seu-dominio.com"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
+EMAIL_FROM="Vitriny <contato@seu-dominio.com>"
+STRIPE_SECRET_KEY="sk_live_..."
+STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_PRO_PRICE_ID="price_..."
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_live_..."
+NEXT_PUBLIC_APP_URL="https://seu-dominio.com"
+S3_ENDPOINT="https://storage-interno.exemplo.com"
+S3_REGION="us-east-1"
+S3_ACCESS_KEY_ID="credencial-do-storage"
+S3_SECRET_ACCESS_KEY="segredo-do-storage"
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="https://files.seu-dominio.com/vitriny"
+S3_FORCE_PATH_STYLE="true"
 ```
 
 Antes do deploy:
@@ -244,7 +324,12 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] Histórico de status da proposta
 - [x] Notas internas do pedido
 - [x] Templates de proposta
-- [x] Planos e limites de uso sem checkout real
+- [x] Planos, limites e assinatura PRO via Stripe
+- [x] Pix manual para propostas e serviços fixos
+- [x] PDF de proposta
+- [x] Imagem por serviço para PRO
+- [x] Temas globais para PRO
+- [x] Filtro de pedidos por status
 - [x] Polimento visual, validações e preparação para deploy
 
 ## Documentação complementar

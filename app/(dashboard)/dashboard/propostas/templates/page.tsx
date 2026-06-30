@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import type { Prisma } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { ProposalTemplateForm } from "@/components/proposals/ProposalTemplateForm";
 import { deleteProposalTemplate } from "@/lib/actions/proposal-templates";
 import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
+import type { ProposalTemplateData } from "@/types";
 
 type ProposalTemplatesPageProps = {
   searchParams: Promise<{ error?: string }>;
@@ -14,10 +16,29 @@ type ProposalTemplatesPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do modelo.",
   profile: "Crie o perfil do prestador antes de criar modelos.",
-  "not-found": "Modelo nao encontrado.",
+  "not-found": "Modelo não encontrado.",
   "limit-proposal-templates":
     LIMIT_ERROR_MESSAGES["limit-proposal-templates"]
 };
+
+type TemplateWithItems = Prisma.ProposalTemplateGetPayload<{
+  include: { items: true };
+}>;
+
+function serializeTemplate(template: TemplateWithItems): ProposalTemplateData {
+  return {
+    id: template.id,
+    name: template.name,
+    title: template.title,
+    description: template.description,
+    items: template.items.map((item) => ({
+      id: item.id,
+      description: item.description,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice.toString()
+    }))
+  };
+}
 
 export default async function ProposalTemplatesPage({
   searchParams
@@ -51,13 +72,14 @@ export default async function ProposalTemplatesPage({
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
         Templates de proposta
       </h1>
-      <p className="mt-2 text-sm text-ink-muted">
-        Crie modelos reutilizaveis para propostas comuns.
+      <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
+        Use modelos para serviços sob demanda, quando o valor depende do pedido e você precisa
+        montar uma proposta personalizada. Serviços com preço fixo não precisam de template.
       </p>
 
       {params.error ? (
         <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {errorMessages[params.error] ?? "Nao foi possivel salvar o modelo."}
+          {errorMessages[params.error] ?? "Não foi possível salvar o modelo."}
         </p>
       ) : null}
 
@@ -67,7 +89,7 @@ export default async function ProposalTemplatesPage({
             Crie seu perfil primeiro
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Templates ficam vinculados ao perfil do prestador.
+            Templates de serviços sob demanda ficam vinculados ao perfil do prestador.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
@@ -80,7 +102,7 @@ export default async function ProposalTemplatesPage({
         <div className="mt-8 grid gap-8">
           <section>
             <h2 className="font-fraunces text-2xl font-bold text-ink">
-              Novo modelo
+              Novo modelo para serviço sob demanda
             </h2>
             <div className="mt-4">
               <ProposalTemplateForm />
@@ -121,7 +143,7 @@ export default async function ProposalTemplatesPage({
                           </button>
                         </form>
                       </div>
-                      <ProposalTemplateForm template={template} />
+                      <ProposalTemplateForm template={serializeTemplate(template)} />
                     </div>
                   </article>
                 ))}

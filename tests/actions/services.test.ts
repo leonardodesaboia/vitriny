@@ -17,18 +17,17 @@ beforeEach(async () => {
 });
 
 const validServiceForm = () =>
-  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on" });
+  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on", pricingType: "CUSTOM" });
 
 describe("createService", () => {
-  it("cria serviço e redireciona para /dashboard/servicos em caso de sucesso", async () => {
+  it("cria serviço e retorna serviceId em caso de sucesso", async () => {
     db.service.count.mockResolvedValue(0);
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-id" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, validServiceForm())).rejects.toThrow(
-      "/dashboard/servicos"
-    );
+    const result = await createService(undefined, validServiceForm());
 
+    expect(result).toEqual({ serviceId: "new-service-id" });
     expect(db.service.create).toHaveBeenCalledOnce();
   });
 
@@ -73,28 +72,81 @@ describe("createService", () => {
     const inactiveForm = makeFormData({
       name: "Pintura residencial",
       description: "",
-      basePrice: ""
+      basePrice: "",
+      pricingType: "CUSTOM"
     });
 
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-1" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, inactiveForm)).rejects.toThrow("/dashboard/servicos");
+    const result = await createService(undefined, inactiveForm);
 
+    expect(result).toEqual({ serviceId: "new-service-1" });
     expect(db.service.count).not.toHaveBeenCalled();
   });
 
   it("prestador PRO cria serviço mesmo com 3+ serviços ativos", async () => {
     db.providerProfile.findUnique.mockResolvedValue(makeProfile({ plan: "PRO" }));
     db.service.count.mockResolvedValue(100);
-    db.service.create.mockResolvedValue({});
+    db.service.create.mockResolvedValue({ id: "new-service-2" });
 
     const { createService } = await import("@/lib/actions/services");
-    await expect(createService(undefined, validServiceForm())).rejects.toThrow(
-      "/dashboard/servicos"
-    );
+    const result = await createService(undefined, validServiceForm());
 
+    expect(result).toEqual({ serviceId: "new-service-2" });
     expect(db.service.create).toHaveBeenCalledOnce();
+  });
+
+  it("cria serviço FIXED com pagamento Pix obrigatório quando o perfil tem Pix", async () => {
+    db.providerProfile.findUnique
+      .mockResolvedValueOnce(makeProfile())
+      .mockResolvedValueOnce({
+        pixKey: "11999999999",
+        pixHolderName: "Vitriny Serviços",
+        pixCity: "Fortaleza"
+      });
+    db.service.count.mockResolvedValue(0);
+    db.service.create.mockResolvedValue({ id: "new-service-pix" });
+
+    const form = makeFormData({
+      name: "Pintura residencial",
+      description: "",
+      basePrice: "500,00",
+      isActive: "on",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    const result = await createService(undefined, form);
+
+    expect(result).toEqual({ serviceId: "new-service-pix" });
+    expect(db.service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+        })
+      })
+    );
+  });
+
+  it("impede pagamento Pix obrigatório quando o perfil não tem Pix", async () => {
+    db.providerProfile.findUnique
+      .mockResolvedValueOnce(makeProfile())
+      .mockResolvedValueOnce({ pixKey: null, pixHolderName: null, pixCity: null });
+
+    const form = makeFormData({
+      name: "Pintura residencial",
+      description: "",
+      basePrice: "500,00",
+      isActive: "on",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    const result = await createService(undefined, form);
+
+    expect(result).toEqual({ error: expect.stringContaining("Configure sua chave Pix") });
+    expect(db.service.create).not.toHaveBeenCalled();
   });
 });
 
@@ -105,7 +157,8 @@ describe("updateService", () => {
       name: "Pintura residencial",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      pricingType: "CUSTOM"
     });
 
   beforeEach(() => {
@@ -114,10 +167,11 @@ describe("updateService", () => {
     db.service.update.mockResolvedValue({});
   });
 
-  it("atualiza serviço e redireciona em caso de sucesso", async () => {
+  it("atualiza serviço e retorna serviceId em caso de sucesso", async () => {
     const { updateService } = await import("@/lib/actions/services");
-    await expect(updateService(undefined, validForm())).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, validForm());
 
+    expect(result).toEqual({ serviceId: "service-1" });
     expect(db.service.update).toHaveBeenCalledOnce();
   });
 
@@ -171,8 +225,9 @@ describe("updateService", () => {
     db.service.update.mockResolvedValue({});
 
     const { updateService } = await import("@/lib/actions/services");
-    await expect(updateService(undefined, validForm())).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, validForm());
 
+    expect(result).toEqual({ serviceId: "service-1" });
     expect(db.service.count).not.toHaveBeenCalled();
   });
 });

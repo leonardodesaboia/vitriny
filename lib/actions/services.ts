@@ -16,11 +16,18 @@ import { requireProviderProfile } from "@/lib/actions/auth-guard";
 import type { ActionResult } from "@/types";
 
 function parseServiceForm(formData: FormData) {
+  const pricingType = formData.get("pricingType");
   return serviceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
-    isActive: formData.get("isActive") === "on"
+    isActive: formData.get("isActive") === "on",
+    pricingType,
+    fixedServiceCheckoutMode:
+      pricingType === "FIXED"
+        ? (formData.get("fixedServiceCheckoutMode") ?? "REQUEST_ONLY")
+        : "REQUEST_ONLY",
+    requiresSchedulingDetails: formData.get("requiresSchedulingDetails") === "on"
   });
 }
 
@@ -43,6 +50,24 @@ export async function createService(
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
+  if (parsed.data.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT") {
+    const profilePix = await prisma.providerProfile.findUnique({
+      where: { id: profile.id },
+      select: { pixKey: true, pixHolderName: true, pixCity: true }
+    });
+    const pixConfigured = !!(
+      profilePix?.pixKey &&
+      profilePix?.pixHolderName &&
+      profilePix?.pixCity
+    );
+    if (!pixConfigured) {
+      return {
+        error:
+          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+      };
+    }
+  }
+
   if (parsed.data.isActive) {
     const activeServicesCount = await prisma.service.count({
       where: { providerId: profile.id, isActive: true }
@@ -53,18 +78,22 @@ export async function createService(
     }
   }
 
-  await prisma.service.create({
+  const newService = await prisma.service.create({
     data: {
       providerId: profile.id,
       name: parsed.data.name,
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
-    }
+      isActive: parsed.data.isActive,
+      pricingType: parsed.data.pricingType,
+      fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
+    },
+    select: { id: true }
   });
 
   revalidatePath("/dashboard/servicos");
-  redirect("/dashboard/servicos");
+  return { serviceId: newService.id };
 }
 
 export async function updateService(
@@ -85,6 +114,24 @@ export async function updateService(
   const parsed = parseServiceForm(formData);
   if (!parsed.success) {
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
+  }
+
+  if (parsed.data.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT") {
+    const profilePix = await prisma.providerProfile.findUnique({
+      where: { id: profile.id },
+      select: { pixKey: true, pixHolderName: true, pixCity: true }
+    });
+    const pixConfigured = !!(
+      profilePix?.pixKey &&
+      profilePix?.pixHolderName &&
+      profilePix?.pixCity
+    );
+    if (!pixConfigured) {
+      return {
+        error:
+          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+      };
+    }
   }
 
   const service = await prisma.service.findFirst({
@@ -112,9 +159,35 @@ export async function updateService(
       name: parsed.data.name,
       description: parsed.data.description,
       basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
+      isActive: parsed.data.isActive,
+      pricingType: parsed.data.pricingType,
+      fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
     }
   });
+
+  revalidatePath("/dashboard/servicos");
+  return { serviceId: service.id };
+}
+
+export async function deleteService(formData: FormData) {
+  const { profile } = await requireProviderProfile();
+  const serviceId = String(formData.get("serviceId") ?? "");
+
+  if (!profile) {
+    redirect("/dashboard/servicos?error=profile");
+  }
+
+  const service = await prisma.service.findFirst({
+    where: { id: serviceId, providerId: profile.id },
+    select: { id: true }
+  });
+
+  if (!service) {
+    redirect("/dashboard/servicos?error=not-found");
+  }
+
+  await prisma.service.delete({ where: { id: service.id } });
 
   revalidatePath("/dashboard/servicos");
   redirect("/dashboard/servicos");

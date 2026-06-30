@@ -6,23 +6,23 @@ const nav = [
     links: [
       { label: "Como funciona", href: "#como-funciona" },
       { label: "Funcionalidades", href: "#funcionalidades" },
-      { label: "Preços", href: "#precos" }
-    ]
+      { label: "Preços", href: "#precos" },
+    ],
   },
   {
     heading: "Conta",
     links: [
       { label: "Criar conta", href: "/cadastro" },
-      { label: "Entrar", href: "/login" }
-    ]
+      { label: "Entrar", href: "/login" },
+    ],
   },
   {
     heading: "Legal",
     links: [
       { label: "Termos de uso", href: "#" },
-      { label: "Privacidade", href: "#" }
-    ]
-  }
+      { label: "Privacidade", href: "#" },
+    ],
+  },
 ];
 
 export function SiteFooter() {
@@ -37,10 +37,11 @@ export function SiteFooter() {
               href="/"
               className="font-fraunces text-xl font-semibold text-ink transition-colors hover:text-leaf"
             >
-              OrçaFácil
+              Vitriny
             </Link>
             <p className="mt-3 max-w-xs text-sm leading-6 text-ink-muted">
-              Orçamentos profissionais para prestadores de serviço. Do pedido à aprovação, online.
+              Orçamentos profissionais para prestadores de serviço. Do pedido à
+              aprovação, online.
             </p>
             <div className="mt-5 flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-leaf" />
@@ -73,7 +74,7 @@ export function SiteFooter() {
         {/* Bottom row */}
         <div className="mt-12 flex flex-col items-start justify-between gap-4 border-t border-paper-soft pt-6 sm:flex-row sm:items-center">
           <p className="text-xs text-ink-muted">
-            © {new Date().getFullYear()} OrçaFácil. Todos os direitos reservados.
+            © {new Date().getFullYear()} Vitriny. Todos os direitos reservados.
           </p>
           <p className="text-xs text-ink-muted/60">
             Pagamentos processados por{" "}

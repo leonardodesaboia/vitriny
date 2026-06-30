@@ -17,6 +17,7 @@ type NewProposalPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados da proposta.",
   exists: "Este pedido já possui uma proposta.",
+  "fixed-price": "Pedidos de serviço com preço fixo não geram proposta.",
   "limit-monthly-proposals":
     LIMIT_ERROR_MESSAGES["limit-monthly-proposals"]
 };
@@ -59,7 +60,10 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
       providerId: profile.id
     },
     include: {
-      proposal: true
+      proposal: true,
+      service: {
+        select: { name: true, pricingType: true }
+      }
     }
   });
 
@@ -74,7 +78,10 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
   return (
     <main className="min-h-screen bg-paper px-6 py-12 text-ink">
       <section className="mx-auto max-w-4xl rounded-lg border border-stone-200 bg-white p-8 shadow-sm">
-        <Link className="text-sm font-semibold text-leaf" href="/dashboard/pedidos">
+        <Link className="inline-flex items-center gap-1.5 text-sm font-semibold text-leaf transition hover:text-leaf-hover" href="/dashboard/pedidos">
+          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
           Voltar aos pedidos
         </Link>
         <p className="mt-6 text-sm font-semibold uppercase tracking-wide text-leaf">
@@ -82,8 +89,12 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
         </p>
         <h1 className="mt-3 text-3xl font-bold">Criar proposta</h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-stone-700">
-          Pedido de {quoteRequest.customerName}. A proposta será criada como
-          enviada para simplificar o MVP.
+          Pedido de {quoteRequest.customerName}
+          {quoteRequest.service?.name ? (
+            <>
+              {" "}— <span className="font-semibold text-ink">{quoteRequest.service.name}</span>
+            </>
+          ) : null}
         </p>
 
         {params.error ? (
@@ -92,7 +103,20 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           </p>
         ) : null}
 
-        {quoteRequest.proposal ? (
+        {quoteRequest.service?.pricingType === "FIXED" ? (
+          <div className="mt-8 rounded-lg border border-mint bg-mint/30 p-5">
+            <h2 className="text-xl font-bold text-ink">Preço fixo</h2>
+            <p className="mt-2 text-sm leading-6 text-stone-700">
+              Este pedido veio de um serviço com preço fixo, então não é possível criar proposta.
+            </p>
+            <Link
+              className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md bg-leaf px-4 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+              href="/dashboard/pedidos"
+            >
+              Voltar aos pedidos
+            </Link>
+          </div>
+        ) : quoteRequest.proposal ? (
           <div className="mt-8 rounded-lg border border-stone-200 bg-paper p-5">
             <h2 className="text-xl font-bold text-ink">Proposta já criada</h2>
             <p className="mt-2 text-sm leading-6 text-stone-700">

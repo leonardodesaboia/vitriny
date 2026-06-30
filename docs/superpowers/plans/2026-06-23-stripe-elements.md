@@ -29,6 +29,7 @@ components/
 ## Task 1: Instalar pacotes e configurar variável de ambiente
 
 **Files:**
+
 - Modify: `package.json` (via npm install)
 - Modify: `.env`
 - Modify: `.env.example`
@@ -36,7 +37,7 @@ components/
 - [ ] **Step 1.1: Instalar pacotes Stripe client-side**
 
 ```bash
-cd /home/leonardodesaboia/Documents/Personal/orcafacil
+cd /home/leonardodesaboia/Documents/Personal/vitriny
 npm install @stripe/stripe-js @stripe/react-stripe-js
 ```
 
@@ -80,17 +81,18 @@ git commit -m "feat(billing): install Stripe client-side SDK and add publishable
 ## Task 2: Criar lib/stripe-client.ts
 
 **Files:**
+
 - Create: `lib/stripe-client.ts`
 
 - [ ] **Step 2.1: Criar o singleton client-side**
 
-Criar `/home/leonardodesaboia/Documents/Personal/orcafacil/lib/stripe-client.ts`:
+Criar `/home/leonardodesaboia/Documents/Personal/vitriny/lib/stripe-client.ts`:
 
 ```typescript
 import { loadStripe } from "@stripe/stripe-js";
 
 export const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
 );
 ```
 
@@ -114,6 +116,7 @@ git commit -m "feat(billing): add Stripe client-side singleton"
 ## Task 3: Substituir createCheckoutSession por createSubscriptionIntent
 
 **Files:**
+
 - Modify: `lib/actions/billing.ts`
 
 A Server Action atual (`createCheckoutSession`) redireciona o usuário para o Stripe Checkout. Vamos substituí-la por `createSubscriptionIntent`, que cria uma subscription `incomplete` e retorna o `clientSecret` para o modal.
@@ -140,7 +143,7 @@ export async function createSubscriptionIntent(): Promise<
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, stripeCustomerId: true, plan: true }
+    select: { id: true, stripeCustomerId: true, plan: true },
   });
 
   if (!profile) {
@@ -156,20 +159,20 @@ export async function createSubscriptionIntent(): Promise<
   if (!customerId) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { email: true, name: true }
+      select: { email: true, name: true },
     });
 
     const customer = await stripe.customers.create({
       email: user?.email ?? undefined,
       name: user?.name ?? undefined,
-      metadata: { providerProfileId: profile.id }
+      metadata: { providerProfileId: profile.id },
     });
 
     customerId = customer.id;
 
     await prisma.providerProfile.update({
       where: { id: profile.id },
-      data: { stripeCustomerId: customerId }
+      data: { stripeCustomerId: customerId },
     });
   }
 
@@ -178,12 +181,12 @@ export async function createSubscriptionIntent(): Promise<
     items: [{ price: process.env.STRIPE_PRO_PRICE_ID! }],
     payment_behavior: "default_incomplete",
     payment_settings: { save_default_payment_method: "on_subscription" },
-    expand: ["latest_invoice.payment_intent"]
+    expand: ["latest_invoice.payment_intent"],
   });
 
   await prisma.providerProfile.updateMany({
     where: { id: profile.id },
-    data: { stripeSubscriptionId: subscription.id }
+    data: { stripeSubscriptionId: subscription.id },
   });
 
   const invoice = subscription.latest_invoice as Stripe.Invoice;
@@ -217,6 +220,7 @@ git commit -m "feat(billing): replace createCheckoutSession with createSubscript
 ## Task 4: Criar SubscriptionModal
 
 **Files:**
+
 - Create: `components/billing/SubscriptionModal.tsx`
 
 O modal usa `<Elements>` do `@stripe/react-stripe-js` para inicializar o contexto Stripe com o `clientSecret`, e `<PaymentElement>` para renderizar o formulário de pagamento.
@@ -231,7 +235,7 @@ import {
   Elements,
   PaymentElement,
   useStripe,
-  useElements
+  useElements,
 } from "@stripe/react-stripe-js";
 import { stripePromise } from "@/lib/stripe-client";
 
@@ -243,7 +247,7 @@ type SubscriptionModalProps = {
 
 function PaymentForm({
   onClose,
-  onSuccess
+  onSuccess,
 }: {
   onClose: () => void;
   onSuccess: () => void;
@@ -263,7 +267,7 @@ function PaymentForm({
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
       confirmParams: {},
-      redirect: "if_required"
+      redirect: "if_required",
     });
 
     if (stripeError) {
@@ -305,7 +309,7 @@ function PaymentForm({
 export function SubscriptionModal({
   clientSecret,
   onClose,
-  onSuccess
+  onSuccess,
 }: SubscriptionModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4">
@@ -363,6 +367,7 @@ git commit -m "feat(billing): add SubscriptionModal with Stripe PaymentElement"
 ## Task 5: Atualizar BillingCard
 
 **Files:**
+
 - Modify: `components/billing/BillingCard.tsx`
 
 Substituir todo o conteúdo por:
@@ -386,7 +391,7 @@ const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   INCOMPLETE: "Aguardando pagamento inicial",
   INCOMPLETE_EXPIRED: "Expirada",
   UNPAID: "Não paga",
-  PAUSED: "Pausada"
+  PAUSED: "Pausada",
 };
 
 type BillingCardProps = {
@@ -398,7 +403,7 @@ type BillingCardProps = {
 export function BillingCard({
   plan,
   subscriptionStatus,
-  currentPeriodEnd
+  currentPeriodEnd,
 }: BillingCardProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -465,7 +470,7 @@ export function BillingCard({
                 {currentPeriodEnd.toLocaleDateString("pt-BR", {
                   day: "2-digit",
                   month: "long",
-                  year: "numeric"
+                  year: "numeric",
                 })}
               </p>
             ) : null}
@@ -500,7 +505,8 @@ export function BillingCard({
                 <span className="text-leaf">✓</span> Pedidos ilimitados por mês
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Propostas ilimitadas por mês
+                <span className="text-leaf">✓</span> Propostas ilimitadas por
+                mês
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Templates ilimitados

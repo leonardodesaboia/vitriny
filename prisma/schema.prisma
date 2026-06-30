@@ -85,11 +85,17 @@ model ProviderProfile {
   city         String?
   state        String?
   plan         PlanTier @default(FREE)
+  themePreset  ProviderThemePreset @default(DEFAULT)
   stripeCustomerId     String?             @unique
   stripeSubscriptionId String?             @unique
   stripePriceId        String?
   subscriptionStatus   SubscriptionStatus?
   currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean             @default(false)
+  pixKey        String?
+  pixKeyType    String?
+  pixHolderName String?
+  pixCity       String?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -102,14 +108,19 @@ model ProviderProfile {
 }
 
 model Service {
-  id          String   @id @default(cuid())
-  providerId  String
-  name        String
-  description String?
-  basePrice   Decimal? @db.Decimal(10, 2)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                        String             @id @default(cuid())
+  providerId                String
+  name                      String
+  description               String?
+  basePrice                 Decimal?           @db.Decimal(10, 2)
+  isActive                  Boolean            @default(true)
+  pricingType               ServicePricingType       @default(CUSTOM)
+  fixedServiceCheckoutMode  FixedServiceCheckoutMode @default(REQUEST_ONLY)
+  requiresSchedulingDetails Boolean                  @default(false)
+  imageUrl                  String?
+  imageStorageKey           String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   quoteRequests QuoteRequest[]
@@ -122,10 +133,16 @@ model QuoteRequest {
   customerName  String
   customerEmail String?
   customerPhone String?
-  description   String
-  status        QuoteRequestStatus @default(NEW)
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  description   String?
+  desiredDate               String?
+  desiredTime               String?
+  location                  String?
+  status                    QuoteRequestStatus @default(NEW)
+  fixedServiceAmount        Decimal?           @db.Decimal(10, 2)
+  pixReservationRequestedAt DateTime?
+  pixReservationPaidAt      DateTime?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
 
   provider      ProviderProfile             @relation(fields: [providerId], references: [id], onDelete: Cascade)
   service       Service?                    @relation(fields: [serviceId], references: [id], onDelete: SetNull)
@@ -167,16 +184,19 @@ model QuoteRequestStatusHistory {
 }
 
 model Proposal {
-  id             String         @id @default(cuid())
+  id             String                @id @default(cuid())
   providerId     String
-  quoteRequestId String         @unique
-  publicToken    String         @unique @default(uuid())
-  title          String
+  quoteRequestId String                @unique
+  publicToken    String                @unique @default(uuid())
+  pricingMode    ProposalPricingMode   @default(SIMPLE)
+  title          String?
   description    String?
-  totalAmount    Decimal        @db.Decimal(10, 2)
-  status         ProposalStatus @default(DRAFT)
+  totalAmount    Decimal               @db.Decimal(10, 2)
+  status         ProposalStatus        @default(DRAFT)
   validUntil     DateTime?
   respondedAt    DateTime?
+  depositAmount  Decimal?       @db.Decimal(10, 2)
+  depositPaidAt  DateTime?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
@@ -264,9 +284,23 @@ enum ProposalStatus {
   EXPIRED
 }
 
+enum ProposalPricingMode {
+  SIMPLE
+  ITEMIZED
+}
+
 enum PlanTier {
   FREE
   PRO
+}
+
+enum ProviderThemePreset {
+  DEFAULT
+  CLEAN
+  BEAUTY
+  CREATIVE
+  PREMIUM
+  BOLD
 }
 
 enum SubscriptionStatus {
@@ -278,4 +312,14 @@ enum SubscriptionStatus {
   INCOMPLETE_EXPIRED
   UNPAID
   PAUSED
+}
+
+enum ServicePricingType {
+  FIXED
+  CUSTOM
+}
+
+enum FixedServiceCheckoutMode {
+  REQUEST_ONLY
+  REQUIRE_PIX_PAYMENT
 }

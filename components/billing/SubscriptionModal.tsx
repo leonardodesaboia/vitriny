@@ -18,7 +18,7 @@ const appearance: Appearance = {
     colorDanger: "#DC2626",
     colorTextPlaceholder: "#78716C",
     colorTextSecondary: "#78716C",
-    fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif',
+    fontFamily: "var(--font-brand-body), system-ui, sans-serif",
     fontSizeBase: "14px",
     spacingUnit: "4px",
     borderRadius: "6px"

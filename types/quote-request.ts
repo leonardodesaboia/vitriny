@@ -2,8 +2,24 @@ import type { Prisma } from "@prisma/client";
 
 export type QuoteRequestWithRelations = Prisma.QuoteRequestGetPayload<{
   include: {
-    service: { select: { id: true; name: true } };
-    proposal: { select: { publicToken: true } };
+    service: {
+      select: {
+        id: true;
+        name: true;
+        pricingType: true;
+        fixedServiceCheckoutMode: true;
+        basePrice: true;
+      };
+    };
+    proposal: {
+      select: {
+        id: true;
+        publicToken: true;
+        status: true;
+        depositAmount: true;
+        depositPaidAt: true;
+      };
+    };
     statusHistory: {
       select: {
         id: true;

@@ -1,8 +1,8 @@
-# OrçaFácil — Agent Instructions
+# Vitriny — Agent Instructions
 
 ## Produto
 
-OrçaFácil é um microSaaS para prestadores de serviço criarem um link público de orçamento, receberem pedidos organizados, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+Vitriny é um microSaaS para prestadores de serviço criarem um link público de orçamento, receberem pedidos organizados, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
 
 ## Stack
 

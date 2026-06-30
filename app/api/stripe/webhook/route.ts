@@ -49,6 +49,7 @@ async function handleStripeEvent(event: Stripe.Event) {
       break;
     }
 
+    case "customer.subscription.created":
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
@@ -65,6 +66,7 @@ async function handleStripeEvent(event: Stripe.Event) {
           currentPeriodEnd: firstItem?.current_period_end
             ? new Date(firstItem.current_period_end * 1000)
             : null,
+          cancelAtPeriodEnd: subscription.cancel_at_period_end,
           ...(plan !== null ? { plan } : {})
         }
       });
@@ -75,13 +77,14 @@ async function handleStripeEvent(event: Stripe.Event) {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
 
-      await prisma.providerProfile.update({
+      await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
         data: {
           stripeSubscriptionId: null,
           stripePriceId: null,
           subscriptionStatus: "CANCELED",
           currentPeriodEnd: null,
+          cancelAtPeriodEnd: false,
           plan: "FREE"
         }
       });

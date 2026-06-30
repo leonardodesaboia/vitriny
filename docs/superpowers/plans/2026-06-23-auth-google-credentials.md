@@ -25,10 +25,12 @@
 ## Task 1: Schema — `User.password` e `PasswordResetToken`
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 - Create (gerado pelo Prisma CLI): `prisma/migrations/<timestamp>_add_password_auth/migration.sql`
 
 **Interfaces:**
+
 - Produces: `User.password: String?` (hash bcrypt, `null` para contas só-Google); model `PasswordResetToken { id, userId, token (único), expiresAt, createdAt }` com relação `user` para `User` (`onDelete: Cascade`).
 
 - [ ] **Step 1: Adicionar campo `password` ao model `User`**
@@ -116,9 +118,11 @@ git commit -m "feat(db): add User.password and PasswordResetToken for credential
 ## Task 2: Validações Zod (`lib/validations/auth.ts`)
 
 **Files:**
+
 - Create: `lib/validations/auth.ts`
 
 **Interfaces:**
+
 - Consumes: nada (schemas puros).
 - Produces: `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema` (todos `z.ZodObject`, usados via `.safeParse` nas Server Actions da Task 5/6) e os tipos `RegisterInput`, `LoginInput`, `ForgotPasswordInput`, `ResetPasswordInput`.
 
@@ -142,31 +146,31 @@ export const registerSchema = z
       .email("Informe um e-mail válido.")
       .max(160, "Use no máximo 160 caracteres."),
     password: z.string().min(8, "Use pelo menos 8 caracteres."),
-    confirmPassword: z.string()
+    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem.",
-    path: ["confirmPassword"]
+    path: ["confirmPassword"],
   });
 
 export const loginSchema = z.object({
   email: z.string().trim().email("Informe um e-mail válido."),
-  password: z.string().min(1, "Informe sua senha.")
+  password: z.string().min(1, "Informe sua senha."),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Informe um e-mail válido.")
+  email: z.string().trim().email("Informe um e-mail válido."),
 });
 
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Token inválido."),
     password: z.string().min(8, "Use pelo menos 8 caracteres."),
-    confirmPassword: z.string()
+    confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem.",
-    path: ["confirmPassword"]
+    path: ["confirmPassword"],
   });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
@@ -192,11 +196,13 @@ git commit -m "feat(auth): add zod schemas for register, login and password rese
 ## Task 3: `auth.ts` — Google, Credentials, sessão JWT
 
 **Files:**
+
 - Modify: `auth.ts`
 - Modify: `package.json` (nova dependência)
 - Modify: `.env`, `.env.example`, `README.md` (env vars)
 
 **Interfaces:**
+
 - Consumes: `loginSchema` de `lib/validations/auth.ts` (Task 2); `prisma` de `lib/prisma.ts`.
 - Produces: `auth`, `signIn`, `signOut`, `handlers` (mesma assinatura de hoje, sem mudança de uso externo); provider `"google"` e `"credentials"` disponíveis para `signIn(provider, options)`.
 
@@ -230,17 +236,17 @@ class GoogleOnlyAccountError extends CredentialsSignin {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: {
-    strategy: "jwt"
+    strategy: "jwt",
   },
   pages: {
-    signIn: "/login"
+    signIn: "/login",
   },
   providers: [
     Google,
     Credentials({
       credentials: {
         email: {},
-        password: {}
+        password: {},
       },
       authorize: async (credentials) => {
         const parsed = loginSchema.safeParse(credentials);
@@ -250,7 +256,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
 
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email }
+          where: { email: parsed.data.email },
         });
 
         if (!user) {
@@ -270,10 +276,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         return {
           id: user.id,
           name: user.name,
-          email: user.email
+          email: user.email,
         };
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     jwt({ token, user }) {
@@ -287,8 +293,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.sub;
       }
       return session;
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -350,11 +356,13 @@ git commit -m "feat(auth): replace GitHub with Google OAuth and Credentials prov
 ## Task 4: Envio de e-mail (`lib/email.ts`)
 
 **Files:**
+
 - Create: `lib/email.ts`
 - Modify: `package.json` (nova dependência)
 - Modify: `.env`, `.env.example`, `README.md` (env var `RESEND_API_KEY`)
 
 **Interfaces:**
+
 - Consumes: `process.env.RESEND_API_KEY`.
 - Produces: `sendPasswordResetEmail(to: string, resetUrl: string): Promise<void>`, usado pela Task 6.
 
@@ -374,10 +382,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await resend.emails.send({
-    from: "OrçaFácil <onboarding@resend.dev>",
+    from: "Vitriny <onboarding@resend.dev>",
     to,
-    subject: "Redefinir senha — OrçaFácil",
-    html: `<p>Recebemos um pedido para redefinir sua senha.</p><p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>.</p><p>O link expira em 1 hora. Se você não pediu isso, ignore este e-mail.</p>`
+    subject: "Redefinir senha — Vitriny",
+    html: `<p>Recebemos um pedido para redefinir sua senha.</p><p><a href="${resetUrl}">Clique aqui para criar uma nova senha</a>.</p><p>O link expira em 1 hora. Se você não pediu isso, ignore este e-mail.</p>`,
   });
 }
 ```
@@ -411,9 +419,11 @@ git commit -m "feat(auth): add Resend wrapper for password reset emails"
 ## Task 5: Server Actions — cadastro e login (`lib/actions/auth.ts`)
 
 **Files:**
+
 - Create: `lib/actions/auth.ts`
 
 **Interfaces:**
+
 - Consumes: `signIn` de `@/auth` (Task 3); `AuthError`, `CredentialsSignin` de `"next-auth"`; `registerSchema`, `loginSchema` de `@/lib/validations/auth` (Task 2); `prisma` de `@/lib/prisma`.
 - Produces: `registerUser(formData: FormData): Promise<void>`, `loginWithCredentials(formData: FormData): Promise<void>` — usados como `action` em `<form>` nas Tasks 8 e 9.
 
@@ -435,13 +445,13 @@ import { registerSchema, loginSchema } from "@/lib/validations/auth";
 async function signInWithCredentials(
   email: string,
   password: string,
-  errorBasePath: string
+  errorBasePath: string,
 ) {
   try {
     await signIn("credentials", {
       email,
       password,
-      redirectTo: "/dashboard"
+      redirectTo: "/dashboard",
     });
   } catch (error) {
     if (error instanceof CredentialsSignin) {
@@ -459,7 +469,7 @@ export async function registerUser(formData: FormData) {
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
-    confirmPassword: formData.get("confirmPassword")
+    confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
@@ -468,12 +478,14 @@ export async function registerUser(formData: FormData) {
 
   const existingUser = await prisma.user.findUnique({
     where: { email: parsed.data.email },
-    select: { password: true }
+    select: { password: true },
   });
 
   if (existingUser) {
     redirect(
-      existingUser.password ? "/cadastro?error=email-exists" : "/cadastro?error=google-account"
+      existingUser.password
+        ? "/cadastro?error=email-exists"
+        : "/cadastro?error=google-account",
     );
   }
 
@@ -483,24 +495,32 @@ export async function registerUser(formData: FormData) {
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
-      password: passwordHash
-    }
+      password: passwordHash,
+    },
   });
 
-  await signInWithCredentials(parsed.data.email, parsed.data.password, "/cadastro");
+  await signInWithCredentials(
+    parsed.data.email,
+    parsed.data.password,
+    "/cadastro",
+  );
 }
 
 export async function loginWithCredentials(formData: FormData) {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
-    password: formData.get("password")
+    password: formData.get("password"),
   });
 
   if (!parsed.success) {
     redirect("/login?error=invalid-credentials");
   }
 
-  await signInWithCredentials(parsed.data.email, parsed.data.password, "/login");
+  await signInWithCredentials(
+    parsed.data.email,
+    parsed.data.password,
+    "/login",
+  );
 }
 ```
 
@@ -521,9 +541,11 @@ git commit -m "feat(auth): add registerUser and loginWithCredentials server acti
 ## Task 6: Server Actions — recuperação de senha
 
 **Files:**
+
 - Modify: `lib/actions/auth.ts`
 
 **Interfaces:**
+
 - Consumes: `sendPasswordResetEmail` de `@/lib/email` (Task 4); `forgotPasswordSchema`, `resetPasswordSchema` de `@/lib/validations/auth` (Task 2).
 - Produces: `requestPasswordReset(formData: FormData): Promise<void>`, `resetPassword(formData: FormData): Promise<void>` — usados nas Tasks 10 e 11.
 
@@ -535,7 +557,10 @@ No topo de `lib/actions/auth.ts`, junto aos imports existentes, adicionar:
 import crypto from "crypto";
 
 import { sendPasswordResetEmail } from "@/lib/email";
-import { forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";
+import {
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from "@/lib/validations/auth";
 ```
 
 (A linha `import { registerSchema, loginSchema } from "@/lib/validations/auth";` da Task 5 passa a importar os quatro juntos: `import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "@/lib/validations/auth";`.)
@@ -555,7 +580,7 @@ No final de `lib/actions/auth.ts`, adicionar:
 ```ts
 export async function requestPasswordReset(formData: FormData) {
   const parsed = forgotPasswordSchema.safeParse({
-    email: formData.get("email")
+    email: formData.get("email"),
   });
 
   if (!parsed.success) {
@@ -564,7 +589,7 @@ export async function requestPasswordReset(formData: FormData) {
 
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
-    select: { id: true, password: true }
+    select: { id: true, password: true },
   });
 
   if (user?.password) {
@@ -574,13 +599,13 @@ export async function requestPasswordReset(formData: FormData) {
       data: {
         userId: user.id,
         token,
-        expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
-      }
+        expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS),
+      },
     });
 
     await sendPasswordResetEmail(
       parsed.data.email,
-      `${process.env.AUTH_URL}/redefinir-senha/${token}`
+      `${process.env.AUTH_URL}/redefinir-senha/${token}`,
     );
   }
 
@@ -591,7 +616,7 @@ export async function resetPassword(formData: FormData) {
   const parsed = resetPasswordSchema.safeParse({
     token: formData.get("token"),
     password: formData.get("password"),
-    confirmPassword: formData.get("confirmPassword")
+    confirmPassword: formData.get("confirmPassword"),
   });
 
   if (!parsed.success) {
@@ -600,7 +625,7 @@ export async function resetPassword(formData: FormData) {
   }
 
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token: parsed.data.token }
+    where: { token: parsed.data.token },
   });
 
   if (!resetToken || resetToken.expiresAt < new Date()) {
@@ -612,11 +637,11 @@ export async function resetPassword(formData: FormData) {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: resetToken.userId },
-      data: { password: passwordHash }
+      data: { password: passwordHash },
     }),
     prisma.passwordResetToken.deleteMany({
-      where: { userId: resetToken.userId }
-    })
+      where: { userId: resetToken.userId },
+    }),
   ]);
 
   redirect("/login?reset=1");
@@ -640,10 +665,12 @@ git commit -m "feat(auth): add requestPasswordReset and resetPassword server act
 ## Task 7: Layout compartilhado de autenticação
 
 **Files:**
+
 - Create: `app/(auth)/layout.tsx`
 - Modify: `app/(auth)/login/page.tsx`
 
 **Interfaces:**
+
 - Produces: `AuthLayout({ children }: { children: ReactNode })` — usado automaticamente pelo App Router para todas as páginas dentro de `app/(auth)/` (login, cadastro, esqueci-senha, redefinir-senha).
 
 - [ ] **Step 1: Criar o layout compartilhado**
@@ -657,15 +684,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen text-ink">
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-leaf p-12 lg:flex">
-        <p className="font-fraunces text-2xl font-semibold text-white">OrçaFácil</p>
+        <p className="font-fraunces text-2xl font-semibold text-white">
+          Vitriny
+        </p>
 
         <div
           className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #D4EBD9, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #D4EBD9, transparent 70%)",
+          }}
         />
         <div
           className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #F5E6D3, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #F5E6D3, transparent 70%)",
+          }}
         />
 
         <blockquote>
@@ -739,12 +772,14 @@ git commit -m "refactor(auth): extract shared split layout for auth pages"
 ## Task 8: Página de login (Google + e-mail/senha)
 
 **Files:**
+
 - Create: `components/auth/GoogleButton.tsx`
 - Create: `components/auth/LoginForm.tsx`
 - Modify: `app/(auth)/login/page.tsx`
 - Delete: `components/auth/LoginButton.tsx`
 
 **Interfaces:**
+
 - Consumes: `loginWithCredentials` de `@/lib/actions/auth` (Task 5); `signIn` de `@/auth` (Task 3).
 - Produces: `GoogleButton({ className }: { className?: string })`, `LoginForm({ errorCode }: { errorCode?: string })` — reaproveitados pela Task 9 (cadastro usa `GoogleButton` também).
 
@@ -789,13 +824,15 @@ type LoginFormProps = {
 const inputClass =
   "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
 
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
 const errorMessages: Record<string, string> = {
   "invalid-credentials": "E-mail ou senha incorretos.",
   "google-account": "Este e-mail está cadastrado com Google. Entre com Google.",
-  OAuthAccountNotLinked: "Este e-mail já está cadastrado com outro método de login.",
-  auth: "Não foi possível entrar. Tente novamente."
+  OAuthAccountNotLinked:
+    "Este e-mail já está cadastrado com outro método de login.",
+  auth: "Não foi possível entrar. Tente novamente.",
 };
 
 export function LoginForm({ errorCode }: LoginFormProps) {
@@ -804,7 +841,8 @@ export function LoginForm({ errorCode }: LoginFormProps) {
       {errorCode ? (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
-            {errorMessages[errorCode] ?? "Não foi possível entrar. Tente novamente."}
+            {errorMessages[errorCode] ??
+              "Não foi possível entrar. Tente novamente."}
           </p>
         </div>
       ) : null}
@@ -902,12 +940,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
       <p className="mt-6 text-center text-xs text-ink-muted">
         Não tem conta?{" "}
-        <Link className="font-semibold text-leaf hover:text-leaf-hover" href="/cadastro">
+        <Link
+          className="font-semibold text-leaf hover:text-leaf-hover"
+          href="/cadastro"
+        >
           Cadastre-se
         </Link>
       </p>
       <p className="mt-2 text-center text-xs text-ink-muted">
-        <Link className="font-semibold text-leaf hover:text-leaf-hover" href="/esqueci-senha">
+        <Link
+          className="font-semibold text-leaf hover:text-leaf-hover"
+          href="/esqueci-senha"
+        >
           Esqueci minha senha
         </Link>
       </p>
@@ -930,6 +974,7 @@ Expected: nenhum erro.
 
 Run: `npm run dev`, acessar `http://localhost:3000/login`.
 Expected:
+
 - Botão "Entrar com Google" aparece.
 - Formulário de e-mail/senha aparece abaixo do separador "ou".
 - Tentar logar com e-mail/senha errados redireciona para `/login?error=invalid-credentials` e mostra "E-mail ou senha incorretos.".
@@ -948,10 +993,12 @@ git commit -m "feat(auth): redesign login page with Google and email/password"
 ## Task 9: Página de cadastro
 
 **Files:**
+
 - Create: `components/auth/RegisterForm.tsx`
 - Create: `app/(auth)/cadastro/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `registerUser` de `@/lib/actions/auth` (Task 5); `GoogleButton` de `@/components/auth/GoogleButton` (Task 8).
 - Produces: rota pública `/cadastro`.
 
@@ -969,12 +1016,14 @@ type RegisterFormProps = {
 const inputClass =
   "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
 
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados informados.",
   "email-exists": "Este e-mail já está cadastrado.",
-  "google-account": "Este e-mail já está cadastrado com Google. Entre com Google."
+  "google-account":
+    "Este e-mail já está cadastrado com Google. Entre com Google.",
 };
 
 export function RegisterForm({ errorCode }: RegisterFormProps) {
@@ -1076,7 +1125,9 @@ type RegisterPageProps = {
 const googleButtonClassName =
   "mt-8 inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf";
 
-export default async function RegisterPage({ searchParams }: RegisterPageProps) {
+export default async function RegisterPage({
+  searchParams,
+}: RegisterPageProps) {
   const session = await auth();
   if (session?.user) {
     redirect("/dashboard");
@@ -1103,7 +1154,10 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
 
       <p className="mt-6 text-center text-xs text-ink-muted">
         Já tem conta?{" "}
-        <Link className="font-semibold text-leaf hover:text-leaf-hover" href="/login">
+        <Link
+          className="font-semibold text-leaf hover:text-leaf-hover"
+          href="/login"
+        >
           Entrar
         </Link>
       </p>
@@ -1119,6 +1173,7 @@ Expected: nenhum erro.
 
 Run: `npm run dev`, acessar `http://localhost:3000/cadastro`.
 Expected:
+
 - Cadastrar com nome/e-mail/senha novos cria o usuário e redireciona para `/dashboard` já logado.
 - Cadastrar de novo com o mesmo e-mail mostra "Este e-mail já está cadastrado.".
 - Senhas que não coincidem mostram `?error=invalid` → "Revise os dados informados.".
@@ -1135,10 +1190,12 @@ git commit -m "feat(auth): add registration page with email/password"
 ## Task 10: Página "esqueci minha senha"
 
 **Files:**
+
 - Create: `components/auth/ForgotPasswordForm.tsx`
 - Create: `app/(auth)/esqueci-senha/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `requestPasswordReset` de `@/lib/actions/auth` (Task 6).
 - Produces: rota pública `/esqueci-senha`.
 
@@ -1156,10 +1213,11 @@ type ForgotPasswordFormProps = {
 const inputClass =
   "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
 
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
 const errorMessages: Record<string, string> = {
-  invalid: "Informe um e-mail válido."
+  invalid: "Informe um e-mail válido.",
 };
 
 export function ForgotPasswordForm({ errorCode }: ForgotPasswordFormProps) {
@@ -1212,13 +1270,15 @@ type ForgotPasswordPageProps = {
 };
 
 export default async function ForgotPasswordPage({
-  searchParams
+  searchParams,
 }: ForgotPasswordPageProps) {
   const query = await searchParams;
 
   return (
     <>
-      <p className="font-fraunces text-3xl font-bold text-ink">Esqueci minha senha</p>
+      <p className="font-fraunces text-3xl font-bold text-ink">
+        Esqueci minha senha
+      </p>
       <p className="mt-3 text-sm leading-6 text-ink-muted">
         Informe seu e-mail para receber um link de redefinição de senha.
       </p>
@@ -1226,8 +1286,8 @@ export default async function ForgotPasswordPage({
       {query.sent ? (
         <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3">
           <p className="text-sm font-semibold text-leaf">
-            Se esse e-mail estiver cadastrado com senha, você vai receber um link em
-            instantes.
+            Se esse e-mail estiver cadastrado com senha, você vai receber um
+            link em instantes.
           </p>
         </div>
       ) : (
@@ -1235,7 +1295,10 @@ export default async function ForgotPasswordPage({
       )}
 
       <p className="mt-6 text-center text-xs text-ink-muted">
-        <Link className="font-semibold text-leaf hover:text-leaf-hover" href="/login">
+        <Link
+          className="font-semibold text-leaf hover:text-leaf-hover"
+          href="/login"
+        >
           Voltar para o login
         </Link>
       </p>
@@ -1251,6 +1314,7 @@ Expected: nenhum erro.
 
 Run: `npm run dev`, acessar `http://localhost:3000/esqueci-senha`.
 Expected:
+
 - Enviar um e-mail cadastrado com senha mostra a mensagem de sucesso e (com `RESEND_API_KEY` configurada) chega um e-mail real.
 - Enviar um e-mail que não existe, ou que é conta Google-only, mostra a mesma mensagem de sucesso (sem diferenciação visível).
 - Enviar e-mail em formato inválido mostra "Informe um e-mail válido.".
@@ -1267,10 +1331,12 @@ git commit -m "feat(auth): add forgot password page"
 ## Task 11: Página "redefinir senha"
 
 **Files:**
+
 - Create: `components/auth/ResetPasswordForm.tsx`
 - Create: `app/(auth)/redefinir-senha/[token]/page.tsx`
 
 **Interfaces:**
+
 - Consumes: `resetPassword` de `@/lib/actions/auth` (Task 6); `prisma` de `@/lib/prisma`.
 - Produces: rota pública `/redefinir-senha/[token]`.
 
@@ -1289,13 +1355,17 @@ type ResetPasswordFormProps = {
 const inputClass =
   "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
 
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
 const errorMessages: Record<string, string> = {
-  invalid: "Revise a senha informada."
+  invalid: "Revise a senha informada.",
 };
 
-export function ResetPasswordForm({ token, errorCode }: ResetPasswordFormProps) {
+export function ResetPasswordForm({
+  token,
+  errorCode,
+}: ResetPasswordFormProps) {
   return (
     <form action={resetPassword} className="mt-6 grid gap-4">
       <input name="token" type="hidden" value={token} />
@@ -1366,21 +1436,23 @@ type ResetPasswordPageProps = {
 
 export default async function ResetPasswordPage({
   params,
-  searchParams
+  searchParams,
 }: ResetPasswordPageProps) {
   const { token } = await params;
   const query = await searchParams;
 
   const resetToken = await prisma.passwordResetToken.findUnique({
     where: { token },
-    select: { expiresAt: true }
+    select: { expiresAt: true },
   });
 
   const isValid = !!resetToken && resetToken.expiresAt > new Date();
 
   return (
     <>
-      <p className="font-fraunces text-3xl font-bold text-ink">Redefinir senha</p>
+      <p className="font-fraunces text-3xl font-bold text-ink">
+        Redefinir senha
+      </p>
 
       {isValid ? (
         <>
@@ -1414,6 +1486,7 @@ Expected: nenhum erro.
 
 Run: `npm run dev`. Solicitar reset em `/esqueci-senha`, copiar o link do e-mail recebido (ou ler o token direto no Prisma Studio com `npm run prisma:studio` se o e-mail não chegar), acessar `/redefinir-senha/[token]`.
 Expected:
+
 - Token válido mostra o formulário de nova senha.
 - Definir nova senha redireciona para `/login?reset=1` e o login antigo deixa de funcionar; o novo funciona.
 - Acessar `/redefinir-senha/token-invalido-qualquer` mostra "Este link é inválido ou já expirou." com botão para solicitar novo link.
@@ -1431,6 +1504,7 @@ git commit -m "feat(auth): add reset password page"
 ## Task 12: Verificação completa e teste manual do fluxo
 
 **Files:**
+
 - Nenhum arquivo novo — task de verificação.
 
 - [ ] **Step 1: Lint completo**
@@ -1476,6 +1550,7 @@ Se todos os passos acima passarem sem precisar de nenhum ajuste de código, não
 ## Task 13: Atualizar documentação
 
 **Files:**
+
 - Modify: `docs/AUTH.md`
 - Modify: `docs/AI_HANDOFF.md`
 - Modify: `docs/ROADMAP.md`
@@ -1487,6 +1562,7 @@ Se todos os passos acima passarem sem precisar de nenhum ajuste de código, não
 Substituir o conteúdo de `docs/AUTH.md` para refletir Google + Credentials + reset de senha + sessão JWT, seguindo a mesma estrutura de seções que o arquivo já usa hoje (Como funciona, Provider(s), Arquivos envolvidos, Variáveis de ambiente, Configuração central, Proteção do dashboard, Testar login/logout, Produção, Observações).
 
 Pontos que precisam aparecer no texto novo:
+
 - Providers: Google (OAuth) e Credentials (e-mail/senha).
 - Sessão `jwt` (não mais `database`), e por quê (exigência do Credentials provider).
 - Campo `User.password` (hash bcrypt, `null` para contas Google).
@@ -1499,6 +1575,7 @@ Pontos que precisam aparecer no texto novo:
 - [ ] **Step 2: Atualizar `docs/AI_HANDOFF.md`**
 
 Nas seções "Restrições importantes" e "Cuidados para não quebrar", trocar qualquer menção a GitHub/login único por:
+
 - Login: Google OAuth + e-mail/senha (sem GitHub).
 - Sessão é `jwt`, não `database`.
 - Senha sempre hash bcrypt, nunca texto puro.

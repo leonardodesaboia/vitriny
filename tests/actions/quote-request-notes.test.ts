@@ -24,11 +24,11 @@ describe("createQuoteRequestNote", () => {
     db.quoteRequestInternalNote.create.mockResolvedValue({});
   });
 
-  it("cria nota e redireciona para /dashboard/pedidos em caso de sucesso", async () => {
+  it("cria nota e retorna sem redirecionar em caso de sucesso", async () => {
     const form = makeFormData({ requestId: validRequestId, content: "Cliente confirmou visita." });
 
     const { createQuoteRequestNote } = await import("@/lib/actions/quote-request-notes");
-    await expect(createQuoteRequestNote(form)).rejects.toThrow("/dashboard/pedidos");
+    await expect(createQuoteRequestNote(form)).resolves.toBeUndefined();
 
     expect(db.quoteRequestInternalNote.create).toHaveBeenCalledOnce();
   });
@@ -75,7 +75,7 @@ describe("createQuoteRequestNote", () => {
     const form = makeFormData({ requestId: validRequestId, content: "Precisa de orçamento urgente." });
 
     const { createQuoteRequestNote } = await import("@/lib/actions/quote-request-notes");
-    await expect(createQuoteRequestNote(form)).rejects.toThrow("/dashboard/pedidos");
+    await createQuoteRequestNote(form);
 
     expect(db.quoteRequestInternalNote.create).toHaveBeenCalledWith(
       expect.objectContaining({

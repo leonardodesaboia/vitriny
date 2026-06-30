@@ -59,7 +59,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, form);
 
-    expect(result).toEqual({ error: expect.stringContaining("inválido") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("inválido") }));
     expect(db.providerProfile.upsert).not.toHaveBeenCalled();
   });
 
@@ -77,7 +77,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, form);
 
-    expect(result).toEqual({ error: expect.stringContaining("inválido") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("inválido") }));
   });
 
   it("retorna erro de slug em uso quando outro usuário já tem o slug", async () => {
@@ -86,7 +86,7 @@ describe("saveProviderProfile", () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     const result = await saveProviderProfile(undefined, validProfileForm());
 
-    expect(result).toEqual({ error: expect.stringContaining("slug") });
+    expect(result).toEqual(expect.objectContaining({ error: expect.stringContaining("em uso") }));
     expect(db.providerProfile.upsert).not.toHaveBeenCalled();
   });
 
@@ -108,6 +108,28 @@ describe("saveProviderProfile", () => {
       expect.objectContaining({
         where: { userId: "user-1" },
         create: expect.objectContaining({ userId: "user-1" })
+      })
+    );
+  });
+
+  it("salva telefone normalizado", async () => {
+    const form = makeFormData({
+      businessName: "Pinturas Silva",
+      slug: "pinturas-silva",
+      description: "",
+      phone: "11999999999",
+      email: "",
+      city: "",
+      state: ""
+    });
+
+    const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
+    await expect(saveProviderProfile(undefined, form)).rejects.toThrow("/dashboard");
+
+    expect(db.providerProfile.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        create: expect.objectContaining({ phone: "(11) 99999-9999" }),
+        update: expect.objectContaining({ phone: "(11) 99999-9999" })
       })
     );
   });

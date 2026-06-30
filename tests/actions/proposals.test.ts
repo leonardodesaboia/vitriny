@@ -3,6 +3,9 @@ import { makeFormData, makeSession, makeProfile, makePrismaMock, type PrismaMock
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/lib/email", () => ({
+  sendProposalSentEmail: vi.fn()
+}));
 
 let db: PrismaMock;
 
@@ -29,6 +32,7 @@ beforeEach(async () => {
 
 const validProposalForm = () =>
   makeFormData({
+    pricingMode: "ITEMIZED",
     requestId: validRequestId,
     title: "Proposta de Pintura",
     description: "",
@@ -41,7 +45,7 @@ const validProposalForm = () =>
 describe("createProposal", () => {
   it("cria proposta e redireciona para /dashboard/pedidos em caso de sucesso", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
 
     expect(db.proposal.create).toHaveBeenCalledOnce();
   });
@@ -51,22 +55,22 @@ describe("createProposal", () => {
     vi.mocked(auth).mockResolvedValue(null as never);
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/login");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/login");
   });
 
   it("redireciona com ?error=profile quando não há perfil", async () => {
     db.providerProfile.findUnique.mockResolvedValue(null);
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow(
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
       "/dashboard/pedidos?error=profile"
     );
   });
 
-  it("redireciona com ?error=invalid quando os dados são inválidos", async () => {
+  it("retorna erro quando os dados são inválidos (não redireciona)", async () => {
     const form = makeFormData({
-      requestId: validRequestId,
-      title: "",
+      pricingMode: "ITEMIZED",
+      requestId: "nao-e-um-cuid-valido",
       description: "",
       validUntil: "",
       itemDescription: ["Item"],
@@ -75,7 +79,7 @@ describe("createProposal", () => {
     });
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(form)).rejects.toThrow("error=invalid");
+    expect(await createProposal(undefined, form)).toEqual({ error: expect.any(String) });
 
     expect(db.proposal.create).not.toHaveBeenCalled();
   });
@@ -84,12 +88,12 @@ describe("createProposal", () => {
     db.quoteRequest.findFirst.mockResolvedValue(null);
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow(
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
       "/dashboard/pedidos?error=not-found"
     );
   });
 
-  it("redireciona com ?error=exists quando o pedido já tem proposta", async () => {
+  it("retorna erro quando o pedido já tem proposta (não redireciona)", async () => {
     db.quoteRequest.findFirst.mockResolvedValue({
       id: validRequestId,
       status: "PROPOSAL_SENT",
@@ -97,12 +101,26 @@ describe("createProposal", () => {
     });
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("error=exists");
+    expect(await createProposal(undefined, validProposalForm())).toEqual({ error: expect.any(String) });
+  });
+
+  it("retorna erro e não cria proposta quando o pedido é de serviço com preço fixo", async () => {
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: validRequestId,
+      status: "NEW",
+      proposal: null,
+      service: { pricingType: "FIXED" }
+    });
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    expect(await createProposal(undefined, validProposalForm())).toEqual({ error: expect.any(String) });
+
+    expect(db.proposal.create).not.toHaveBeenCalled();
   });
 
   it("calcula totalAmount corretamente: quantidade × preço unitário", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
 
     const callArg = db.proposal.create.mock.calls[0]?.[0];
     expect(callArg?.data?.totalAmount?.toString()).toBe("300");
@@ -120,7 +138,7 @@ describe("createProposal", () => {
     });
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(form)).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, form)).rejects.toThrow("/dashboard/pedidos");
 
     const callArg = db.proposal.create.mock.calls[0]?.[0];
     expect(callArg?.data?.totalAmount?.toString()).toBe("350");
@@ -130,7 +148,7 @@ describe("createProposal", () => {
     db.proposal.count.mockResolvedValue(5);
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow(
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
       "limit-monthly-proposals"
     );
 
@@ -142,14 +160,14 @@ describe("createProposal", () => {
     db.proposal.count.mockResolvedValue(100);
 
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
 
     expect(db.proposal.create).toHaveBeenCalledOnce();
   });
 
   it("atualiza status do pedido para PROPOSAL_SENT após criar proposta", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
 
     expect(db.quoteRequest.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { status: "PROPOSAL_SENT" } })
@@ -158,9 +176,84 @@ describe("createProposal", () => {
 
   it("cria proposta com status SENT (não DRAFT)", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
-    await expect(createProposal(validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
 
     const callArg = db.proposal.create.mock.calls[0]?.[0];
     expect(callArg?.data?.status).toBe("SENT");
+  });
+
+  it("envia e-mail ao cliente quando cria proposta para pedido com e-mail", async () => {
+    const { sendProposalSentEmail } = await import("@/lib/email");
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessName: "Vitriny Serviços" })
+    );
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: validRequestId,
+      status: "NEW",
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      proposal: null,
+      service: { pricingType: "CUSTOM" }
+    });
+    db.proposal.create.mockResolvedValue({
+      id: "proposal-1",
+      publicToken: "token-publico"
+    });
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
+      "notice=proposal-email-sent"
+    );
+
+    expect(sendProposalSentEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "maria@example.com",
+        businessName: "Vitriny Serviços",
+        customerName: "Maria",
+        proposalUrl: expect.stringContaining("/proposta/token-publico")
+      })
+    );
+  });
+
+  it("avisa quando o pedido não tem e-mail do cliente", async () => {
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: validRequestId,
+      status: "NEW",
+      customerName: "Maria",
+      customerEmail: null,
+      proposal: null,
+      service: { pricingType: "CUSTOM" }
+    });
+    db.proposal.create.mockResolvedValue({
+      id: "proposal-1",
+      publicToken: "token-publico"
+    });
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
+      "warning=proposal-email-missing"
+    );
+  });
+
+  it("avisa quando o envio de e-mail da proposta falha", async () => {
+    const { sendProposalSentEmail } = await import("@/lib/email");
+    vi.mocked(sendProposalSentEmail).mockRejectedValueOnce(new Error("resend failed"));
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: validRequestId,
+      status: "NEW",
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      proposal: null,
+      service: { pricingType: "CUSTOM" }
+    });
+    db.proposal.create.mockResolvedValue({
+      id: "proposal-1",
+      publicToken: "token-publico"
+    });
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    await expect(createProposal(undefined, validProposalForm())).rejects.toThrow(
+      "warning=proposal-email-failed"
+    );
   });
 });

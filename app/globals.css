@@ -4,6 +4,101 @@
 
 :root {
   color-scheme: light;
+  --color-paper: 245 240 232;
+  --color-paper-soft: 237 232 222;
+  --color-ink: 28 25 23;
+  --color-ink-muted: 120 113 108;
+  --color-leaf: 27 94 59;
+  --color-leaf-hover: 45 122 82;
+  --color-mint: 212 235 217;
+  --color-amber: 201 125 63;
+  --color-amber-soft: 245 230 211;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-fraunces);
+}
+
+[data-brand-theme="DEFAULT"] {
+  --color-paper: 245 240 232;
+  --color-paper-soft: 237 232 222;
+  --color-ink: 28 25 23;
+  --color-ink-muted: 120 113 108;
+  --color-leaf: 27 94 59;
+  --color-leaf-hover: 45 122 82;
+  --color-mint: 212 235 217;
+  --color-amber: 201 125 63;
+  --color-amber-soft: 245 230 211;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-fraunces);
+}
+
+[data-brand-theme="CLEAN"] {
+  --color-paper: 248 250 252;
+  --color-paper-soft: 226 232 240;
+  --color-ink: 15 23 42;
+  --color-ink-muted: 100 116 139;
+  --color-leaf: 3 105 161;
+  --color-leaf-hover: 7 89 133;
+  --color-mint: 224 242 254;
+  --color-amber: 217 119 6;
+  --color-amber-soft: 254 243 199;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-jakarta);
+}
+
+[data-brand-theme="BEAUTY"] {
+  --color-paper: 255 241 242;
+  --color-paper-soft: 255 228 230;
+  --color-ink: 41 37 36;
+  --color-ink-muted: 120 113 108;
+  --color-leaf: 190 18 60;
+  --color-leaf-hover: 159 18 57;
+  --color-mint: 255 228 230;
+  --color-amber: 194 65 12;
+  --color-amber-soft: 255 237 213;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-fraunces);
+}
+
+[data-brand-theme="CREATIVE"] {
+  --color-paper: 236 254 255;
+  --color-paper-soft: 207 250 254;
+  --color-ink: 15 23 42;
+  --color-ink-muted: 71 85 105;
+  --color-leaf: 192 38 211;
+  --color-leaf-hover: 162 28 175;
+  --color-mint: 217 249 157;
+  --color-amber: 8 145 178;
+  --color-amber-soft: 207 250 254;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-jakarta);
+}
+
+[data-brand-theme="PREMIUM"] {
+  --color-paper: 245 245 244;
+  --color-paper-soft: 231 229 228;
+  --color-ink: 28 25 23;
+  --color-ink-muted: 87 83 78;
+  --color-leaf: 146 64 14;
+  --color-leaf-hover: 120 53 15;
+  --color-mint: 254 243 199;
+  --color-amber: 180 83 9;
+  --color-amber-soft: 254 243 199;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-fraunces);
+}
+
+[data-brand-theme="BOLD"] {
+  --color-paper: 255 247 237;
+  --color-paper-soft: 254 215 170;
+  --color-ink: 24 24 27;
+  --color-ink-muted: 82 82 91;
+  --color-leaf: 220 38 38;
+  --color-leaf-hover: 185 28 28;
+  --color-mint: 254 202 202;
+  --color-amber: 234 88 12;
+  --color-amber-soft: 255 237 213;
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-jakarta);
 }
 
 * {
@@ -16,9 +111,9 @@ html {
 
 body {
   margin: 0;
-  background: #F5F0E8;
-  font-family: var(--font-jakarta), system-ui, sans-serif;
-  color: #1C1917;
+  background: rgb(var(--color-paper));
+  font-family: var(--font-brand-body), system-ui, sans-serif;
+  color: rgb(var(--color-ink));
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -26,6 +121,13 @@ body {
 a {
   color: inherit;
   text-decoration: none;
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-brand-body), system-ui, sans-serif;
 }
 
 /* Grain texture — apply with class .grain on position:relative parent */

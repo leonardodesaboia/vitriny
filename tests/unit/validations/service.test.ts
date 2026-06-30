@@ -2,9 +2,16 @@ import { describe, it, expect } from "vitest";
 import { serviceSchema } from "@/lib/validations/service";
 
 describe("serviceSchema", () => {
-  const valid = { name: "Pintura residencial", description: "", basePrice: "", isActive: true };
+  // fixture base agora inclui pricingType
+  const valid = {
+    name: "Pintura residencial",
+    description: "",
+    basePrice: "",
+    pricingType: "CUSTOM",
+    isActive: true
+  };
 
-  it("aceita dados válidos sem preço e sem descrição", () => {
+  it("aceita dados válidos sem preço e sem descrição (CUSTOM)", () => {
     const result = serviceSchema.safeParse(valid);
     expect(result.success).toBe(true);
     if (result.success) {
@@ -13,7 +20,7 @@ describe("serviceSchema", () => {
     }
   });
 
-  it("aceita dados válidos com preço e descrição", () => {
+  it("aceita dados válidos com preço e descrição (CUSTOM)", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       description: "Pintura interna e externa",
@@ -59,5 +66,95 @@ describe("serviceSchema", () => {
 
   it("rejeita preço com mais de 2 casas decimais", () => {
     expect(serviceSchema.safeParse({ ...valid, basePrice: "100.123" }).success).toBe(false);
+  });
+
+  // Novos casos — pricingType FIXED
+  it("FIXED aceita basePrice > 0", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      basePrice: "200.00"
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.pricingType).toBe("FIXED");
+      expect(result.data.basePrice).toBe("200.00");
+    }
+  });
+
+  it("aceita pagamento Pix obrigatório para serviço FIXED", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT",
+      basePrice: "200.00"
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it("rejeita o modo legado de reserva Pix", () => {
+    expect(
+      serviceSchema.safeParse({
+        ...valid,
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION",
+        basePrice: "200.00"
+      }).success
+    ).toBe(false);
+  });
+
+  it("aceita REQUIRE_PIX_PAYMENT como modo de checkout", () => {
+    expect(
+      serviceSchema.safeParse({
+        ...valid,
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT",
+        basePrice: "200.00"
+      }).success
+    ).toBe(true);
+  });
+
+  it("FIXED rejeita quando basePrice está vazio", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      basePrice: ""
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("FIXED rejeita quando basePrice é zero", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      basePrice: "0"
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("FIXED rejeita quando basePrice é nulo", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "FIXED",
+      basePrice: null
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("CUSTOM aceita basePrice vazio", () => {
+    const result = serviceSchema.safeParse({
+      ...valid,
+      pricingType: "CUSTOM",
+      basePrice: ""
+    });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.basePrice).toBeNull();
+  });
+
+  it("rejeita pricingType inválido", () => {
+    expect(
+      serviceSchema.safeParse({ ...valid, pricingType: "HORA" }).success
+    ).toBe(false);
   });
 });

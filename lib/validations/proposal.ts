@@ -1,15 +1,33 @@
 import { z } from "zod";
 
-const optionalText = z
-  .string()
-  .trim()
-  .transform((value) => (value === "" ? null : value));
+const optionalText = z.preprocess(
+  (v) => (v == null ? "" : v),
+  z.string().trim().transform((value) => (value === "" ? null : value))
+);
+
+function normalizeMoney(v: string) {
+  return v.includes(",") ? v.replace(/\./g, "").replace(",", ".") : v;
+}
 
 const moneyValue = z
   .string()
   .trim()
-  .transform((value) => value.replace(",", "."))
+  .transform(normalizeMoney)
   .pipe(z.string().regex(/^\d+(\.\d{1,2})?$/, "Informe um valor válido."));
+
+const requiredMoney = moneyValue.pipe(
+  z.string().refine((v) => parseFloat(v) > 0, "O valor deve ser maior que zero.")
+);
+
+const optionalMoney = optionalText.pipe(
+  z.union([
+    z.null(),
+    z
+      .string()
+      .transform(normalizeMoney)
+      .pipe(z.string().regex(/^\d+(\.\d{1,2})?$/, "Informe um valor válido."))
+  ])
+);
 
 export const proposalItemSchema = z.object({
   description: z
@@ -25,18 +43,43 @@ export const proposalItemSchema = z.object({
   unitPrice: moneyValue
 });
 
-export const proposalSchema = z.object({
+const baseFields = {
   requestId: z.string().cuid(),
-  title: z
-    .string()
-    .trim()
-    .min(2, "Informe o título da proposta.")
-    .max(120, "Use no máximo 120 caracteres."),
+  title: optionalText.pipe(
+    z.union([
+      z.null(),
+      z.string().min(2, "O título deve ter pelo menos 2 caracteres.").max(120, "Use no máximo 120 caracteres.")
+    ])
+  ),
   description: optionalText.pipe(
     z.string().max(1000, "Use no máximo 1000 caracteres.").nullable()
   ),
-  validUntil: optionalText.pipe(z.string().date().nullable()),
-  items: z.array(proposalItemSchema).min(1, "Inclua pelo menos um item.")
-});
+  validUntil: optionalText.pipe(
+    z
+      .string()
+      .date()
+      .nullable()
+      .refine(
+        (v) => v === null || v >= new Date().toISOString().slice(0, 10),
+        { message: "A validade não pode ser uma data passada." }
+      )
+  ),
+  depositAmount: optionalMoney
+};
+
+export const proposalSchema = z.discriminatedUnion("pricingMode", [
+  z.object({
+    ...baseFields,
+    pricingMode: z.literal("SIMPLE"),
+    totalAmount: requiredMoney
+  }),
+  z.object({
+    ...baseFields,
+    pricingMode: z.literal("ITEMIZED"),
+    items: z
+      .array(proposalItemSchema)
+      .min(1, "Adicione pelo menos um item com valor.")
+  })
+]);
 
 export type ProposalInput = z.infer<typeof proposalSchema>;

@@ -8,7 +8,9 @@ const optionalText = z
 const moneyValue = z
   .string()
   .trim()
-  .transform((value) => value.replace(",", "."))
+  .transform((value) =>
+    value.includes(",") ? value.replace(/\./g, "").replace(",", ".") : value
+  )
   .pipe(z.string().regex(/^\d+(\.\d{1,2})?$/, "Informe um valor valido."));
 
 export const proposalTemplateItemSchema = z.object({

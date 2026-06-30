@@ -2,7 +2,7 @@
 
 ## Contexto
 
-Hoje o OrçaFácil só permite login via GitHub OAuth (Auth.js v5 beta + PrismaAdapter, sessão `database`). O objetivo desta etapa é remover o GitHub e oferecer duas novas formas de entrada: Google OAuth e cadastro tradicional com e-mail/senha, incluindo recuperação de senha por e-mail.
+Hoje o Vitriny só permite login via GitHub OAuth (Auth.js v5 beta + PrismaAdapter, sessão `database`). O objetivo desta etapa é remover o GitHub e oferecer duas novas formas de entrada: Google OAuth e cadastro tradicional com e-mail/senha, incluindo recuperação de senha por e-mail.
 
 Decisão confirmada com o usuário: não há usuários reais cadastrados via GitHub hoje (só dados de teste), então a remoção do GitHub não precisa de plano de migração.
 
@@ -81,7 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!parsed.success) return null;
 
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email }
+          where: { email: parsed.data.email },
         });
 
         if (!user?.password) return null;
@@ -90,8 +90,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!valid) return null;
 
         return { id: user.id, name: user.name, email: user.email };
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     jwt({ token, user }) {
@@ -101,8 +101,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) session.user.id = token.sub as string;
       return session;
-    }
-  }
+    },
+  },
 });
 ```
 
@@ -172,10 +172,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await resend.emails.send({
-    from: "OrçaFácil <onboarding@resend.dev>",
+    from: "Vitriny <onboarding@resend.dev>",
     to,
-    subject: "Redefinir senha — OrçaFácil",
-    html: `<p>Clique para redefinir sua senha:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>O link expira em 1 hora.</p>`
+    subject: "Redefinir senha — Vitriny",
+    html: `<p>Clique para redefinir sua senha:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>O link expira em 1 hora.</p>`,
   });
 }
 ```
