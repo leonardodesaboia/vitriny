@@ -114,7 +114,7 @@ export function PublicServicesGrid({
               service.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION" ? (
                 service.pixConfigured ? (
                   <Link
-                    href={`/u/${slug}/orcamento?serviceId=${service.id}&modo=pagamento`}
+                    href={`/u/${slug}/orcamento?serviceId=${service.id}&modo=reserva`}
                     className="mt-4 inline-flex min-h-9 w-fit flex-none items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition-colors hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
                   >
                     Pagar com Pix →
