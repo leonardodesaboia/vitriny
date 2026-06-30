@@ -91,10 +91,17 @@ export async function setDefaultPaymentMethod(
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { stripeSubscriptionId: true }
+    select: { stripeCustomerId: true, stripeSubscriptionId: true }
   });
 
   if (!profile?.stripeSubscriptionId) return { error: "Assinatura não encontrada." };
+  if (!profile.stripeCustomerId) return { error: "Cliente Stripe não encontrado." };
+
+  // Verifica que o paymentMethod pertence ao customer antes de aplicar
+  const pm = await stripe.paymentMethods.retrieve(paymentMethodId);
+  if (pm.customer !== profile.stripeCustomerId) {
+    return { error: "Forma de pagamento inválida." };
+  }
 
   await stripe.subscriptions.update(profile.stripeSubscriptionId, {
     default_payment_method: paymentMethodId
