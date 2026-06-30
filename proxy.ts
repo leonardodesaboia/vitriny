@@ -1,5 +1,8 @@
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 import { NextResponse, type NextRequest } from "next/server";
+
+const { auth } = NextAuth(authConfig);
 
 // In-memory sliding window rate limiter.
 // For multi-instance deployments, replace this Map with a Redis/Upstash store.
