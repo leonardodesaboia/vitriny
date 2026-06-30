@@ -5,12 +5,12 @@
 1. Usuário acessa landing page.
 2. Usuário faz login.
 3. Usuário acessa dashboard.
-4. Usuário confere plano atual e uso dos limites.
+4. Usuário confere plano atual, uso dos limites, métricas do mês, pendências e as cinco movimentações mais recentes.
 5. Usuário cria/edita perfil.
 6. Usuário publica perfil.
 7. Usuário cadastra serviços.
 8. Cliente acessa `/u/[slug]`.
-9. Cliente envia pedido de orçamento, segue para pagamento Pix direto de serviço `FIXED` ou faz reserva Pix quando habilitada.
+9. Cliente envia pedido; quando o serviço `FIXED` usa `REQUIRE_PIX_PAYMENT`, segue obrigatoriamente para o Pix.
 10. Prestador vê pedido.
 11. Prestador cria proposta (apenas para serviços CUSTOM).
 12. Cliente acessa `/proposta/[publicToken]`.
@@ -18,22 +18,21 @@
 14. Se houver entrada Pix, cliente paga diretamente ao prestador e envia comprovante.
 15. Prestador vê status atualizado e marca o entrada como recebido.
 
-Fluxo alternativo — Reserva Pix (serviços FIXED):
+Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
 
-9a. Cliente clica em "Reservar com Pix" no card do serviço.
+9a. Cliente clica em "Pagar com Pix" no card do serviço.
 9b. Cliente preenche dados e envia formulário.
 9c. Cliente é redirecionado para `/u/[slug]/reserva/[requestId]` com QR Code + código copia e cola.
 9d. Cliente realiza o pagamento Pix diretamente ao prestador.
-9e. Prestador acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
-9f. `pixReservationPaidAt` é preenchido e o painel exibe badge "Reserva Pix confirmada".
+9e. Cliente avisa o prestador e envia o comprovante.
+9f. Prestador acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
+9g. `pixReservationPaidAt` é preenchido e o painel exibe badge "Pagamento Pix confirmado".
 
-Fluxo alternativo — Pagamento Pix direto (serviços FIXED):
+Compatibilidade legada — Pagamento Pix direto:
 
-9a. Cliente clica em `Solicitar serviço` para um serviço `FIXED` com Pix configurado.
-9b. Preenche os dados em `/u/[slug]/orcamento`.
-9c. O pedido salva `fixedServiceAmount` e redireciona para `/u/[slug]/pagamento/[requestId]`.
-9d. A página mostra QR Code e código copia e cola com o valor congelado no pedido.
-9e. A confirmação continua manual e fora do OrçaFácil; não existe webhook Pix.
+- `/u/[slug]/pagamento/[requestId]` continua abrindo links criados pelo fluxo antigo.
+- Novos pedidos nunca são redirecionados para essa rota.
+- A página informa que o pagamento é manual e não oferece um estado de confirmação inexistente.
 
 ## Passo a passo manual
 
@@ -63,7 +62,7 @@ Fluxo alternativo — Pagamento Pix direto (serviços FIXED):
 
 - Acesse `/dashboard/servicos`.
 - Cadastre serviço ativo.
-- Para serviços `FIXED`: ative "Permitir reserva via Pix" se quiser que o cliente pague antecipadamente (requer chave Pix configurada no perfil).
+- Para serviços `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
 - Esperado: serviço aparece na listagem.
 
 ### 4. Página pública
@@ -74,17 +73,21 @@ Fluxo alternativo — Pagamento Pix direto (serviços FIXED):
 
 ### 5. Pedido público
 
-- Clique em `Pedir orçamento` para serviço `CUSTOM` ou `Solicitar serviço` para `FIXED`.
+- Clique em `Pedir orçamento` para serviço `CUSTOM`, `Solicitar serviço` para `FIXED` em `REQUEST_ONLY` ou `Pagar com Pix` para `FIXED` em `REQUIRE_PIX_PAYMENT`.
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
+- Informe ao menos um contato válido: e-mail ou telefone.
+- Para serviço `CUSTOM` ou pedido sem serviço selecionado, descreva obrigatoriamente o que precisa.
+- Quando o serviço exige agendamento, informe uma data real que não esteja no passado, além de horário/período e local.
 - Envie o formulário.
-- Para serviço `CUSTOM` ou `FIXED` sem Pix configurado, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
-- Para serviço `FIXED` com Pix configurado, esperado: `/u/[slug]/pagamento/[requestId]` com QR Code e valor de `fixedServiceAmount`.
+- Para serviço `CUSTOM` ou `FIXED` em `REQUEST_ONLY`, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
+- Para serviço `FIXED` em `REQUIRE_PIX_PAYMENT`, esperado: `/u/[slug]/reserva/[requestId]` com QR Code e valor de `fixedServiceAmount`.
+- Se o Pix obrigatório deixou de estar configurado, esperado: o pedido não é criado e a página mostra `payment-unavailable`.
 - Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o prestador recebe e-mail avisando sobre o novo pedido.
 
-### 5a. Reserva Pix (serviços FIXED com ALLOW_PIX_RESERVATION)
+### 5a. Pagamento Pix obrigatório (serviços FIXED com REQUIRE_PIX_PAYMENT)
 
-- Clique em `Reservar com Pix` no card do serviço (visível apenas quando `fixedServiceCheckoutMode = ALLOW_PIX_RESERVATION` e chave Pix configurada).
-- O formulário exibe o valor da reserva em destaque.
+- Clique em `Pagar com Pix` no card do serviço (visível quando `fixedServiceCheckoutMode = REQUIRE_PIX_PAYMENT` e os dados Pix estão configurados).
+- O formulário informa que o pagamento é obrigatório e exibe o valor em destaque.
 - Envie o formulário.
 - Esperado: redirecionamento para `/u/[slug]/reserva/[requestId]` com QR Code Pix e código copia e cola.
 - O valor exibido é o snapshot `fixedServiceAmount` — não muda mesmo se o prestador alterar o preço depois.
@@ -100,6 +103,8 @@ Como verificar no banco:
 - Esperado: pedido aparece na lista.
 - Use os filtros de status (`Todos`, `Novo`, `Em análise`, `Proposta enviada`, `Fechado`) para validar a listagem filtrada.
 - Confirme que apenas o filtro selecionado tem destaque e que um `?status=` inválido volta para `Todos`.
+- A partir da dashboard, abra as visões rápidas por `?view=MONTH|OPEN|APPROVED_MONTH|PIX_RESERVATION|DEPOSIT` e confirme que o título da visão e a opção de limpar filtro aparecem.
+- Volte à dashboard e confirme que novos pedidos, mudanças de proposta e confirmações Pix aparecem em ordem decrescente na seção `Atividade recente`, limitada a cinco itens.
 - Altere status para `REVIEWING` ou `CLOSED`.
 
 ### 7. Proposta

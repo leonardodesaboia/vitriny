@@ -30,13 +30,14 @@
 - Exclusão de serviço com confirmação
 - Edição de nota do cliente diretamente no card do pedido
 - Lista de serviços colapsável com padrão accordion (expandir ao clicar)
-- Reserva e pagamento Pix direto para serviços fixos, com confirmação manual
+- Pagamento antecipado Pix obrigatório para serviços fixos, com confirmação manual
 - Entrada Pix em proposta aprovada
 - Imagem por serviço para usuários PRO
 - Geração autenticada de PDF de proposta
 - Temas globais de cores e fontes para usuários PRO
 - Filtro de pedidos por status
 - Responsividade da página de serviços em telas mobile
+- Dashboard operacional com onboarding por tipo de serviço, métricas mensais, atalhos para pendências e atividade recente
 
 ## Próximos passos recomendados
 
@@ -58,8 +59,7 @@
 ## Melhorias de médio prazo
 
 - Ampliar cobertura E2E dos fluxos de billing, Pix e personalização.
-- Expiração/limpeza de reservas Pix abandonadas.
-- Métricas básicas do prestador.
+- Expiração/limpeza de pagamentos Pix obrigatórios abandonados.
 
 ## Futuro, somente após validação
 

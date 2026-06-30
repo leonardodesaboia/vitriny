@@ -29,11 +29,11 @@ MVP funcional implementado:
 
 - landing page;
 - login/logout;
-- dashboard protegido;
+- dashboard protegido com onboarding por tipo de serviço, métricas mensais, pendências operacionais e atividade recente;
 - perfil do prestador;
 - cadastro de serviços;
 - página pública do prestador em `/u/[slug]`;
-- pedido público de orçamento em `/u/[slug]/orcamento`, com serviço pré-selecionado quando o cliente vem de um card;
+- pedido público de orçamento em `/u/[slug]/orcamento`, com serviço pré-selecionado, contato obrigatório e validação server-side por tipo de serviço;
 - painel de pedidos recebidos;
 - criação de proposta;
 - página pública da proposta em `/proposta/[publicToken]`;
@@ -43,8 +43,9 @@ MVP funcional implementado:
 - notas internas do pedido no painel;
 - templates de proposta no dashboard;
 - filtro de pedidos por status em `/dashboard/pedidos`;
+- visões rápidas de pedidos abertas pela dashboard: mês atual, pedidos em aberto, propostas aprovadas, pagamentos Pix e entradas pendentes;
 - serviços com preço fixo ou sob orçamento, agendamento opcional e imagem para PRO;
-- Pix manual para entrada de proposta, reserva e pagamento direto de serviço fixo;
+- Pix manual para entrada de proposta e pagamento antecipado obrigatório de serviço fixo;
 - download autenticado da proposta em PDF após aprovação ou recusa;
 - personalização global de cores e fontes para usuários PRO;
 - tela de assinatura com faturas carregadas em segundo plano, sem travar o dashboard;
@@ -86,7 +87,7 @@ Importante: o Pix do cliente final é manual. O OrçaFácil mostra chave Pix, c�
 
 ## Feature PRO: Tema visual da aplicação
 
-Usuários no plano PRO podem escolher um tema visual para a aplicação: dashboard do profissional e fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido, reserva/pagamento Pix e proposta pública em `/proposta/[publicToken]`. Os temas disponíveis são `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`.
+Usuários no plano PRO podem escolher um tema visual para a aplicação: dashboard do profissional e fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido, pagamento Pix e proposta pública em `/proposta/[publicToken]`. Os temas disponíveis são `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`.
 
 Usuários FREE sempre usam o tema `DEFAULT`. Se um usuário PRO escolher um tema e depois voltar para FREE, o valor permanece salvo no banco, mas a aplicação renderiza `DEFAULT` enquanto o plano não for PRO.
 
@@ -256,7 +257,7 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
-   Para serviço fixo com Pix configurado, também pode seguir para `/u/[slug]/pagamento/[requestId]` ou `/u/[slug]/reserva/[requestId]`.
+   Quando o serviço fixo exige pagamento antecipado, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`. `/u/[slug]/pagamento/[requestId]` permanece apenas para links legados.
 9. Prestador vê o pedido em `/dashboard/pedidos`.
 10. Prestador cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.

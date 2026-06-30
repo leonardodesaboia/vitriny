@@ -32,12 +32,15 @@ docs/
 - `app/`: rotas, páginas e route handlers.
 - `components/`: componentes reutilizáveis de UI/formulários.
 - `components/onboarding/PublicLinkCard.tsx` e `components/onboarding/onboarding-storage.ts`: registram localmente a cópia/abertura do link público no onboarding.
+- `components/dashboard/`: cards de métricas, pendências e timeline de atividade recente da dashboard.
 - `components/billing/AsyncInvoiceList.tsx`: carrega as faturas depois do primeiro paint para não travar a página de billing.
 - `lib/actions/`: Server Actions.
 - `lib/actions/auth-guard.ts`: helpers `requireAuth` e `requireProviderProfile`.
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
+- `lib/dashboard.ts`: regras puras do onboarding, das visões rápidas de pedidos e da composição imutável da atividade recente.
+- `lib/dashboard-activity.ts`: consultas limitadas e filtradas por prestador que alimentam a timeline da dashboard.
 - `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
 - `prisma/schema.prisma`: modelo de dados.
 - `types/`: tipos compartilhados entre actions e componentes.
@@ -55,8 +58,8 @@ Rotas públicas:
 - `app/(auth)/redefinir-senha/[token]/page.tsx`
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
-- `app/u/[slug]/reserva/[requestId]/page.tsx` — página de reserva Pix: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e pix configurado.
-- `app/u/[slug]/pagamento/[requestId]/page.tsx` — página de pagamento Pix direto para serviço fixo; usa `fixedServiceAmount` e valida pedido, prestador, serviço e dados Pix.
+- `app/u/[slug]/reserva/[requestId]/page.tsx` — página de pagamento antecipado obrigatório: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e Pix configurado.
+- `app/u/[slug]/pagamento/[requestId]/page.tsx` — compatibilidade para links legados de pagamento direto; novos pedidos não usam esta rota.
 - `app/proposta/[publicToken]/page.tsx`
 
 Rotas autenticadas:
@@ -68,6 +71,8 @@ Rotas autenticadas:
 - `app/(dashboard)/dashboard/propostas/nova/page.tsx`
 - `app/(dashboard)/dashboard/propostas/templates/page.tsx`
 - `app/(dashboard)/dashboard/billing/page.tsx`
+
+`/dashboard/pedidos` aceita filtros por status em `?status=` e visões operacionais vindas da dashboard em `?view=MONTH|OPEN|APPROVED_MONTH|PIX_RESERVATION|DEPOSIT`.
 
 Auth:
 
@@ -91,7 +96,7 @@ Server Actions ficam em `lib/actions/`:
 
 - `provider-profile.ts`
 - `services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService`
-- `quote-requests.ts` — `createQuoteRequest` (fluxo normal, reserva e pagamento Pix direto), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only para reservas)
+- `quote-requests.ts` — `createQuoteRequest` (fluxo normal ou pagamento Pix obrigatório), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only)
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts` — inclui `markDepositPaid` (provider-only)
@@ -104,7 +109,7 @@ Elas validam sessão quando necessário e aplicam regras de ownership.
 ## Route Handlers
 
 - `app/api/auth/[...nextauth]/route.ts` — Auth.js.
-- `app/api/services/[id]/image/route.ts` — upload (`POST`) e remoção (`DELETE`) de imagem de serviço via MinIO/S3.
+- `app/api/services/[id]/image/route.ts` — upload (`POST`) e remoção (`DELETE`) de imagem de serviço via MinIO/S3. O tipo do arquivo é detectado por magic bytes (não por `Content-Type`) para evitar bypass de validação.
 - `app/api/billing/invoices/route.ts` — lista faturas Stripe do prestador autenticado sem bloquear a renderização da página.
 - `app/api/stripe/webhook/route.ts` — webhook Stripe com validação de assinatura.
 - `app/api/proposals/[id]/pdf/route.ts` — download autenticado de proposta aprovada ou recusada em PDF, com validação de ownership.
@@ -130,8 +135,9 @@ Adapter:
 
 Proteção:
 
-- `proxy.ts` protege `/dashboard/:path*`.
+- `proxy.ts` protege `/dashboard/:path*` e aplica rate limiting em POST para `/api/auth/callback/credentials`, `/esqueci-senha` e `/u/*/orcamento`. O store é in-memory (sliding window); trocar por Redis/Upstash antes de escalar para múltiplas instâncias.
 - Páginas autenticadas também checam `auth()` e redirecionam para `/login`.
+- `next.config.mjs` define security headers HTTP em todas as respostas: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e `Permissions-Policy`.
 
 ## Prisma e PostgreSQL
 
@@ -156,6 +162,8 @@ Schemas ficam em `lib/validations/`:
 - `proposal.ts`
 - `proposal-template.ts`
 - `auth.ts` (`registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`)
+
+O pedido público exige pelo menos e-mail ou telefone. Regras dependentes do serviço são validadas novamente na Server Action: descrição para `CUSTOM` ou pedido genérico, dados completos de agendamento quando configurados e data real não passada.
 
 ## Planos e limites
 
@@ -243,6 +251,6 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 - Remetente do Resend (`onboarding@resend.dev`) é sandbox; trocar por domínio verificado antes de produção real.
 - O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
-- Não há rate limit em formulários públicos.
-- Reserva Pix não tem expiração automática: `pixReservationRequestedAt` fica permanente no banco mesmo se o cliente não pagar. Sem limpeza automática de reservas abandonadas.
+- Rate limiting in-memory no middleware não sobrevive a reinicializações e não é compartilhado entre instâncias. Adequado para single-instance; exige Redis/Upstash em produção multi-instância.
+- Pagamento Pix obrigatório não tem expiração automática: `pixReservationRequestedAt` fica permanente no banco mesmo se o cliente não pagar. Sem limpeza automática de pagamentos abandonados.
 - Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket deve existir com leitura pública. Em produção, configurar as variáveis `S3_*` descritas em `.env.example`.

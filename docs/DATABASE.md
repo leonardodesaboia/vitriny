@@ -56,7 +56,7 @@ Campos importantes:
 - `themePreset`: preset visual salvo para dashboard do profissional e fluxo público do cliente. O valor default é `DEFAULT`.
 - `isPublished`: controla se o perfil aparece publicamente.
 - `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
-- `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para proposta, reserva e pagamento direto de serviço fixo.
+- `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para entrada de proposta e pagamento antecipado de serviço fixo.
 
 Relaciona-se com:
 
@@ -77,7 +77,7 @@ Campos importantes:
 - `basePrice`: `Decimal? @db.Decimal(10, 2)`.
 - `isActive`: controla se aparece publicamente.
 - `pricingType`: tipo de precificação (`FIXED` ou `CUSTOM`). Default `CUSTOM`. Controla se o serviço tem preço fixo exibido publicamente ou se está sob orçamento.
-- `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. `REQUEST_ONLY` = apenas pedido normal; `ALLOW_PIX_RESERVATION` = cliente pode reservar pagando via Pix antes da confirmação do prestador.
+- `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. `REQUEST_ONLY` = apenas pedido normal; `REQUIRE_PIX_PAYMENT` = o cliente precisa pagar via Pix para concluir a solicitação.
 - `requiresSchedulingDetails`: quando `true`, formulário público exibe campos de data, horário e local.
 - `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente apenas quando `plan === "PRO"`.
 
@@ -90,11 +90,11 @@ Campos:
 - dados do cliente;
 - `serviceId` opcional;
 - `description` nullable (`String?`) — pedidos de serviços com preço fixo podem não ter descrição do cliente;
-- `desiredDate`, `desiredTime`, `location` — campos opcionais de agendamento, exibidos quando presentes;
+- `desiredDate`, `desiredTime`, `location` — nullable no banco para retrocompatibilidade, mas obrigatórios na aplicação quando o serviço usa `requiresSchedulingDetails`;
 - status;
 - vínculo com `ProviderProfile`.
-- `fixedServiceAmount Decimal? @db.Decimal(10, 2)` — snapshot do `basePrice` no momento em que o pedido segue para reserva ou pagamento Pix direto. Imutável após criação; páginas de Pix usam este valor, nunca o preço atual do serviço.
-- `pixReservationRequestedAt DateTime?` — preenchido quando o cliente escolhe "Reservar com Pix" no formulário público.
+- `fixedServiceAmount Decimal? @db.Decimal(10, 2)` — snapshot do `basePrice` quando um pedido exige pagamento antecipado. Imutável após criação; páginas de Pix usam este valor, nunca o preço atual do serviço.
+- `pixReservationRequestedAt DateTime?` — campo legado preenchido quando o pedido entra no pagamento Pix obrigatório; o nome é mantido para compatibilidade de dados.
 - `pixReservationPaidAt DateTime?` — preenchido manualmente pelo prestador ao confirmar recebimento do Pix.
 
 Observação: pedidos novos salvam o serviço escolhido em `serviceId` e mantêm `description` como o texto enviado pelo cliente. O prefixo legado com ID do serviço pode existir apenas em pedidos antigos.
@@ -237,7 +237,7 @@ O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o
 Controla o fluxo de conversão de serviços com `pricingType = FIXED`.
 
 - `REQUEST_ONLY` (default): cliente envia apenas um pedido normal. Compatível com todos os serviços antigos.
-- `ALLOW_PIX_RESERVATION`: exibe CTA "Reservar com Pix" na página pública quando `pixKey`, `pixHolderName` e `pixCity` estão configurados no perfil do prestador. O cliente paga antecipadamente e o prestador confirma manualmente.
+- `REQUIRE_PIX_PAYMENT`: exibe um único CTA "Pagar com Pix". O cliente precisa pagar antecipadamente e o prestador confirma manualmente.
 
 Serviços `CUSTOM` sempre ficam com `REQUEST_ONLY` (forçado na action).
 
@@ -272,7 +272,7 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).
 - Serviços antigos sem `pricingType` explícito ficam como `CUSTOM` pelo default.
 - `QuoteRequest.description` é nullable; pedidos de serviços FIXED não exigem descrição do cliente.
-- `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento da reserva ou pagamento Pix direto. Nunca atualizar após criação do pedido.
+- `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento em que o pagamento antecipado é criado. Nunca atualizar após criação do pedido.
 - `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.
 - Pedidos antigos têm `fixedServiceAmount`, `pixReservationRequestedAt` e `pixReservationPaidAt` todos `null` — retrocompatibilidade garantida.
 - `fixedServiceCheckoutMode` é forçado como `REQUEST_ONLY` para serviços `CUSTOM` na action, independente do que o formulário enviar.

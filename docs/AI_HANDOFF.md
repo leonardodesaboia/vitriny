@@ -15,7 +15,10 @@ O MVP principal está implementado.
 - o card de link público do onboarding passou a registrar, em `localStorage`, quando o usuário copiou ou abriu o link, para que o checklist reflita a ação real;
 - cards e listas de pedidos/serviços foram ajustados para lidar melhor com nomes longos, layout fixo e leitura em desktop e mobile; `/dashboard/servicos` usa `min-w-0`, contenção de overflow e inputs `w-full` para evitar quebra horizontal em telas como iPhone 12 Pro;
 - `/dashboard/pedidos` ganhou filtro por status via query string `?status=NEW|REVIEWING|PROPOSAL_SENT|CLOSED`, com contador por aba e fallback para `Todos` quando o status é inválido;
-- serviços `FIXED` com Pix configurado podem criar pedido com `fixedServiceAmount` e redirecionar para `/u/[slug]/pagamento/[requestId]`; esse fluxo não preenche `pixReservationRequestedAt` e não possui confirmação automática;
+- `/dashboard` usa agregações do Prisma para métricas mensais e pendências; o onboarding final varia entre serviços `CUSTOM`, `FIXED` ou uma combinação dos dois;
+- os cards da dashboard abrem `/dashboard/pedidos` com filtros por status ou com as visões `?view=MONTH|OPEN|APPROVED_MONTH|PIX_RESERVATION|DEPOSIT`;
+- a dashboard combina os cinco eventos mais recentes entre novos pedidos, propostas enviadas/aprovadas/recusadas, pagamentos Pix confirmados e entradas confirmadas;
+- serviços `FIXED` em `REQUIRE_PIX_PAYMENT` criam o snapshot `fixedServiceAmount` e redirecionam obrigatoriamente para `/u/[slug]/reserva/[requestId]`; `REQUEST_ONLY` nunca redireciona ao Pix;
 - a documentação e o schema passaram a registrar o novo campo `ProviderProfile.themePreset`, a enum `ProviderThemePreset` e a migration correspondente.
 
 ## Estado atual
@@ -26,14 +29,14 @@ Funciona hoje:
 - dashboard protegido;
 - perfil do prestador;
 - serviços com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
-- serviços com `requiresSchedulingDetails` (Boolean, default false): quando true, o formulário público exibe campos opcionais de data desejada, horário/período e local;
+- serviços com `requiresSchedulingDetails` (Boolean, default false): quando true, data futura ou atual, horário/período e local são obrigatórios no navegador e no servidor;
 - serviços com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
 - exclusão de serviço com confirmação (`deleteService`);
 - lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
-- **reserva Pix para serviços FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `ALLOW_PIX_RESERVATION`); quando ativado + chave Pix configurada no perfil, exibe CTA "Reservar com Pix" na página pública; formulário em modo reserva redireciona para `/u/[slug]/reserva/[requestId]` com QR Code + copia e cola; `fixedServiceAmount` é snapshot imutável do preço no momento da reserva; confirmação manual pelo prestador via `markPixReservationPaid`; badge e botão de confirmação no painel de pedidos;
-- **pagamento Pix direto para serviços FIXED**: no fluxo comum, quando preço e dados Pix existem, o pedido salva o snapshot em `fixedServiceAmount` e redireciona para `/u/[slug]/pagamento/[requestId]`; o OrçaFácil apenas exibe os dados Pix;
+- **pagamento Pix obrigatório para serviços FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `REQUIRE_PIX_PAYMENT`); quando obrigatório, existe um único CTA "Pagar com Pix", o servidor impede bypass e redireciona para `/u/[slug]/reserva/[requestId]`; `fixedServiceAmount` é snapshot imutável e a confirmação é manual pelo prestador via `markPixReservationPaid`;
+- **compatibilidade de pagamento legado**: `/u/[slug]/pagamento/[requestId]` permanece disponível para pedidos antigos, mas novos pedidos não são enviados para essa rota;
 - página pública `/u/[slug]`;
-- pedido público com campos opcionais `desiredDate` (String YYYY-MM-DD), `desiredTime` (String) e `location` (String), exibidos no painel quando presentes;
+- pedido público exige ao menos e-mail ou telefone; `CUSTOM` e pedidos genéricos exigem descrição; `desiredDate`, `desiredTime` e `location` são condicionais ao serviço e exibidos no painel quando presentes;
 - painel de pedidos;
 - edição de nota do cliente diretamente no card do pedido (`updateQuoteRequestDescription`);
 - criação de proposta;
@@ -71,7 +74,7 @@ Limites centralizados em `lib/plan-limits.ts`:
 - `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
-Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada, reserva e pagamento direto de serviço fixo: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
+Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de serviço fixo: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
 
 ## Comandos principais
 
@@ -144,7 +147,7 @@ Priorize:
 - Senha sempre hash bcrypt, nunca texto puro.
 - Não vincular contas automaticamente entre Google e e-mail/senha com o mesmo e-mail.
 - "Esqueci minha senha" nunca deve revelar se um e-mail existe no sistema.
-- Reserva Pix — restrições de produto:
+- Pagamento Pix obrigatório — restrições de produto:
   - Não implementar gateway Pix nem confirmação automática.
   - Não usar Stripe para pagamento do cliente final.
   - Não criar webhook de pagamento.
@@ -154,12 +157,19 @@ Priorize:
   - `markPixReservationPaid` é exclusivo do prestador autenticado — nunca expor ao cliente público.
   - Validar ownership de `QuoteRequest` pelo `ProviderProfile` do usuário logado.
   - `fixedServiceCheckoutMode = REQUEST_ONLY` para serviços CUSTOM — forçado na action.
+  - `REQUIRE_PIX_PAYMENT` não oferece alternativa sem pagamento e é validado novamente no servidor.
   - Pedidos antigos ficam com campos Pix `null` — retrocompatibilidade obrigatória.
-- Pagamento Pix direto — restrições de produto:
-  - a rota é `/u/[slug]/pagamento/[requestId]`;
+- Pagamento Pix direto legado — restrições de produto:
+  - a rota `/u/[slug]/pagamento/[requestId]` atende apenas links antigos;
   - exige serviço `FIXED`, `fixedServiceAmount` e dados Pix válidos;
   - não exige `pixReservationRequestedAt` e não usa `markPixReservationPaid`;
   - nunca recalcular o valor a partir de `Service.basePrice`.
+- Rate limiting — restrições:
+  - o store in-memory em `proxy.ts` não é compartilhado entre processos; substituir por Redis/Upstash antes de escalar horizontalmente;
+  - não reduzir os limites sem medir impacto em produção (formulário público: 20 req/min por IP).
+- Upload de imagem — restrições:
+  - detectar tipo por magic bytes (`detectImageMimeType`) antes de aceitar; não confiar em `Content-Type`;
+  - nunca reutilizar `storageKey` de outro serviço — sempre derivar do `serviceId`.
 
 ## Arquivos para ler primeiro
 
@@ -178,7 +188,7 @@ Priorize:
 - Proposta pública: sempre buscar por `publicToken`.
 - Perfil público: só mostrar `isPublished=true`.
 - Serviços públicos: só mostrar `isActive=true`.
-- Pedido público: validar que `serviceId`, quando informado, pertence ao prestador e está ativo.
+- Pedido público: validar que `serviceId`, quando informado, pertence ao prestador e está ativo. Chamar `validateQuoteRequestForService` depois do Zod para regras dependentes do serviço (descrição obrigatória para CUSTOM, data futura, campos de agendamento).
 - Status de pedido: registrar mudanças em `QuoteRequestStatusHistory`.
 - Status de proposta: registrar mudanças em `ProposalStatusHistory`.
 - Notas internas: nunca exibir em rotas públicas e sempre filtrar pelo prestador dono do pedido.
@@ -189,8 +199,8 @@ Priorize:
 - Painel de pedidos: CTA 'Criar proposta' é secundário para pedidos FIXED.
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
-- Reserva Pix — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
-- Pagamento Pix direto — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, serviço `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
+- Pagamento Pix obrigatório — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
+- Pagamento Pix direto legado — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, serviço `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
 - `fixedServiceAmount`: nunca recalcular; usar sempre o snapshot do banco. A página de reserva não busca `service.basePrice`.
 - `markPixReservationPaid`: validar ownership pelo perfil autenticado; checar `pixReservationRequestedAt !== null`; checar que `pixReservationPaidAt` ainda está `null` (idempotência).
 - Webhook Stripe: `customer.subscription.created` e `customer.subscription.updated` usam o mesmo handler via fall-through — não separar sem motivo.
@@ -198,6 +208,8 @@ Priorize:
 ## Registro de front
 
 - A relação `QuoteRequest.serviceId` existe no banco e já é consumida no front. Pedidos novos salvam a descrição limpa; o fallback legado existe apenas para pedidos antigos.
+- `DateInput` usa `useDateInput` para máscara DD/MM/AAAA e converte para ISO (YYYY-MM-DD) antes do submit. As funções `isValidISODate` e `isISODateBeforeToday` em `lib/utils/date.ts` são compartilhadas entre validação client e server.
+- `proxy.ts` aplica sliding-window rate limiting em POST antes de despachar para auth e server actions.
 - `QuoteRequestStatusHistory`, `ProposalStatusHistory`, `QuoteRequestInternalNote`, `ProposalTemplate` e `ProposalTemplateItem` já têm UI nas áreas correspondentes.
 - O formulário de proposta usa editor dinâmico para adicionar/remover itens sem limite fixo de linhas.
 - `docs/FRONTEND_PENDING.md` registra o estado das melhorias concluídas e o backfill legado ainda opcional.
