@@ -15,8 +15,14 @@ export function DateInput({ name, id, defaultValue, className, required }: DateI
 
   return (
     <>
-      <input name={name} required={required} type="hidden" value={submitValue} />
-      <input {...inputProps} className={className} id={id} type="text" />
+      <input name={name} type="hidden" value={submitValue} />
+      <input
+        {...inputProps}
+        className={className}
+        id={id}
+        required={required}
+        type="text"
+      />
     </>
   );
 }
