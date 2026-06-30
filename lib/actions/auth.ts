@@ -57,9 +57,7 @@ export async function registerUser(formData: FormData) {
   });
 
   if (existingUser) {
-    redirect(
-      existingUser.password ? "/cadastro?error=email-exists" : "/cadastro?error=google-account"
-    );
+    redirect("/cadastro?error=email-exists");
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
@@ -105,17 +103,21 @@ export async function requestPasswordReset(formData: FormData) {
   if (user?.password) {
     const token = crypto.randomBytes(32).toString("hex");
 
-    await prisma.passwordResetToken.create({
-      data: {
-        userId: user.id,
-        token,
-        expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
-      }
-    });
+    await prisma.$transaction([
+      prisma.passwordResetToken.deleteMany({ where: { userId: user.id } }),
+      prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          token,
+          expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
+        }
+      })
+    ]);
 
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
     await sendPasswordResetEmail(
       parsed.data.email,
-      `${process.env.AUTH_URL}/redefinir-senha/${token}`
+      `${appUrl.replace(/\/$/, "")}/redefinir-senha/${token}`
     );
   }
 
