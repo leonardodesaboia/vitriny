@@ -10,7 +10,7 @@ describe("createPixPayment", () => {
       pixCity: "São Paulo",
       amount: "150.50",
       transactionId: "proposal-123",
-      description: "Entrada OrçaFácil"
+      description: "Entrada Vitriny"
     });
 
     expect(payment.copyPasteCode).toContain("BR.GOV.BCB.PIX");
@@ -26,7 +26,7 @@ describe("createPixPayment", () => {
       pixCity: "São Paulo/SP!",
       amount: "99.90",
       transactionId: "proposal-123",
-      description: "Entrada OrçaFácil!"
+      description: "Entrada Vitriny!"
     });
 
     expect(payment.copyPasteCode).toContain("JOAO PRESTADOR");

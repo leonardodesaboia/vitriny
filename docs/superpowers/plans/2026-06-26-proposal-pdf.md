@@ -12,11 +12,11 @@
 
 ## File Map
 
-| Action | Path | Responsibility |
-|---|---|---|
-| Create | `components/proposals/ProposalPdf.tsx` | PDF component with type definitions, styles, and layout |
-| Create | `app/api/proposals/[id]/pdf/route.ts` | Authenticated route handler — auth, ownership, PDF stream |
-| Modify | `components/quote-request/QuoteRequestCard.tsx` | Add "Baixar PDF" download link in proposal section |
+| Action | Path                                            | Responsibility                                            |
+| ------ | ----------------------------------------------- | --------------------------------------------------------- |
+| Create | `components/proposals/ProposalPdf.tsx`          | PDF component with type definitions, styles, and layout   |
+| Create | `app/api/proposals/[id]/pdf/route.ts`           | Authenticated route handler — auth, ownership, PDF stream |
+| Modify | `components/quote-request/QuoteRequestCard.tsx` | Add "Baixar PDF" download link in proposal section        |
 
 ---
 
@@ -56,6 +56,7 @@ git commit -m "chore: add @react-pdf/renderer for proposal PDF generation"
 ## Task 2: Create `ProposalPdf` component
 
 **Files:**
+
 - Create: `components/proposals/ProposalPdf.tsx`
 
 This component is **server-only** — no `"use client"` directive. It uses `@react-pdf/renderer` primitives. Fonts used are Helvetica and Helvetica-Bold (built-in to PDF format — no registration needed).
@@ -64,13 +65,7 @@ This component is **server-only** — no `"use client"` directive. It uses `@rea
 
 ```tsx
 // components/proposals/ProposalPdf.tsx
-import {
-  Document,
-  Page,
-  View,
-  Text,
-  StyleSheet,
-} from "@react-pdf/renderer";
+import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -117,18 +112,18 @@ export type ProposalPdfData = {
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const C = {
-  leaf:      "#1B5E3B",
-  paper:     "#F5F0E8",
+  leaf: "#1B5E3B",
+  paper: "#F5F0E8",
   paperSoft: "#EDE8DE",
-  ink:       "#1C1917",
-  inkMuted:  "#78716C",
-  amber:     "#C97D3F",
-  mint:      "#D4EBD9",
-  white:     "#FFFFFF",
-  red50:     "#FEF2F2",
-  redText:   "#B91C1C",
-  amberBg:   "#FFFBEB",
-  amberBorder:"#FDE68A",
+  ink: "#1C1917",
+  inkMuted: "#78716C",
+  amber: "#C97D3F",
+  mint: "#D4EBD9",
+  white: "#FFFFFF",
+  red50: "#FEF2F2",
+  redText: "#B91C1C",
+  amberBg: "#FFFBEB",
+  amberBorder: "#FDE68A",
   amberText: "#92400E",
   amberDark: "#78350F",
 };
@@ -162,7 +157,7 @@ function formatDate(date: Date) {
 
 function formatSchedulingDate(dateStr: string) {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
-    new Date(dateStr + "T12:00:00Z")
+    new Date(dateStr + "T12:00:00Z"),
   );
 }
 
@@ -332,7 +327,7 @@ const s = StyleSheet.create({
     paddingVertical: 9,
   },
   tableRowEven: { backgroundColor: C.white },
-  tableRowOdd:  { backgroundColor: C.paper },
+  tableRowOdd: { backgroundColor: C.paper },
   tableLastRow: {
     borderBottomLeftRadius: 8,
     borderBottomRightRadius: 8,
@@ -344,9 +339,9 @@ const s = StyleSheet.create({
     borderStyle: "solid",
     overflow: "hidden",
   },
-  colDesc:  { flex: 1 },
-  colQty:   { width: 36, textAlign: "right" },
-  colUnit:  { width: 80, textAlign: "right" },
+  colDesc: { flex: 1 },
+  colQty: { width: 36, textAlign: "right" },
+  colUnit: { width: 80, textAlign: "right" },
   colTotal: { width: 80, textAlign: "right" },
   thText: {
     fontFamily: "Helvetica-Bold",
@@ -508,9 +503,7 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
       <Page size="A4" style={s.page}>
         {/* ── Header ── */}
         <View style={s.header}>
-          <Text style={s.headerLabel}>
-            ORÇAFÁCIL · PROPOSTA COMERCIAL
-          </Text>
+          <Text style={s.headerLabel}>ORÇAFÁCIL · PROPOSTA COMERCIAL</Text>
           <Text style={s.headerTitle}>
             {proposal.title ?? proposal.provider.businessName}
           </Text>
@@ -560,17 +553,23 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
 
             <View style={s.partyCard}>
               <Text style={s.sectionLabel}>CLIENTE</Text>
-              <Text style={s.partyName}>{proposal.quoteRequest.customerName}</Text>
+              <Text style={s.partyName}>
+                {proposal.quoteRequest.customerName}
+              </Text>
               {proposal.quoteRequest.customerEmail ? (
                 <View style={s.infoRow}>
                   <Text style={s.infoLabel}>E-mail</Text>
-                  <Text style={s.infoValue}>{proposal.quoteRequest.customerEmail}</Text>
+                  <Text style={s.infoValue}>
+                    {proposal.quoteRequest.customerEmail}
+                  </Text>
                 </View>
               ) : null}
               {proposal.quoteRequest.customerPhone ? (
                 <View style={s.infoRow}>
                   <Text style={s.infoLabel}>Telefone</Text>
-                  <Text style={s.infoValue}>{proposal.quoteRequest.customerPhone}</Text>
+                  <Text style={s.infoValue}>
+                    {proposal.quoteRequest.customerPhone}
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -632,8 +631,12 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
                       i === proposal.items.length - 1 ? s.tableLastRow : {},
                     ]}
                   >
-                    <Text style={[s.tdText, s.colDesc]}>{item.description}</Text>
-                    <Text style={[s.tdTextMuted, s.colQty]}>{item.quantity}</Text>
+                    <Text style={[s.tdText, s.colDesc]}>
+                      {item.description}
+                    </Text>
+                    <Text style={[s.tdTextMuted, s.colQty]}>
+                      {item.quantity}
+                    </Text>
                     <Text style={[s.tdTextMuted, s.colUnit]}>
                       {formatMoney(item.unitPrice)}
                     </Text>
@@ -652,19 +655,27 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
               {proposal.validUntil ? (
                 <>
                   <Text style={s.validText}>Válido até</Text>
-                  <Text style={s.validValue}>{formatDate(proposal.validUntil)}</Text>
+                  <Text style={s.validValue}>
+                    {formatDate(proposal.validUntil)}
+                  </Text>
                 </>
               ) : null}
               {proposal.respondedAt ? (
                 <>
-                  <Text style={[s.validText, { marginTop: 4 }]}>Respondida em</Text>
-                  <Text style={s.validValue}>{formatDate(proposal.respondedAt)}</Text>
+                  <Text style={[s.validText, { marginTop: 4 }]}>
+                    Respondida em
+                  </Text>
+                  <Text style={s.validValue}>
+                    {formatDate(proposal.respondedAt)}
+                  </Text>
                 </>
               ) : null}
             </View>
             <View>
               <Text style={s.totalLabel}>TOTAL</Text>
-              <Text style={s.totalValue}>{formatMoney(proposal.totalAmount)}</Text>
+              <Text style={s.totalValue}>
+                {formatMoney(proposal.totalAmount)}
+              </Text>
             </View>
           </View>
 
@@ -703,7 +714,8 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
                       : (statusLabels[h.toStatus] ?? h.toStatus)}
                   </Text>
                   <Text style={s.historyMeta}>
-                    {actorLabels[h.actor] ?? h.actor} · {formatDate(h.createdAt)}
+                    {actorLabels[h.actor] ?? h.actor} ·{" "}
+                    {formatDate(h.createdAt)}
                   </Text>
                 </View>
               ))}
@@ -713,8 +725,10 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
           {/* ── Rodapé ── */}
           <View style={s.footer}>
             <Text style={s.footerText}>
-              Gerado via OrçaFácil em{" "}
-              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date())}
+              Gerado via Vitriny em{" "}
+              {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(
+                new Date(),
+              )}
             </Text>
           </View>
         </View>
@@ -742,6 +756,7 @@ git commit -m "feat(pdf): add ProposalPdf component with design tokens"
 ## Task 3: Create API route `GET /api/proposals/[id]/pdf`
 
 **Files:**
+
 - Create: `app/api/proposals/[id]/pdf/route.ts`
 
 Auth pattern follows `app/api/services/[id]/image/route.ts`: call `auth()` → get profile by `userId` → find resource by `id` with `providerId` check.
@@ -759,7 +774,10 @@ import { renderToBuffer } from "@react-pdf/renderer";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { ProposalPdf, type ProposalPdfData } from "@/components/proposals/ProposalPdf";
+import {
+  ProposalPdf,
+  type ProposalPdfData,
+} from "@/components/proposals/ProposalPdf";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -777,7 +795,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   });
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Perfil não encontrado." },
+      { status: 404 },
+    );
   }
 
   const proposal = await prisma.proposal.findFirst({
@@ -803,13 +824,16 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   });
 
   if (!proposal) {
-    return NextResponse.json({ error: "Proposta não encontrada." }, { status: 404 });
+    return NextResponse.json(
+      { error: "Proposta não encontrada." },
+      { status: 404 },
+    );
   }
 
   if (proposal.status !== "APPROVED" && proposal.status !== "REJECTED") {
     return NextResponse.json(
       { error: "PDF disponível apenas para propostas aprovadas ou recusadas." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -848,7 +872,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   };
 
   const buffer = await renderToBuffer(
-    createElement(ProposalPdf, { proposal: data })
+    createElement(ProposalPdf, { proposal: data }),
   );
 
   const filename = `proposta-${proposal.publicToken}.pdf`;
@@ -882,6 +906,7 @@ git commit -m "feat(pdf): add authenticated route GET /api/proposals/[id]/pdf"
 ## Task 4: Add "Baixar PDF" button to `QuoteRequestCard`
 
 **Files:**
+
 - Modify: `components/quote-request/QuoteRequestCard.tsx`
 
 Find the proposal section (search for `Ver proposta ↗`). The button goes next to that link. The condition is `proposal.status === "APPROVED" || proposal.status === "REJECTED"`.
@@ -928,8 +953,8 @@ Find and replace the `<div className="flex flex-col items-start justify-between 
       >
         Ver proposta ↗
       </Link>
-      {(quoteRequest.proposal.status === "APPROVED" ||
-        quoteRequest.proposal.status === "REJECTED") ? (
+      {quoteRequest.proposal.status === "APPROVED" ||
+      quoteRequest.proposal.status === "REJECTED" ? (
         <a
           href={`/api/proposals/${quoteRequest.proposal.id}/pdf`}
           download

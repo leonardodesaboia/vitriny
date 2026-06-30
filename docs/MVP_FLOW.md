@@ -141,7 +141,7 @@ Como verificar:
 - Se a proposta aprovada tiver `depositAmount > 0` e o prestador tiver `pixKey`, `pixHolderName` e `pixCity`, a página pública mostra QR Code Pix e código Pix copia e cola.
 - Esperado: cliente vê as mensagens:
   - "Pagamento feito diretamente ao prestador."
-  - "O OrçaFácil não confirma esse pagamento automaticamente."
+  - "O Vitriny não confirma esse pagamento automaticamente."
   - "Após pagar, envie o comprovante ao prestador ou combine a confirmação diretamente com ele."
 - Cliente paga fora da plataforma e envia o comprovante ao prestador.
 - Prestador acessa `/dashboard/pedidos` e clica em `Marcar como recebido`.

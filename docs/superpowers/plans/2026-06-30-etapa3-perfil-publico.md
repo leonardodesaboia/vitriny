@@ -12,20 +12,21 @@
 
 ## Mapa de arquivos
 
-| Arquivo | O que muda |
-|---|---|
-| `lib/utils/how-it-works.ts` | **Novo.** Função pura `getHowItWorksContent(services)` → `{ title, steps }` |
-| `tests/unit/utils/how-it-works.test.ts` | **Novo.** Testes unitários dos 4 casos da função |
-| `app/u/[slug]/page.tsx` | Hero CTA · WhatsApp no card de telefone · "Como funciona" condicional · `generateMetadata` com `cache()` |
-| `app/u/[slug]/orcamento/page.tsx` | `aria-live="polite"` no bloco de sucesso |
-| `components/public/PublicServicesGrid.tsx` | Estado vazio com CTA · CTA de fallback pós-grid · `useReducedMotion` |
-| `components/quote-request/QuoteRequestForm.tsx` | `role="alert"` no `<p>` de erro |
+| Arquivo                                         | O que muda                                                                                               |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `lib/utils/how-it-works.ts`                     | **Novo.** Função pura `getHowItWorksContent(services)` → `{ title, steps }`                              |
+| `tests/unit/utils/how-it-works.test.ts`         | **Novo.** Testes unitários dos 4 casos da função                                                         |
+| `app/u/[slug]/page.tsx`                         | Hero CTA · WhatsApp no card de telefone · "Como funciona" condicional · `generateMetadata` com `cache()` |
+| `app/u/[slug]/orcamento/page.tsx`               | `aria-live="polite"` no bloco de sucesso                                                                 |
+| `components/public/PublicServicesGrid.tsx`      | Estado vazio com CTA · CTA de fallback pós-grid · `useReducedMotion`                                     |
+| `components/quote-request/QuoteRequestForm.tsx` | `role="alert"` no `<p>` de erro                                                                          |
 
 ---
 
 ## Task 1: Função "Como funciona" + testes
 
 **Files:**
+
 - Create: `lib/utils/how-it-works.ts`
 - Create: `tests/unit/utils/how-it-works.test.ts`
 
@@ -47,7 +48,7 @@ describe("getHowItWorksContent", () => {
 
   it("retorna fluxo CUSTOM quando há apenas serviços CUSTOM", () => {
     const { title, steps } = getHowItWorksContent([
-      { pricingType: "CUSTOM", fixedServiceCheckoutMode: null }
+      { pricingType: "CUSTOM", fixedServiceCheckoutMode: null },
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Preencha o formulário");
@@ -55,7 +56,7 @@ describe("getHowItWorksContent", () => {
 
   it("retorna fluxo FIXED quando há apenas FIXED/REQUEST_ONLY", () => {
     const { title, steps } = getHowItWorksContent([
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" },
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Escolha o serviço");
@@ -64,7 +65,10 @@ describe("getHowItWorksContent", () => {
 
   it("retorna fluxo PIX quando há apenas FIXED/ALLOW_PIX_RESERVATION", () => {
     const { title, steps } = getHowItWorksContent([
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
+      {
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION",
+      },
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Preencha seus dados");
@@ -75,7 +79,7 @@ describe("getHowItWorksContent", () => {
   it("retorna fluxo MISTO quando há CUSTOM e FIXED", () => {
     const { title, steps } = getHowItWorksContent([
       { pricingType: "CUSTOM", fixedServiceCheckoutMode: null },
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" }
+      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" },
     ]);
     expect(title).toBe("Serviços fixos e sob orçamento");
     expect(steps[0].title).toBe("Escolha ou descreva");
@@ -85,7 +89,10 @@ describe("getHowItWorksContent", () => {
   it("retorna fluxo FIXED (não PIX) para perfil com ambos os modos FIXED", () => {
     const { title, steps } = getHowItWorksContent([
       { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" },
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION" }
+      {
+        pricingType: "FIXED",
+        fixedServiceCheckoutMode: "ALLOW_PIX_RESERVATION",
+      },
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps[0].title).toBe("Escolha o serviço");
@@ -108,7 +115,11 @@ Esperado: FAIL com `Cannot find module '@/lib/utils/how-it-works'`.
 
 type ServiceInput = {
   pricingType: "FIXED" | "CUSTOM";
-  fixedServiceCheckoutMode: "REQUEST_ONLY" | "ALLOW_PIX_RESERVATION" | null | undefined;
+  fixedServiceCheckoutMode:
+    | "REQUEST_ONLY"
+    | "ALLOW_PIX_RESERVATION"
+    | null
+    | undefined;
 };
 
 type Step = {
@@ -126,11 +137,12 @@ export function getHowItWorksContent(services: ServiceInput[]): {
   const hasPixRequired = services.some(
     (s) =>
       s.pricingType === "FIXED" &&
-      s.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION"
+      s.fixedServiceCheckoutMode === "ALLOW_PIX_RESERVATION",
   );
   const hasRequestOnly = services.some(
     (s) =>
-      s.pricingType === "FIXED" && s.fixedServiceCheckoutMode === "REQUEST_ONLY"
+      s.pricingType === "FIXED" &&
+      s.fixedServiceCheckoutMode === "REQUEST_ONLY",
   );
 
   if (hasCustom && hasFixed) {
@@ -141,20 +153,20 @@ export function getHowItWorksContent(services: ServiceInput[]): {
           step: "1",
           title: "Escolha ou descreva",
           description:
-            "Selecione um serviço da lista ou descreva livremente o que precisa."
+            "Selecione um serviço da lista ou descreva livremente o que precisa.",
         },
         {
           step: "2",
           title: "Prestador avalia",
           description:
-            "O prestador analisa e confirma disponibilidade ou prepara uma proposta."
+            "O prestador analisa e confirma disponibilidade ou prepara uma proposta.",
         },
         {
           step: "3",
           title: "Receba o retorno",
-          description: "Você é contactado com as próximas etapas."
-        }
-      ]
+          description: "Você é contactado com as próximas etapas.",
+        },
+      ],
     };
   }
 
@@ -165,20 +177,20 @@ export function getHowItWorksContent(services: ServiceInput[]): {
         {
           step: "1",
           title: "Preencha seus dados",
-          description: "Informe nome e contato para continuar."
+          description: "Informe nome e contato para continuar.",
         },
         {
           step: "2",
           title: "Realize o pagamento Pix",
-          description: "O pagamento é exigido para confirmar o pedido."
+          description: "O pagamento é exigido para confirmar o pedido.",
         },
         {
           step: "3",
           title: "Confirmação manual",
           description:
-            "O prestador confirma o recebimento e finaliza o agendamento."
-        }
-      ]
+            "O prestador confirma o recebimento e finaliza o agendamento.",
+        },
+      ],
     };
   }
 
@@ -189,20 +201,20 @@ export function getHowItWorksContent(services: ServiceInput[]): {
         {
           step: "1",
           title: "Escolha o serviço",
-          description: "Selecione o serviço desejado e preencha seus dados."
+          description: "Selecione o serviço desejado e preencha seus dados.",
         },
         {
           step: "2",
           title: "Prestador avalia",
           description:
-            "O prestador analisa a solicitação e confirma disponibilidade."
+            "O prestador analisa a solicitação e confirma disponibilidade.",
         },
         {
           step: "3",
           title: "Prestador entra em contato",
-          description: "Você recebe o retorno pelo contato informado."
-        }
-      ]
+          description: "Você recebe o retorno pelo contato informado.",
+        },
+      ],
     };
   }
 
@@ -213,21 +225,21 @@ export function getHowItWorksContent(services: ServiceInput[]): {
         step: "1",
         title: "Preencha o formulário",
         description:
-          "Conte o que você precisa em poucos campos. Leva menos de 2 minutos."
+          "Conte o que você precisa em poucos campos. Leva menos de 2 minutos.",
       },
       {
         step: "2",
         title: "Prestador avalia",
         description:
-          "O prestador analisa seu pedido e prepara uma proposta personalizada."
+          "O prestador analisa seu pedido e prepara uma proposta personalizada.",
       },
       {
         step: "3",
         title: "Receba a proposta",
         description:
-          "Você recebe uma proposta com valor, prazo e condições para aprovar."
-      }
-    ]
+          "Você recebe uma proposta com valor, prazo e condições para aprovar.",
+      },
+    ],
   };
 }
 ```
@@ -252,6 +264,7 @@ git commit -m "feat(profile): adiciona utilitário de steps Como Funciona com te
 ## Task 2: PublicServicesGrid — estado vazio, fallback CTA, useReducedMotion
 
 **Files:**
+
 - Modify: `components/public/PublicServicesGrid.tsx`
 
 - [ ] **Step 2.1: Substituir o arquivo pelo código atualizado**
@@ -434,6 +447,7 @@ git commit -m "feat(profile): estado vazio com CTA, fallback pós-grid e prefers
 ## Task 3: page.tsx — hero CTA, WhatsApp no card, "Como funciona" condicional, generateMetadata
 
 **Files:**
+
 - Modify: `app/u/[slug]/page.tsx`
 
 Esta task edita `page.tsx` de uma vez, cobrindo todos os changes da página principal. Substituir o conteúdo do arquivo pelo código abaixo.
@@ -498,7 +512,7 @@ export async function generateMetadata({
     return { robots: { index: false, follow: false } };
   }
 
-  const title = `${profile.businessName} · OrçaFácil`;
+  const title = `${profile.businessName} · Vitriny`;
   const description =
     profile.description ?? `Solicite um orçamento para ${profile.businessName}.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
@@ -545,7 +559,7 @@ export default async function PublicProviderProfilePage({
   const whatsappNumber = profile.phone ? phoneToWhatsAppNumber(profile.phone) : null;
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        `Olá ${profile.businessName}, vi seu perfil no OrçaFácil e gostaria de solicitar um orçamento.`
+        `Olá ${profile.businessName}, vi seu perfil no Vitriny e gostaria de solicitar um orçamento.`
       )}`
     : null;
 
@@ -725,7 +739,7 @@ export default async function PublicProviderProfilePage({
           {/* Powered by */}
           <p className="mt-8 text-center text-xs text-ink-muted/60">
             Powered by{" "}
-            <span className="font-semibold text-ink-muted">OrçaFácil</span>
+            <span className="font-semibold text-ink-muted">Vitriny</span>
           </p>
         </div>
       </div>
@@ -754,6 +768,7 @@ git commit -m "feat(profile): hero CTA, WhatsApp no contato, Como Funciona condi
 ## Task 4: Acessibilidade — QuoteRequestForm e página de orçamento
 
 **Files:**
+
 - Modify: `components/quote-request/QuoteRequestForm.tsx:68`
 - Modify: `app/u/[slug]/orcamento/page.tsx:131`
 
@@ -763,21 +778,25 @@ Em `components/quote-request/QuoteRequestForm.tsx`, localizar o bloco de erro (l
 
 ```tsx
 // Antes:
-{state?.error ? (
-  <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-    {state.error}
-  </p>
-) : null}
+{
+  state?.error ? (
+    <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+      {state.error}
+    </p>
+  ) : null;
+}
 
 // Depois:
-{state?.error ? (
-  <p
-    role="alert"
-    className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
-  >
-    {state.error}
-  </p>
-) : null}
+{
+  state?.error ? (
+    <p
+      role="alert"
+      className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700"
+    >
+      {state.error}
+    </p>
+  ) : null;
+}
 ```
 
 - [ ] **Step 4.2: Adicionar `aria-live="polite"` no bloco de sucesso da página de orçamento**

@@ -266,7 +266,7 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Notas internas de pedido devem ser acessíveis apenas pelo prestador dono do pedido.
 - Templates de proposta pertencem a um prestador e não devem ser acessados por outros usuários.
 - Uma proposta pública deve ser acessada por `publicToken`.
-- Pix é manual: o OrçaFácil gera código Pix/QR Code estático com dados do prestador, mas não processa dinheiro nem recebe confirmação automática.
+- Pix é manual: o Vitriny gera código Pix/QR Code estático com dados do prestador, mas não processa dinheiro nem recebe confirmação automática.
 - Token de redefinição de senha é de uso único e expira em 1 hora.
 - Senha de usuário sempre armazenada como hash bcrypt, nunca texto puro.
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).

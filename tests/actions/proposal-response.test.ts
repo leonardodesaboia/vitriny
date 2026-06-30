@@ -23,7 +23,7 @@ beforeEach(async () => {
       customerName: "Maria"
     },
     provider: {
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       email: "perfil@example.com",
       user: { email: "conta@example.com" }
     }
@@ -46,7 +46,7 @@ describe("respondToProposal", () => {
     expect(sendProposalResponseEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "perfil@example.com",
-        businessName: "OrçaFácil Serviços",
+        businessName: "Vitriny Serviços",
         customerName: "Maria",
         response: "APPROVED",
         proposalUrl: expect.stringContaining("/proposta/token-publico")

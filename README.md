@@ -1,10 +1,10 @@
-# OrçaFácil
+# Vitriny
 
-OrçaFácil é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+Vitriny é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
 
 ## Visão geral
 
-O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O OrçaFácil centraliza esse fluxo em um painel simples.
+O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O Vitriny centraliza esse fluxo em um painel simples.
 
 Público-alvo:
 
@@ -83,7 +83,7 @@ Limites do plano `FREE`:
 
 O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizadas em `lib/plan-limits.ts`.
 
-Importante: o Pix do cliente final é manual. O OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
+Importante: o Pix do cliente final é manual. O Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
 
 ## Feature PRO: Tema visual da aplicação
 
@@ -121,8 +121,8 @@ Acesse o console em `http://localhost:9001` (usuário: `minioadmin`, senha: `min
 
 1. Acesse o console MinIO em `http://localhost:9001`
 2. Vá em **Buckets → Create Bucket**
-3. Nome: `orcafacil` (deve bater com `S3_BUCKET_NAME`)
-4. Vá em **Buckets → orcafacil → Access Policy**
+3. Nome: `vitriny` (deve bater com `S3_BUCKET_NAME`)
+4. Vá em **Buckets → vitriny → Access Policy**
 5. Selecione **Public** (ou defina a policy como `s3:GetObject` para todos)
 
 > **Importante:** Se o bucket não for público, o upload funciona mas as imagens não aparecerão no browser. O `imageUrl` armazenado no banco usa `S3_PUBLIC_BASE_URL`, que precisa ser acessível pelo navegador do cliente final.
@@ -134,12 +134,12 @@ S3_ENDPOINT="http://localhost:9000"          # usado pelo SDK (interno)
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="minioadmin"
 S3_SECRET_ACCESS_KEY="minioadmin"
-S3_BUCKET_NAME="orcafacil"
-S3_PUBLIC_BASE_URL="http://localhost:9000/orcafacil"  # URL pública no imageUrl
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="http://localhost:9000/vitriny"  # URL pública no imageUrl
 S3_FORCE_PATH_STYLE="true"                   # obrigatório para MinIO
 ```
 
-> Em produção, `S3_ENDPOINT` aponta para o MinIO interno e `S3_PUBLIC_BASE_URL` aponta para o domínio público (ex: `https://files.seudominio.com/orcafacil`).
+> Em produção, `S3_ENDPOINT` aponta para o MinIO interno e `S3_PUBLIC_BASE_URL` aponta para o domínio público (ex: `https://files.seudominio.com/vitriny`).
 
 ## Como rodar localmente
 
@@ -179,13 +179,13 @@ Acesse `http://localhost:3000`.
 ## Variáveis de ambiente
 
 ```env
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/vitriny"
 AUTH_SECRET="um-segredo-com-pelo-menos-32-caracteres"
 AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="seu-google-client-id"
 AUTH_GOOGLE_SECRET="seu-google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
-EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
+EMAIL_FROM="Vitriny <contato@seu-dominio.com>"
 STRIPE_SECRET_KEY="sk_test_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 STRIPE_PRO_PRICE_ID="price_..."
@@ -195,8 +195,8 @@ S3_ENDPOINT="http://localhost:9000"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="minioadmin"
 S3_SECRET_ACCESS_KEY="minioadmin"
-S3_BUCKET_NAME="orcafacil"
-S3_PUBLIC_BASE_URL="http://localhost:9000/orcafacil"
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="http://localhost:9000/vitriny"
 S3_FORCE_PATH_STYLE="true"
 ```
 
@@ -269,13 +269,13 @@ npx prisma validate
 Variáveis necessárias em produção:
 
 ```env
-DATABASE_URL="postgresql://usuario:senha@host:5432/orcafacil"
+DATABASE_URL="postgresql://usuario:senha@host:5432/vitriny"
 AUTH_SECRET="segredo-forte"
 AUTH_URL="https://seu-dominio.com"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
-EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
+EMAIL_FROM="Vitriny <contato@seu-dominio.com>"
 STRIPE_SECRET_KEY="sk_live_..."
 STRIPE_WEBHOOK_SECRET="whsec_..."
 STRIPE_PRO_PRICE_ID="price_..."
@@ -285,8 +285,8 @@ S3_ENDPOINT="https://storage-interno.exemplo.com"
 S3_REGION="us-east-1"
 S3_ACCESS_KEY_ID="credencial-do-storage"
 S3_SECRET_ACCESS_KEY="segredo-do-storage"
-S3_BUCKET_NAME="orcafacil"
-S3_PUBLIC_BASE_URL="https://files.seu-dominio.com/orcafacil"
+S3_BUCKET_NAME="vitriny"
+S3_PUBLIC_BASE_URL="https://files.seu-dominio.com/vitriny"
 S3_FORCE_PATH_STYLE="true"
 ```
 

@@ -185,7 +185,7 @@ describe("createProposal", () => {
   it("envia e-mail ao cliente quando cria proposta para pedido com e-mail", async () => {
     const { sendProposalSentEmail } = await import("@/lib/email");
     db.providerProfile.findUnique.mockResolvedValue(
-      makeProfile({ businessName: "OrçaFácil Serviços" })
+      makeProfile({ businessName: "Vitriny Serviços" })
     );
     db.quoteRequest.findFirst.mockResolvedValue({
       id: validRequestId,
@@ -208,7 +208,7 @@ describe("createProposal", () => {
     expect(sendProposalSentEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "maria@example.com",
-        businessName: "OrçaFácil Serviços",
+        businessName: "Vitriny Serviços",
         customerName: "Maria",
         proposalUrl: expect.stringContaining("/proposta/token-publico")
       })

@@ -22,7 +22,7 @@ beforeEach(async () => {
     id: "profile-1",
     plan: "FREE",
     isPublished: true,
-    businessName: "OrçaFácil Serviços",
+    businessName: "Vitriny Serviços",
     email: "perfil@example.com",
     user: { email: "conta@example.com" }
   });
@@ -41,7 +41,7 @@ describe("createQuoteRequest", () => {
   it("rejeita pedido sem e-mail e sem telefone", async () => {
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
     const result = await createQuoteRequest(
-      "orcafacil",
+      "vitriny",
       undefined,
       makeFormData({
         customerName: "Maria",
@@ -68,7 +68,7 @@ describe("createQuoteRequest", () => {
     });
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
     const result = await createQuoteRequest(
-      "orcafacil",
+      "vitriny",
       undefined,
       makeFormData({
         customerName: "Maria",
@@ -95,7 +95,7 @@ describe("createQuoteRequest", () => {
     });
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
     const result = await createQuoteRequest(
-      "orcafacil",
+      "vitriny",
       undefined,
       makeFormData({
         customerName: "Maria",
@@ -122,7 +122,7 @@ describe("createQuoteRequest", () => {
     });
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
     const result = await createQuoteRequest(
-      "orcafacil",
+      "vitriny",
       undefined,
       makeFormData({
         customerName: "Maria",
@@ -161,7 +161,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Maria",
@@ -173,7 +173,7 @@ describe("createQuoteRequest", () => {
           location: "Centro"
         })
       )
-    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
 
     expect(db.quoteRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -192,7 +192,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Maria",
@@ -202,12 +202,12 @@ describe("createQuoteRequest", () => {
           description: "Preciso pintar a sala."
         })
       )
-    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
 
     expect(sendQuoteRequestReceivedEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "perfil@example.com",
-        businessName: "OrçaFácil Serviços",
+        businessName: "Vitriny Serviços",
         customerName: "Maria",
         serviceName: "Pintura",
         dashboardUrl: expect.stringContaining("/dashboard/pedidos")
@@ -222,10 +222,10 @@ describe("createQuoteRequest", () => {
         id: "profile-1",
         plan: "FREE",
         isPublished: true,
-        businessName: "OrçaFácil Serviços",
+        businessName: "Vitriny Serviços",
         email: "perfil@example.com",
         pixKey: "11999999999",
-        pixHolderName: "OrçaFácil Serviços",
+        pixHolderName: "Vitriny Serviços",
         pixCity: "Fortaleza",
         user: { email: "conta@example.com" }
       });
@@ -241,7 +241,7 @@ describe("createQuoteRequest", () => {
 
       await expect(
         createQuoteRequest(
-          "orcafacil",
+          "vitriny",
           undefined,
           makeFormData({
             customerName: "Maria",
@@ -250,7 +250,7 @@ describe("createQuoteRequest", () => {
             description: ""
           })
         )
-      ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+      ).rejects.toThrow("/u/vitriny/orcamento?success=1");
 
       expect(db.quoteRequest.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -267,10 +267,10 @@ describe("createQuoteRequest", () => {
       id: "profile-1",
       plan: "FREE",
       isPublished: true,
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       email: "perfil@example.com",
       pixKey: "11999999999",
-      pixHolderName: "OrçaFácil Serviços",
+      pixHolderName: "Vitriny Serviços",
       pixCity: "Fortaleza",
       user: { email: "conta@example.com" }
     });
@@ -286,7 +286,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Maria",
@@ -295,7 +295,7 @@ describe("createQuoteRequest", () => {
           description: ""
         })
       )
-    ).rejects.toThrow("/u/orcafacil/reserva/request-1");
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
 
     expect(db.quoteRequest.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -312,7 +312,7 @@ describe("createQuoteRequest", () => {
       id: "profile-1",
       plan: "FREE",
       isPublished: true,
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       email: "perfil@example.com",
       pixKey: null,
       pixHolderName: null,
@@ -331,7 +331,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Maria",
@@ -340,7 +340,7 @@ describe("createQuoteRequest", () => {
           description: ""
         })
       )
-    ).rejects.toThrow("/u/orcafacil/orcamento?error=payment-unavailable");
+    ).rejects.toThrow("/u/vitriny/orcamento?error=payment-unavailable");
 
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -352,7 +352,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Maria",
@@ -371,7 +371,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Carlos",
@@ -379,12 +379,12 @@ describe("createQuoteRequest", () => {
           description: "Preciso pintar a sala."
         })
       )
-    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
 
     expect(sendQuoteRequestConfirmationToCustomerEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "carlos@example.com",
-        businessName: "OrçaFácil Serviços",
+        businessName: "Vitriny Serviços",
         isPixPayment: false
       })
     );
@@ -396,7 +396,7 @@ describe("createQuoteRequest", () => {
 
     await expect(
       createQuoteRequest(
-        "orcafacil",
+        "vitriny",
         undefined,
         makeFormData({
           customerName: "Carlos",
@@ -404,7 +404,7 @@ describe("createQuoteRequest", () => {
           description: "Preciso pintar a sala."
         })
       )
-    ).rejects.toThrow("/u/orcafacil/orcamento?success=1");
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
 
     expect(sendQuoteRequestConfirmationToCustomerEmail).not.toHaveBeenCalled();
   });

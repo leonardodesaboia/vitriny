@@ -1,5 +1,5 @@
 export const ONBOARDING_PUBLIC_LINK_KEY =
-  "orcafacil-onboarding-public-link-used";
+  "vitriny-onboarding-public-link-used";
 
 export function onboardingStorageKey(key: string, storageScope: string) {
   return `${key}:${storageScope}`;
@@ -10,6 +10,6 @@ export function markPublicLinkUsed(storageScope: string) {
     onboardingStorageKey(ONBOARDING_PUBLIC_LINK_KEY, storageScope),
     "1"
   );
-  window.dispatchEvent(new Event("orcafacil:onboarding-updated"));
+  window.dispatchEvent(new Event("vitriny:onboarding-updated"));
 }
 

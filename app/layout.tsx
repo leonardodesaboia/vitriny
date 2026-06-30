@@ -6,29 +6,29 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
-  axes: ["opsz"]
+  axes: ["opsz"],
 });
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
-  display: "swap"
+  display: "swap",
 });
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  display: "swap"
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "OrçaFácil",
+  title: "Vitriny",
   description:
-    "MicroSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link."
+    "MicroSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {

@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   markPublicLinkUsed,
   ONBOARDING_PUBLIC_LINK_KEY,
-  onboardingStorageKey
+  onboardingStorageKey,
 } from "@/components/onboarding/onboarding-storage";
 
 export type OnboardingStep = {
@@ -25,14 +25,14 @@ interface OnboardingChecklistProps {
   storageScope?: string;
 }
 
-const STORAGE_KEY = "orcafacil-onboarding-dismissed";
+const STORAGE_KEY = "vitriny-onboarding-dismissed";
 
 function subscribe(callback: () => void) {
   window.addEventListener("storage", callback);
-  window.addEventListener("orcafacil:onboarding-updated", callback);
+  window.addEventListener("vitriny:onboarding-updated", callback);
   return () => {
     window.removeEventListener("storage", callback);
-    window.removeEventListener("orcafacil:onboarding-updated", callback);
+    window.removeEventListener("vitriny:onboarding-updated", callback);
   };
 }
 function getStoredFlag(key: string, storageScope: string) {
@@ -45,17 +45,17 @@ function getServerSnapshot() {
 export function OnboardingChecklist({
   steps,
   slug,
-  storageScope = "default"
+  storageScope = "default",
 }: OnboardingChecklistProps) {
   const storedDismissed = useSyncExternalStore(
     subscribe,
     () => getStoredFlag(STORAGE_KEY, storageScope),
-    getServerSnapshot
+    getServerSnapshot,
   );
   const publicLinkUsed = useSyncExternalStore(
     subscribe,
     () => getStoredFlag(ONBOARDING_PUBLIC_LINK_KEY, storageScope),
-    getServerSnapshot
+    getServerSnapshot,
   );
   const [localDismissed, setLocalDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -64,18 +64,20 @@ export function OnboardingChecklist({
   const displaySteps = useMemo(
     () =>
       steps.map((step) =>
-        step.isCopyStep ? { ...step, done: step.done || publicLinkUsed } : step
+        step.isCopyStep ? { ...step, done: step.done || publicLinkUsed } : step,
       ),
-    [publicLinkUsed, steps]
+    [publicLinkUsed, steps],
   );
   const completedCount = displaySteps.filter((s) => s.done).length;
   const allDone = completedCount === displaySteps.length;
   const nextStep = displaySteps.find((s) => !s.done);
-  const progressPercent = Math.round((completedCount / displaySteps.length) * 100);
+  const progressPercent = Math.round(
+    (completedCount / displaySteps.length) * 100,
+  );
 
   function handleDismiss() {
     localStorage.setItem(onboardingStorageKey(STORAGE_KEY, storageScope), "1");
-    window.dispatchEvent(new Event("orcafacil:onboarding-updated"));
+    window.dispatchEvent(new Event("vitriny:onboarding-updated"));
     setLocalDismissed(true);
   }
 
@@ -168,7 +170,13 @@ export function OnboardingChecklist({
                     fill="none"
                     aria-label="Próximo passo"
                   >
-                    <circle cx="10" cy="10" r="9.5" stroke="#1B5E3B" strokeWidth="1" />
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="9.5"
+                      stroke="#1B5E3B"
+                      strokeWidth="1"
+                    />
                     <circle cx="10" cy="10" r="4" fill="#1B5E3B" />
                   </svg>
                 ) : (
@@ -179,7 +187,13 @@ export function OnboardingChecklist({
                     fill="none"
                     aria-label="Pendente"
                   >
-                    <circle cx="10" cy="10" r="9.5" stroke="#EDE8DE" strokeWidth="1" />
+                    <circle
+                      cx="10"
+                      cy="10"
+                      r="9.5"
+                      stroke="#EDE8DE"
+                      strokeWidth="1"
+                    />
                   </svg>
                 )}
               </div>

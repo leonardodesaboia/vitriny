@@ -152,7 +152,10 @@ export default async function PublicProposalPage({
   );
 
   return (
-    <main className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6" data-brand-theme={theme.id}>
+    <main
+      className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6"
+      data-brand-theme={theme.id}
+    >
       <div className="mx-auto max-w-3xl">
         {/* Document header */}
         <div className="rounded-2xl border border-paper-soft bg-white shadow-card">
@@ -281,20 +284,26 @@ export default async function PublicProposalPage({
             </div>
 
             {/* Scheduling details */}
-            {(proposal.quoteRequest.desiredDate ||
-              proposal.quoteRequest.desiredTime ||
-              proposal.quoteRequest.location) ? (
+            {proposal.quoteRequest.desiredDate ||
+            proposal.quoteRequest.desiredTime ||
+            proposal.quoteRequest.location ? (
               <div className="mt-4 grid gap-3 rounded-xl border border-paper-soft bg-paper p-5 sm:grid-cols-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
                     Data desejada
                   </p>
                   <p className="mt-1 text-sm font-medium text-ink">
-                    {proposal.quoteRequest.desiredDate
-                      ? new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(
-                          new Date(proposal.quoteRequest.desiredDate + "T12:00:00Z")
-                        )
-                      : <span className="text-ink-muted">Não informado</span>}
+                    {proposal.quoteRequest.desiredDate ? (
+                      new Intl.DateTimeFormat("pt-BR", {
+                        timeZone: "UTC",
+                      }).format(
+                        new Date(
+                          proposal.quoteRequest.desiredDate + "T12:00:00Z",
+                        ),
+                      )
+                    ) : (
+                      <span className="text-ink-muted">Não informado</span>
+                    )}
                   </p>
                 </div>
                 <div>
@@ -483,7 +492,7 @@ export default async function PublicProposalPage({
                         Pagamento feito diretamente ao prestador.
                       </p>
                       <p>
-                        O OrçaFácil não confirma esse pagamento automaticamente.
+                        O Vitriny não confirma esse pagamento automaticamente.
                       </p>
                       <p>
                         Após pagar, envie o comprovante ao prestador ou combine
@@ -580,9 +589,7 @@ export default async function PublicProposalPage({
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-ink-muted">
           Proposta gerada via{" "}
-          <span className="font-fraunces font-semibold text-leaf">
-            OrçaFácil
-          </span>
+          <span className="font-fraunces font-semibold text-leaf">Vitriny</span>
         </p>
       </div>
     </main>

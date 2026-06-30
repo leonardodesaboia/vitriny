@@ -102,7 +102,7 @@ describe("createService", () => {
       .mockResolvedValueOnce(makeProfile())
       .mockResolvedValueOnce({
         pixKey: "11999999999",
-        pixHolderName: "OrçaFácil Serviços",
+        pixHolderName: "Vitriny Serviços",
         pixCity: "Fortaleza"
       });
     db.service.count.mockResolvedValue(0);

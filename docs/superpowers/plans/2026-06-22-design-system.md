@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implementar o design system "Tropical Paper" no OrçaFácil — tokens, tipografia, componentes base, animações Framer Motion e redesign completo de todas as páginas.
+**Goal:** Implementar o design system "Tropical Paper" no Vitriny — tokens, tipografia, componentes base, animações Framer Motion e redesign completo de todas as páginas.
 
 **Architecture:** Tokens centralizados em `tailwind.config.ts` e `globals.css`. Componentes UI em `components/ui/`. Dashboard ganha layout próprio com Sidebar collapsible. Framer Motion em componentes client-only.
 
@@ -13,6 +13,7 @@
 ## Task 0: Criar branch e instalar dependência
 
 **Files:**
+
 - Modify: `package.json`
 
 - [ ] **Criar branch `design-system` a partir de main**
@@ -32,6 +33,7 @@ npm install framer-motion
 ```bash
 npm ls framer-motion
 ```
+
 Esperado: `framer-motion@x.x.x`
 
 - [ ] **Commit**
@@ -46,6 +48,7 @@ git commit -m "chore: add framer-motion"
 ## Task 1: Tokens de cor e fonte no Tailwind
 
 **Files:**
+
 - Modify: `tailwind.config.ts`
 
 - [ ] **Substituir o conteúdo de `tailwind.config.ts`**
@@ -57,7 +60,7 @@ const config: Config = {
   content: [
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./lib/**/*.{js,ts,jsx,tsx,mdx}"
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
@@ -70,20 +73,21 @@ const config: Config = {
         "leaf-hover": "#2D7A52",
         mint: "#D4EBD9",
         amber: "#C97D3F",
-        "amber-soft": "#F5E6D3"
+        "amber-soft": "#F5E6D3",
       },
       fontFamily: {
         fraunces: ["var(--font-fraunces)", "serif"],
         jakarta: ["var(--font-jakarta)", "sans-serif"],
-        mono: ["var(--font-mono)", "monospace"]
+        mono: ["var(--font-mono)", "monospace"],
       },
       boxShadow: {
         card: "0 1px 3px rgba(28,25,23,0.08), 0 4px 16px rgba(28,25,23,0.06)",
-        "card-hover": "0 4px 20px rgba(28,25,23,0.14), 0 8px 32px rgba(28,25,23,0.08)"
-      }
-    }
+        "card-hover":
+          "0 4px 20px rgba(28,25,23,0.14), 0 8px 32px rgba(28,25,23,0.08)",
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;
@@ -94,6 +98,7 @@ export default config;
 ```bash
 npm run lint
 ```
+
 Esperado: sem erros
 
 - [ ] **Commit**
@@ -108,6 +113,7 @@ git commit -m "feat: add Tropical Paper design tokens to Tailwind"
 ## Task 2: Fontes e globals.css
 
 **Files:**
+
 - Modify: `app/layout.tsx`
 - Modify: `app/globals.css`
 
@@ -132,9 +138,9 @@ html {
 
 body {
   margin: 0;
-  background: #F5F0E8;
+  background: #f5f0e8;
   font-family: var(--font-jakarta), system-ui, sans-serif;
-  color: #1C1917;
+  color: #1c1917;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -146,7 +152,7 @@ a {
 
 /* Grain texture — aplicar com classe .grain no elemento pai position:relative */
 .grain::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -168,29 +174,29 @@ const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
-  axes: ["opsz"]
+  axes: ["opsz"],
 });
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-jakarta",
-  display: "swap"
+  display: "swap",
 });
 
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
-  display: "swap"
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "OrçaFácil",
+  title: "Vitriny",
   description:
-    "MicroSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link."
+    "MicroSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
@@ -210,6 +216,7 @@ export default function RootLayout({
 ```bash
 npm run build
 ```
+
 Esperado: build sem erros
 
 - [ ] **Commit**
@@ -224,6 +231,7 @@ git commit -m "feat: load Fraunces, Plus Jakarta Sans and JetBrains Mono fonts"
 ## Task 3: Componente Button
 
 **Files:**
+
 - Create: `components/ui/Button.tsx`
 
 - [ ] **Criar `components/ui/Button.tsx`**
@@ -242,20 +250,26 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:
-    "bg-leaf text-white hover:bg-leaf-hover focus-visible:ring-amber",
+  primary: "bg-leaf text-white hover:bg-leaf-hover focus-visible:ring-amber",
   secondary:
     "border border-leaf text-leaf bg-transparent hover:bg-mint focus-visible:ring-leaf",
   ghost:
     "text-ink-muted hover:text-leaf hover:bg-paper focus-visible:ring-leaf",
   danger:
-    "border border-red-300 text-red-700 bg-transparent hover:bg-red-50 focus-visible:ring-red-400"
+    "border border-red-300 text-red-700 bg-transparent hover:bg-red-50 focus-visible:ring-red-400",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   (
-    { variant = "primary", loading = false, children, className = "", disabled, ...props },
-    ref
+    {
+      variant = "primary",
+      loading = false,
+      children,
+      className = "",
+      disabled,
+      ...props
+    },
+    ref,
   ) => {
     return (
       <motion.button
@@ -269,7 +283,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
           "disabled:pointer-events-none disabled:opacity-50",
           variantClasses[variant],
-          className
+          className,
         ].join(" ")}
         {...(props as React.ComponentPropsWithoutRef<typeof motion.button>)}
       >
@@ -298,7 +312,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </motion.button>
     );
-  }
+  },
 );
 
 Button.displayName = "Button";
@@ -309,6 +323,7 @@ Button.displayName = "Button";
 ```bash
 npm run lint
 ```
+
 Esperado: sem erros
 
 - [ ] **Commit**
@@ -323,6 +338,7 @@ git commit -m "feat: add Button component with Framer Motion spring tap"
 ## Task 4: Componente Card
 
 **Files:**
+
 - Create: `components/ui/Card.tsx`
 
 - [ ] **Criar `components/ui/Card.tsx`**
@@ -343,8 +359,7 @@ export function Card({
   className = "",
   ...props
 }: CardProps) {
-  const base =
-    "rounded-xl border border-paper-soft bg-white shadow-card";
+  const base = "rounded-xl border border-paper-soft bg-white shadow-card";
 
   if (hoverable) {
     return (
@@ -379,6 +394,7 @@ git commit -m "feat: add Card component with optional hover animation"
 ## Task 5: Componente Badge de status
 
 **Files:**
+
 - Create: `components/ui/Badge.tsx`
 
 - [ ] **Criar `components/ui/Badge.tsx`**
@@ -406,7 +422,7 @@ const variantClasses: Record<BadgeStatus, string> = {
   rejected: "bg-red-50 text-red-700",
   expired: "bg-paper-soft text-ink-muted",
   draft: "bg-paper-soft text-ink-muted",
-  sent: "bg-mint text-leaf"
+  sent: "bg-mint text-leaf",
 };
 
 const defaultLabels: Record<BadgeStatus, string> = {
@@ -418,12 +434,12 @@ const defaultLabels: Record<BadgeStatus, string> = {
   rejected: "Recusada",
   expired: "Expirada",
   draft: "Rascunho",
-  sent: "Enviada"
+  sent: "Enviada",
 };
 
 export function Badge({
   status,
-  children
+  children,
 }: {
   status: BadgeStatus;
   children?: ReactNode;
@@ -433,7 +449,7 @@ export function Badge({
       className={[
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1",
         "text-xs font-semibold",
-        variantClasses[status]
+        variantClasses[status],
       ].join(" ")}
     >
       {status === "new" && (
@@ -449,27 +465,27 @@ export function Badge({
 
 /** Mapeia QuoteRequestStatus do Prisma para BadgeStatus */
 export function quoteStatusToBadge(
-  status: "NEW" | "REVIEWING" | "PROPOSAL_SENT" | "CLOSED"
+  status: "NEW" | "REVIEWING" | "PROPOSAL_SENT" | "CLOSED",
 ): BadgeStatus {
   const map: Record<string, BadgeStatus> = {
     NEW: "new",
     REVIEWING: "reviewing",
     PROPOSAL_SENT: "proposal_sent",
-    CLOSED: "closed"
+    CLOSED: "closed",
   };
   return map[status] ?? "closed";
 }
 
 /** Mapeia ProposalStatus do Prisma para BadgeStatus */
 export function proposalStatusToBadge(
-  status: "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED"
+  status: "DRAFT" | "SENT" | "APPROVED" | "REJECTED" | "EXPIRED",
 ): BadgeStatus {
   const map: Record<string, BadgeStatus> = {
     DRAFT: "draft",
     SENT: "sent",
     APPROVED: "approved",
     REJECTED: "rejected",
-    EXPIRED: "expired"
+    EXPIRED: "expired",
   };
   return map[status] ?? "draft";
 }
@@ -487,6 +503,7 @@ git commit -m "feat: add Badge component with status color map"
 ## Task 6: AnimatedCounter
 
 **Files:**
+
 - Create: `components/ui/AnimatedCounter.tsx`
 
 - [ ] **Criar `components/ui/AnimatedCounter.tsx`**
@@ -502,7 +519,10 @@ interface AnimatedCounterProps {
   className?: string;
 }
 
-export function AnimatedCounter({ value, className = "" }: AnimatedCounterProps) {
+export function AnimatedCounter({
+  value,
+  className = "",
+}: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
 
@@ -513,7 +533,7 @@ export function AnimatedCounter({ value, className = "" }: AnimatedCounterProps)
       ease: "easeOut",
       onUpdate(v) {
         if (ref.current) ref.current.textContent = Math.round(v).toString();
-      }
+      },
     });
     return () => controls.stop();
   }, [inView, value]);
@@ -538,6 +558,7 @@ git commit -m "feat: add AnimatedCounter with useInView trigger"
 ## Task 7: SiteHeader e SiteFooter
 
 **Files:**
+
 - Modify: `components/layout/SiteHeader.tsx`
 - Modify: `components/layout/SiteFooter.tsx`
 
@@ -555,9 +576,12 @@ export function SiteHeader() {
           className="font-fraunces text-xl font-semibold tracking-tight text-ink hover:text-leaf transition-colors"
           href="/"
         >
-          OrçaFácil
+          Vitriny
         </Link>
-        <nav aria-label="Principal" className="hidden items-center gap-6 text-sm md:flex">
+        <nav
+          aria-label="Principal"
+          className="hidden items-center gap-6 text-sm md:flex"
+        >
           <a
             className="font-medium text-ink-muted transition-colors hover:text-leaf"
             href="#como-funciona"
@@ -585,7 +609,7 @@ export function SiteFooter() {
   return (
     <footer className="border-t border-paper-soft bg-white">
       <div className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between px-6 text-sm">
-        <p className="font-fraunces font-semibold text-ink">OrçaFácil</p>
+        <p className="font-fraunces font-semibold text-ink">Vitriny</p>
         <p className="text-ink-muted">Feito para prestadores de serviço</p>
       </div>
     </footer>
@@ -605,6 +629,7 @@ git commit -m "feat: update SiteHeader and SiteFooter with Tropical Paper design
 ## Task 8: Sidebar e layout do dashboard
 
 **Files:**
+
 - Create: `components/layout/Sidebar.tsx`
 - Create: `app/(dashboard)/layout.tsx`
 
@@ -623,39 +648,84 @@ const navItems = [
     href: "/dashboard",
     label: "Dashboard",
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+        />
       </svg>
-    )
+    ),
   },
   {
     href: "/dashboard/pedidos",
     label: "Pedidos",
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+        />
       </svg>
-    )
+    ),
   },
   {
     href: "/dashboard/servicos",
     label: "Serviços",
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+        />
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
       </svg>
-    )
+    ),
   },
   {
     href: "/dashboard/perfil",
     label: "Perfil",
     icon: (
-      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <svg
+        className="h-4 w-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+        />
       </svg>
-    )
-  }
+    ),
+  },
 ];
 
 export function Sidebar() {
@@ -692,7 +762,7 @@ export function Sidebar() {
               transition={{ duration: 0.15 }}
               className="font-fraunces text-base font-semibold text-ink"
             >
-              OrçaFácil
+              Vitriny
             </motion.span>
           )}
         </AnimatePresence>
@@ -701,11 +771,26 @@ export function Sidebar() {
           className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-ink-muted hover:bg-paper hover:text-leaf transition-colors"
           aria-label={expanded ? "Recolher menu" : "Expandir menu"}
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             {expanded ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
             )}
           </svg>
         </button>
@@ -724,7 +809,7 @@ export function Sidebar() {
                 "text-sm font-medium transition-colors",
                 active
                   ? "bg-mint text-leaf"
-                  : "text-ink-muted hover:bg-paper hover:text-ink"
+                  : "text-ink-muted hover:bg-paper hover:text-ink",
               ].join(" ")}
             >
               <span className="w-5 shrink-0 flex items-center justify-center">
@@ -761,7 +846,7 @@ import { auth } from "@/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 
 export default async function DashboardLayout({
-  children
+  children,
 }: {
   children: React.ReactNode;
 }) {
@@ -784,6 +869,7 @@ export default async function DashboardLayout({
 ```bash
 npm run build
 ```
+
 Esperado: build sem erros
 
 - [ ] **Commit**
@@ -800,6 +886,7 @@ git commit -m "feat: add collapsible Sidebar and dashboard layout"
 **Nota arquitetural:** `app/page.tsx` permanece Server Component. As partes com Framer Motion são extraídas para componentes client separados — padrão correto do Next.js App Router (Server Components não podem importar hooks/framer-motion diretamente).
 
 **Files:**
+
 - Create: `components/landing/LandingHero.tsx`
 - Create: `components/landing/LandingSteps.tsx`
 - Modify: `app/page.tsx`
@@ -813,12 +900,16 @@ import { motion } from "framer-motion";
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
+  show: { transition: { staggerChildren: 0.1 } },
 };
 
 const item = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
 };
 
 export function LandingHero() {
@@ -837,11 +928,17 @@ export function LandingHero() {
         >
           Receba pedidos, envie propostas e feche serviços por link.
         </motion.h1>
-        <motion.p variants={item} className="mt-6 max-w-xl text-base leading-7 text-ink-muted">
-          O OrçaFácil reúne perfil público, serviços, pedidos recebidos e
+        <motion.p
+          variants={item}
+          className="mt-6 max-w-xl text-base leading-7 text-ink-muted"
+        >
+          O Vitriny reúne perfil público, serviços, pedidos recebidos e
           propostas em um fluxo simples para prestadores de serviço.
         </motion.p>
-        <motion.div variants={item} className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <motion.div
+          variants={item}
+          className="mt-8 flex flex-col gap-3 sm:flex-row"
+        >
           <a
             className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover"
             href="#proximos-passos"
@@ -877,7 +974,9 @@ export function LandingHero() {
             <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
               Cliente
             </dt>
-            <dd className="mt-1 text-base font-medium text-ink">Mariana Costa</dd>
+            <dd className="mt-1 text-base font-medium text-ink">
+              Mariana Costa
+            </dd>
           </div>
           <div>
             <dt className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
@@ -917,17 +1016,21 @@ const steps = [
   { n: "01", text: "Publique seu perfil e seus serviços." },
   { n: "02", text: "Receba pedidos de orçamento por link público." },
   { n: "03", text: "Acompanhe pedidos no painel do prestador." },
-  { n: "04", text: "Envie propostas para aprovação ou recusa online." }
+  { n: "04", text: "Envie propostas para aprovação ou recusa online." },
 ];
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1 } }
+  show: { transition: { staggerChildren: 0.1 } },
 };
 
 const item = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 30 } }
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring", stiffness: 300, damping: 30 },
+  },
 };
 
 export function LandingSteps() {
@@ -949,7 +1052,9 @@ export function LandingSteps() {
             {step.n}
           </span>
           <span className="relative text-xs font-bold text-leaf">{step.n}</span>
-          <p className="relative mt-3 text-sm leading-6 text-ink-muted">{step.text}</p>
+          <p className="relative mt-3 text-sm leading-6 text-ink-muted">
+            {step.text}
+          </p>
         </motion.div>
       ))}
     </motion.div>
@@ -973,7 +1078,10 @@ export default function Home() {
       <LandingHero />
 
       {/* Como funciona */}
-      <section id="como-funciona" className="border-y border-paper-soft bg-white">
+      <section
+        id="como-funciona"
+        className="border-y border-paper-soft bg-white"
+      >
         <div className="mx-auto max-w-6xl px-6 py-16">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
             Fluxo
@@ -1010,6 +1118,7 @@ export default function Home() {
 ```bash
 npm run build
 ```
+
 Esperado: build sem erros
 
 - [ ] **Commit**
@@ -1024,6 +1133,7 @@ git commit -m "feat: redesign landing page with Tropical Paper design system"
 ## Task 10: Login page redesign
 
 **Files:**
+
 - Modify: `app/(auth)/login/page.tsx`
 
 - [ ] **Substituir `app/(auth)/login/page.tsx`**
@@ -1043,16 +1153,22 @@ export default async function LoginPage() {
     <main className="flex min-h-screen text-ink">
       {/* Lado esquerdo — padrão decorativo */}
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-leaf p-12 grain lg:flex">
-        <p className="font-fraunces text-2xl font-semibold text-white">OrçaFácil</p>
+        <p className="font-fraunces text-2xl font-semibold text-white">
+          Vitriny
+        </p>
 
         {/* Círculos decorativos */}
         <div
           className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #D4EBD9, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #D4EBD9, transparent 70%)",
+          }}
         />
         <div
           className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #F5E6D3, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #F5E6D3, transparent 70%)",
+          }}
         />
 
         <blockquote>
@@ -1095,6 +1211,7 @@ git commit -m "feat: redesign login page with split layout"
 ## Task 11: Dashboard home redesign
 
 **Files:**
+
 - Modify: `app/(dashboard)/dashboard/page.tsx`
 
 - [ ] **Substituir `app/(dashboard)/dashboard/page.tsx`**
@@ -1118,8 +1235,8 @@ export default async function DashboardPage() {
     where: { userId: session.user.id },
     include: {
       quoteRequests: { select: { id: true, status: true } },
-      proposals: { select: { id: true, status: true } }
-    }
+      proposals: { select: { id: true, status: true } },
+    },
   });
 
   const totalPedidos = profile?.quoteRequests.length ?? 0;
@@ -1134,7 +1251,7 @@ export default async function DashboardPage() {
     { label: "Pedidos totais", value: totalPedidos },
     { label: "Pedidos novos", value: novosPedidos },
     { label: "Propostas enviadas", value: propostasEnviadas },
-    { label: "Propostas aprovadas", value: propostasAprovadas }
+    { label: "Propostas aprovadas", value: propostasAprovadas },
   ];
 
   return (
@@ -1246,6 +1363,7 @@ git commit -m "feat: redesign dashboard home with animated metric counters"
 ## Task 12: Pedidos page redesign
 
 **Files:**
+
 - Modify: `app/(dashboard)/dashboard/pedidos/page.tsx`
 - Modify: `components/quote-request/QuoteRequestList.tsx`
 
@@ -1269,10 +1387,12 @@ type RequestsPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   profile: "Crie o perfil do prestador antes de receber pedidos.",
-  "not-found": "Pedido não encontrado."
+  "not-found": "Pedido não encontrado.",
 };
 
-export default async function RequestsPage({ searchParams }: RequestsPageProps) {
+export default async function RequestsPage({
+  searchParams,
+}: RequestsPageProps) {
   const session = await auth();
   const params = await searchParams;
 
@@ -1285,10 +1405,10 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
     include: {
       quoteRequests: {
         orderBy: { createdAt: "desc" },
-        include: { proposal: { select: { publicToken: true } } }
+        include: { proposal: { select: { publicToken: true } } },
       },
-      services: { select: { id: true, name: true } }
-    }
+      services: { select: { id: true, name: true } },
+    },
   });
 
   return (
@@ -1305,7 +1425,8 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
 
       {params.error ? (
         <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {errorMessages[params.error] ?? "Não foi possível atualizar o pedido."}
+          {errorMessages[params.error] ??
+            "Não foi possível atualizar o pedido."}
         </p>
       ) : null}
 
@@ -1349,6 +1470,7 @@ git commit -m "feat: redesign pedidos page with Tropical Paper design"
 ## Task 13: Perfil público redesign
 
 **Files:**
+
 - Modify: `app/u/[slug]/page.tsx`
 
 - [ ] **Substituir `app/u/[slug]/page.tsx`**
@@ -1363,7 +1485,7 @@ type Props = { params: Promise<{ slug: string }> };
 function formatMoney(value: { toString: () => string }) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(Number(value.toString()));
 }
 
@@ -1383,9 +1505,9 @@ export default async function PublicProviderProfilePage({ params }: Props) {
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
-        select: { id: true, name: true, description: true, basePrice: true }
-      }
-    }
+        select: { id: true, name: true, description: true, basePrice: true },
+      },
+    },
   });
 
   if (!profile || !profile.isPublished) {
@@ -1406,7 +1528,9 @@ export default async function PublicProviderProfilePage({ params }: Props) {
             {profile.businessName}
           </h1>
           {location ? (
-            <p className="mt-3 text-sm font-medium text-ink-muted">{location}</p>
+            <p className="mt-3 text-sm font-medium text-ink-muted">
+              {location}
+            </p>
           ) : null}
           {profile.description ? (
             <p className="mt-5 max-w-2xl text-base leading-7 text-ink-muted">
@@ -1415,7 +1539,7 @@ export default async function PublicProviderProfilePage({ params }: Props) {
           ) : null}
 
           {/* Contatos */}
-          {(profile.phone || profile.email) ? (
+          {profile.phone || profile.email ? (
             <div className="mt-6 flex flex-wrap gap-3">
               {profile.phone && (
                 <span className="inline-flex items-center gap-2 rounded-full border border-paper-soft bg-paper px-4 py-2 text-sm font-medium text-ink">
@@ -1510,6 +1634,7 @@ git commit -m "feat: redesign public provider profile page"
 ## Task 14: Formulário público de orçamento redesign
 
 **Files:**
+
 - Modify: `app/u/[slug]/orcamento/page.tsx`
 
 - [ ] **Substituir `app/u/[slug]/orcamento/page.tsx`**
@@ -1522,16 +1647,23 @@ import { prisma } from "@/lib/prisma";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string; serviceId?: string; success?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    serviceId?: string;
+    success?: string;
+  }>;
 };
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   service: "O serviço selecionado não está disponível.",
-  unavailable: "Este perfil não está disponível para pedidos."
+  unavailable: "Este perfil não está disponível para pedidos.",
 };
 
-export default async function PublicQuoteRequestPage({ params, searchParams }: Props) {
+export default async function PublicQuoteRequestPage({
+  params,
+  searchParams,
+}: Props) {
   const { slug } = await params;
   const query = await searchParams;
 
@@ -1543,16 +1675,18 @@ export default async function PublicQuoteRequestPage({ params, searchParams }: P
       services: {
         where: { isActive: true },
         orderBy: { name: "asc" },
-        select: { id: true, name: true }
-      }
-    }
+        select: { id: true, name: true },
+      },
+    },
   });
 
   if (!profile || !profile.isPublished) {
     notFound();
   }
 
-  const selectedServiceId = profile.services.some((s) => s.id === query.serviceId)
+  const selectedServiceId = profile.services.some(
+    (s) => s.id === query.serviceId,
+  )
     ? query.serviceId
     : null;
 
@@ -1563,8 +1697,18 @@ export default async function PublicQuoteRequestPage({ params, searchParams }: P
           className="inline-flex items-center gap-2 text-sm font-medium text-ink-muted transition hover:text-leaf"
           href={`/u/${slug}`}
         >
-          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Voltar ao perfil
         </Link>
@@ -1593,7 +1737,8 @@ export default async function PublicQuoteRequestPage({ params, searchParams }: P
           <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
             {query.error ? (
               <p className="mb-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-                {errorMessages[query.error] ?? "Não foi possível enviar o pedido."}
+                {errorMessages[query.error] ??
+                  "Não foi possível enviar o pedido."}
               </p>
             ) : null}
             <QuoteRequestForm
@@ -1621,6 +1766,7 @@ git commit -m "feat: redesign public quote request page"
 ## Task 15: Proposta pública redesign
 
 **Files:**
+
 - Modify: `app/proposta/[publicToken]/page.tsx`
 
 - [ ] **Substituir `app/proposta/[publicToken]/page.tsx`**
@@ -1637,9 +1783,10 @@ type Props = {
 };
 
 function formatMoney(value: { toString: () => string }) {
-  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
-    Number(value.toString())
-  );
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value.toString()));
 }
 
 function formatDate(date: Date) {
@@ -1648,16 +1795,19 @@ function formatDate(date: Date) {
 
 const responseMessages: Record<string, string> = {
   approved: "Proposta aprovada com sucesso.",
-  rejected: "Proposta recusada."
+  rejected: "Proposta recusada.",
 };
 
 const errorMessages: Record<string, string> = {
   answered: "Esta proposta já foi respondida.",
   expired: "Esta proposta está expirada e não pode mais ser respondida.",
-  "not-found": "Proposta não encontrada."
+  "not-found": "Proposta não encontrada.",
 };
 
-export default async function PublicProposalPage({ params, searchParams }: Props) {
+export default async function PublicProposalPage({
+  params,
+  searchParams,
+}: Props) {
   const { publicToken } = await params;
   const query = await searchParams;
 
@@ -1666,15 +1816,17 @@ export default async function PublicProposalPage({ params, searchParams }: Props
     include: {
       provider: true,
       quoteRequest: true,
-      items: { orderBy: { createdAt: "asc" } }
-    }
+      items: { orderBy: { createdAt: "asc" } },
+    },
   });
 
   if (!proposal) {
     notFound();
   }
 
-  const isExpired = proposal.validUntil ? proposal.validUntil < new Date() : false;
+  const isExpired = proposal.validUntil
+    ? proposal.validUntil < new Date()
+    : false;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
   const canRespond = !isAnswered && !isExpired;
@@ -1736,13 +1888,19 @@ export default async function PublicProposalPage({ params, searchParams }: Props
                 {proposal.provider.businessName}
               </p>
               {proposal.provider.email && (
-                <p className="mt-1 text-sm text-ink-muted">{proposal.provider.email}</p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {proposal.provider.email}
+                </p>
               )}
               {proposal.provider.phone && (
-                <p className="mt-1 text-sm text-ink-muted">{proposal.provider.phone}</p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {proposal.provider.phone}
+                </p>
               )}
               {providerLocation && (
-                <p className="mt-1 text-sm text-ink-muted">{providerLocation}</p>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {providerLocation}
+                </p>
               )}
             </div>
             <div className="rounded-lg bg-paper p-4">
@@ -1815,7 +1973,9 @@ export default async function PublicProposalPage({ params, searchParams }: Props
               <p className="text-sm text-ink-muted">
                 Validade:{" "}
                 <span className="font-medium text-ink">
-                  {proposal.validUntil ? formatDate(proposal.validUntil) : "Sem data"}
+                  {proposal.validUntil
+                    ? formatDate(proposal.validUntil)
+                    : "Sem data"}
                 </span>
               </p>
             </div>
@@ -1900,6 +2060,7 @@ git commit -m "feat: redesign public proposal page with document layout"
 ```bash
 npm run lint
 ```
+
 Esperado: sem erros
 
 - [ ] **Rodar build de produção**
@@ -1907,6 +2068,7 @@ Esperado: sem erros
 ```bash
 npm run build
 ```
+
 Esperado: build sem erros, todas as páginas compiladas
 
 - [ ] **Verificar schema Prisma (não alteramos, mas confirmamos)**
@@ -1914,6 +2076,7 @@ Esperado: build sem erros, todas as páginas compiladas
 ```bash
 npx prisma validate
 ```
+
 Esperado: `The schema at prisma/schema.prisma is valid`
 
 - [ ] **Commit final**
@@ -1927,25 +2090,25 @@ git commit -m "feat: complete Tropical Paper design system implementation"
 
 ## Resumo dos arquivos
 
-| Arquivo | Ação |
-|---|---|
-| `tailwind.config.ts` | Modificar — tokens de cor e fonte |
-| `app/globals.css` | Modificar — variáveis CSS, grain, base |
-| `app/layout.tsx` | Modificar — fontes next/font |
-| `components/ui/Button.tsx` | Criar |
-| `components/ui/Card.tsx` | Criar |
-| `components/ui/Badge.tsx` | Criar |
-| `components/ui/AnimatedCounter.tsx` | Criar |
-| `components/layout/Sidebar.tsx` | Criar |
-| `components/layout/SiteHeader.tsx` | Modificar |
-| `components/layout/SiteFooter.tsx` | Modificar |
-| `app/(dashboard)/layout.tsx` | Criar |
-| `components/landing/LandingHero.tsx` | Criar |
-| `components/landing/LandingSteps.tsx` | Criar |
-| `app/page.tsx` | Modificar |
-| `app/(auth)/login/page.tsx` | Modificar |
-| `app/(dashboard)/dashboard/page.tsx` | Modificar |
-| `app/(dashboard)/dashboard/pedidos/page.tsx` | Modificar |
-| `app/u/[slug]/page.tsx` | Modificar |
-| `app/u/[slug]/orcamento/page.tsx` | Modificar |
-| `app/proposta/[publicToken]/page.tsx` | Modificar |
+| Arquivo                                      | Ação                                   |
+| -------------------------------------------- | -------------------------------------- |
+| `tailwind.config.ts`                         | Modificar — tokens de cor e fonte      |
+| `app/globals.css`                            | Modificar — variáveis CSS, grain, base |
+| `app/layout.tsx`                             | Modificar — fontes next/font           |
+| `components/ui/Button.tsx`                   | Criar                                  |
+| `components/ui/Card.tsx`                     | Criar                                  |
+| `components/ui/Badge.tsx`                    | Criar                                  |
+| `components/ui/AnimatedCounter.tsx`          | Criar                                  |
+| `components/layout/Sidebar.tsx`              | Criar                                  |
+| `components/layout/SiteHeader.tsx`           | Modificar                              |
+| `components/layout/SiteFooter.tsx`           | Modificar                              |
+| `app/(dashboard)/layout.tsx`                 | Criar                                  |
+| `components/landing/LandingHero.tsx`         | Criar                                  |
+| `components/landing/LandingSteps.tsx`        | Criar                                  |
+| `app/page.tsx`                               | Modificar                              |
+| `app/(auth)/login/page.tsx`                  | Modificar                              |
+| `app/(dashboard)/dashboard/page.tsx`         | Modificar                              |
+| `app/(dashboard)/dashboard/pedidos/page.tsx` | Modificar                              |
+| `app/u/[slug]/page.tsx`                      | Modificar                              |
+| `app/u/[slug]/orcamento/page.tsx`            | Modificar                              |
+| `app/proposta/[publicToken]/page.tsx`        | Modificar                              |

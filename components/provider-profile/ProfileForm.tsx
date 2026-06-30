@@ -5,7 +5,7 @@ import type { ProviderProfile } from "@prisma/client";
 
 import {
   saveProviderProfile,
-  type ProviderProfileFormState
+  type ProviderProfileFormState,
 } from "@/lib/actions/provider-profile";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { THEME_PRESET_OPTIONS } from "@/lib/theme-presets";
@@ -20,10 +20,18 @@ const inputClass =
 
 const labelClass = "text-sm font-semibold text-ink";
 
-function SectionHeader({ label, description }: { label: string; description?: string }) {
+function SectionHeader({
+  label,
+  description,
+}: {
+  label: string;
+  description?: string;
+}) {
   return (
     <div className="border-t border-paper-soft pt-6">
-      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+        {label}
+      </p>
       {description ? (
         <p className="mt-1 text-xs leading-5 text-ink-muted">{description}</p>
       ) : null}
@@ -37,21 +45,19 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const [state, formAction, isPending] = useActionState<
     ProviderProfileFormState,
     FormData
-  >(
-    async (previousState, formData) => {
-      const result = await saveProviderProfile(previousState, formData);
-      if (result?.values) {
-        setSlug(result.values.slug);
-        setIsPublished(result.values.isPublished);
-      }
-      return result;
-    },
-    undefined
-  );
+  >(async (previousState, formData) => {
+    const result = await saveProviderProfile(previousState, formData);
+    if (result?.values) {
+      setSlug(result.values.slug);
+      setIsPublished(result.values.isPublished);
+    }
+    return result;
+  }, undefined);
 
   const values = state?.values;
   const formKey = values ? `profile-error-${state.submittedAt}` : "profile";
-  const currentThemePreset = values?.themePreset ?? profile?.themePreset ?? "DEFAULT";
+  const currentThemePreset =
+    values?.themePreset ?? profile?.themePreset ?? "DEFAULT";
   const isPro = profile?.plan === "PRO";
 
   return (
@@ -110,7 +116,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 ↗
               </span>
               Seu link público:{" "}
-              <span className="font-semibold text-ink">orcafacil/u/{slug}</span>
+              <span className="font-semibold text-ink">vitriny/u/{slug}</span>
             </p>
           ) : (
             <p className="text-xs text-ink-muted">
@@ -251,7 +257,9 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               : "Seu perfil está oculto. Ative para receber pedidos pelo link público."}
           </span>
           {slug && isPublished ? (
-            <span className="mt-1 text-xs font-semibold text-leaf">/u/{slug}</span>
+            <span className="mt-1 text-xs font-semibold text-leaf">
+              /u/{slug}
+            </span>
           ) : null}
         </div>
       </label>
@@ -265,14 +273,18 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
       <div className="grid gap-4 rounded-xl border border-paper-soft bg-paper p-5">
         {!isPro ? (
           <>
-            <input name="themePreset" type="hidden" value={currentThemePreset} />
+            <input
+              name="themePreset"
+              type="hidden"
+              value={currentThemePreset}
+            />
             <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
               <p className="text-sm font-semibold text-amber-800">
                 Personalização visual está disponível no plano PRO.
               </p>
               <p className="mt-1 text-xs leading-5 text-amber-800/80">
-                O tema padrão está ativo na página pública enquanto seu plano for
-                FREE.
+                O tema padrão está ativo na página pública enquanto seu plano
+                for FREE.
               </p>
             </div>
             <div className="rounded-xl border border-paper-soft bg-white p-4">
@@ -318,7 +330,9 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                     <span className={`flex-1 ${preset.preview.surface}`} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-ink">{preset.name}</p>
+                    <p className="text-sm font-semibold text-ink">
+                      {preset.name}
+                    </p>
                     <p className="mt-1 text-xs leading-5 text-ink-muted">
                       {preset.description}
                     </p>

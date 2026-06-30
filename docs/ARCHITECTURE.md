@@ -2,7 +2,7 @@
 
 ## Arquitetura técnica
 
-OrçaFácil usa Next.js App Router com Server Components, Server Actions, Prisma e PostgreSQL.
+Vitriny usa Next.js App Router com Server Components, Server Actions, Prisma e PostgreSQL.
 
 Fluxo simplificado:
 
@@ -206,12 +206,12 @@ Limites `FREE`:
 
 ### Camadas de teste
 
-| Camada | Localização | Runner | Banco |
-|--------|------------|--------|-------|
-| Unitários (validações + limites) | `tests/unit/` | Vitest | — |
-| Actions (Prisma mockado) | `tests/actions/` | Vitest | mock |
-| Integração | `tests/integration/` | Vitest | `orcafacil_test` |
-| E2E | `tests/e2e/` | Playwright | dev DB |
+| Camada                           | Localização          | Runner     | Banco            |
+| -------------------------------- | -------------------- | ---------- | ---------------- |
+| Unitários (validações + limites) | `tests/unit/`        | Vitest     | —                |
+| Actions (Prisma mockado)         | `tests/actions/`     | Vitest     | mock             |
+| Integração                       | `tests/integration/` | Vitest     | `orcafacil_test` |
+| E2E                              | `tests/e2e/`         | Playwright | dev DB           |
 
 ### Comandos
 
@@ -228,9 +228,10 @@ npm run playwright:install # instalar browsers (primeira vez)
 A suite de integração usa um banco PostgreSQL separado (`orcafacil_test`) no mesmo container Docker.
 
 Criação e migração:
+
 ```bash
-docker exec orcafacil-postgres psql -U orcafacil -c "CREATE DATABASE orcafacil_test;"
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil_test" npx prisma db push
+docker exec vitriny-postgres psql -U vitriny -c "CREATE DATABASE orcafacil_test;"
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/orcafacil_test" npx prisma db push
 ```
 
 ### E2E

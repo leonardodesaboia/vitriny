@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 
-export const E2E_USER_EMAIL = "e2e-test@orcafacil.test";
+export const E2E_USER_EMAIL = "e2e-test@vitriny.test";
 export const E2E_USER_PASSWORD = "TestPassword123!";
 export const E2E_PROVIDER_SLUG = "e2e-test-provider";
 

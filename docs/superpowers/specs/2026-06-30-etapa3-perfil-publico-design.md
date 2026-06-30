@@ -14,11 +14,11 @@ Transformar `/u/[slug]` em página comercial completa: CTAs de conversão em tod
 
 ## Arquivos alterados
 
-| Arquivo | Natureza da mudança |
-|---|---|
-| `app/u/[slug]/page.tsx` | CTA no hero, WhatsApp no card de telefone, "Como funciona" condicional, `generateMetadata` |
-| `components/public/PublicServicesGrid.tsx` | Estado vazio com CTA, CTA de fallback pós-grid, `useReducedMotion` |
-| `components/quote-request/QuoteRequestForm.tsx` | `role="alert"` na mensagem de erro, `aria-live="polite"` na mensagem de sucesso |
+| Arquivo                                         | Natureza da mudança                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| `app/u/[slug]/page.tsx`                         | CTA no hero, WhatsApp no card de telefone, "Como funciona" condicional, `generateMetadata` |
+| `components/public/PublicServicesGrid.tsx`      | Estado vazio com CTA, CTA de fallback pós-grid, `useReducedMotion`                         |
+| `components/quote-request/QuoteRequestForm.tsx` | `role="alert"` na mensagem de erro, `aria-live="polite"` na mensagem de sucesso            |
 
 Nenhum arquivo novo. Sem migration de banco.
 
@@ -76,22 +76,27 @@ noServices = services.length === 0
 ### Conteúdos por caso
 
 **CUSTOM only ou sem serviços:**
+
 1. Preencha o formulário — Conte o que você precisa em poucos campos.
 2. Prestador avalia — O prestador analisa seu pedido e prepara uma proposta.
 3. Receba a proposta — Proposta com valor, prazo e condições para aprovar.
 
 **FIXED/REQUEST_ONLY only:**
+
 1. Escolha o serviço — Selecione o serviço desejado e preencha seus dados.
 2. Prestador avalia — O prestador analisa a solicitação e confirma disponibilidade.
 3. Prestador entra em contato — Você recebe o retorno pelo contato informado.
 
 **FIXED/REQUIRE_PIX_PAYMENT only:**
+
 1. Preencha seus dados — Informe nome e contato para continuar.
 2. Realize o pagamento Pix — O pagamento é exigido para confirmar o pedido.
 3. Confirmação manual — O prestador confirma o recebimento e finaliza o agendamento.
 
 **Misto (CUSTOM + FIXED, com ou sem Pix):**
+
 - Subtítulo: "Este prestador oferece serviços com preço fixo e sob orçamento."
+
 1. Escolha ou descreva — Selecione um serviço da lista ou descreva livremente o que precisa.
 2. Prestador avalia — O prestador analisa e confirma disponibilidade ou prepara uma proposta.
 3. Receba o retorno — Você é contactado com as próximas etapas.
@@ -110,7 +115,7 @@ Se apenas `hasCustom` ou `noServices` → usar conteúdo CUSTOM.
 O card de telefone passa a ter dois links quando `profile.phone` está disponível:
 
 - **Botão principal "WhatsApp":** link `wa.me/{numero}?text={mensagem}` abrindo em `_blank`.
-  - Mensagem pré-preenchida: `"Olá {businessName}, vi seu perfil no OrçaFácil e gostaria de solicitar um orçamento."`
+  - Mensagem pré-preenchida: `"Olá {businessName}, vi seu perfil no Vitriny e gostaria de solicitar um orçamento."`
   - Usar `phoneToWhatsAppNumber` (já existe em `lib/utils/phone.ts`).
 - **Link secundário "Ligar":** `href={phoneToTelHref(phone)}` com texto menor/discreto.
 
@@ -129,16 +134,17 @@ export async function generateMetadata({ params }): Promise<Metadata> {
   const { slug } = await params;
   const profile = await prisma.providerProfile.findUnique({
     where: { slug },
-    select: { businessName: true, description: true, isPublished: true }
+    select: { businessName: true, description: true, isPublished: true },
   });
 
   if (!profile || !profile.isPublished) {
     return { robots: { index: false, follow: false } };
   }
 
-  const title = `${profile.businessName} · OrçaFácil`;
-  const description = profile.description
-    ?? `Solicite um orçamento para ${profile.businessName}.`;
+  const title = `${profile.businessName} · Vitriny`;
+  const description =
+    profile.description ??
+    `Solicite um orçamento para ${profile.businessName}.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL}/u/${slug}`;
 
   return {

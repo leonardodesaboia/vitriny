@@ -9,9 +9,12 @@ export function SiteHeader() {
           className="font-fraunces text-xl font-semibold tracking-tight text-ink transition-colors hover:text-leaf"
           href="/"
         >
-          OrçaFácil
+          Vitriny
         </Link>
-        <nav aria-label="Principal" className="hidden items-center gap-6 text-sm md:flex">
+        <nav
+          aria-label="Principal"
+          className="hidden items-center gap-6 text-sm md:flex"
+        >
           <a
             className="font-medium text-ink-muted transition-colors hover:text-leaf"
             href="#como-funciona"

@@ -96,7 +96,7 @@ function emailLayout({
             <tr>
               <td style="padding:0 0 16px;">
                 <div style="display:inline-block;border-radius:999px;background:#D4EBD9;padding:8px 12px;font-size:13px;font-weight:800;line-height:16px;color:#1B5E3B;">
-                  OrçaFácil
+                  Vitriny
                 </div>
               </td>
             </tr>
@@ -111,7 +111,7 @@ function emailLayout({
             <tr>
               <td style="padding:18px 4px 0;">
                 <p style="margin:0;font-size:12px;line-height:18px;color:#78716C;">
-                  Este e-mail foi enviado automaticamente pelo OrçaFácil.
+                  Este e-mail foi enviado automaticamente pelo Vitriny.
                 </p>
               </td>
             </tr>
@@ -152,8 +152,8 @@ async function sendAppEmail({ to, subject, preview, html }: SendAppEmailInput) {
 export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   await sendAppEmail({
     to,
-    subject: "Redefinir senha — OrçaFácil",
-    preview: "Use o link para criar uma nova senha no OrçaFácil.",
+    subject: "Redefinir senha — Vitriny",
+    preview: "Use o link para criar uma nova senha no Vitriny.",
     html: [
       paragraph("Recebemos um pedido para redefinir sua senha."),
       emailButton("Criar nova senha", resetUrl),
@@ -171,7 +171,7 @@ export async function sendQuoteRequestReceivedEmail({
 }: QuoteRequestReceivedEmailInput) {
   await sendAppEmail({
     to,
-    subject: "Novo pedido de orçamento — OrçaFácil",
+    subject: "Novo pedido de orçamento — Vitriny",
     preview: `${customerName} enviou um novo pedido de orçamento.`,
     html: [
       paragraph(`Olá, ${businessName}.`),
@@ -194,7 +194,7 @@ export async function sendProposalSentEmail({
 }: ProposalSentEmailInput) {
   await sendAppEmail({
     to,
-    subject: `Sua proposta de ${businessName} — OrçaFácil`,
+    subject: `Sua proposta de ${businessName} — Vitriny`,
     preview: `${businessName} enviou uma proposta no valor de ${totalAmount}.`,
     html: [
       paragraph(`Olá, ${customerName}.`),
@@ -252,8 +252,8 @@ export async function sendProposalResponseEmail({
     to,
     subject:
       response === "APPROVED"
-        ? "Proposta aprovada — OrçaFácil"
-        : "Proposta recusada — OrçaFácil",
+        ? "Proposta aprovada — Vitriny"
+        : "Proposta recusada — Vitriny",
     preview: `${customerName} ${responseLabel} a proposta.`,
     html: [
       paragraph(`Olá, ${businessName}.`),

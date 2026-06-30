@@ -21,7 +21,7 @@ describe("sendPasswordResetEmail", () => {
     process.env = {
       ...originalEnv,
       RESEND_API_KEY: "re_test",
-      EMAIL_FROM: "OrçaFácil <contato@orcafacil.com>"
+      EMAIL_FROM: "Vitriny <contato@vitriny.com>"
     };
   });
 
@@ -35,9 +35,9 @@ describe("sendPasswordResetEmail", () => {
     await sendPasswordResetEmail("cliente@example.com", "https://app.test/redefinir/token");
 
     expect(sendEmail).toHaveBeenCalledWith({
-      from: "OrçaFácil <contato@orcafacil.com>",
+      from: "Vitriny <contato@vitriny.com>",
       to: "cliente@example.com",
-      subject: "Redefinir senha — OrçaFácil",
+      subject: "Redefinir senha — Vitriny",
       html: expect.stringContaining("https://app.test/redefinir/token")
     });
   });
@@ -49,7 +49,7 @@ describe("sendPasswordResetEmail", () => {
 
     const html = sendEmail.mock.calls[0]?.[0]?.html as string;
     expect(html).toContain("background:#F5F0E8");
-    expect(html).toContain("OrçaFácil");
+    expect(html).toContain("Vitriny");
     expect(html).toContain("background:#1B5E3B");
     expect(html).toContain("box-shadow:0 1px 3px rgba(28,25,23,0.08)");
   });
@@ -80,7 +80,7 @@ describe("notificações da aplicação", () => {
     process.env = {
       ...process.env,
       RESEND_API_KEY: "re_test",
-      EMAIL_FROM: "OrçaFácil <contato@orcafacil.com>"
+      EMAIL_FROM: "Vitriny <contato@vitriny.com>"
     };
   });
 
@@ -89,7 +89,7 @@ describe("notificações da aplicação", () => {
 
     await sendQuoteRequestReceivedEmail({
       to: "prestador@example.com",
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       customerName: "Maria",
       serviceName: "Pintura",
       dashboardUrl: "https://app.test/dashboard/pedidos"
@@ -98,7 +98,7 @@ describe("notificações da aplicação", () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "prestador@example.com",
-        subject: "Novo pedido de orçamento — OrçaFácil",
+        subject: "Novo pedido de orçamento — Vitriny",
         html: expect.stringContaining("Pintura")
       })
     );
@@ -109,7 +109,7 @@ describe("notificações da aplicação", () => {
 
     await sendProposalSentEmail({
       to: "cliente@example.com",
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       customerName: "Maria",
       proposalUrl: "https://app.test/proposta/token",
       totalAmount: "R$ 300,00"
@@ -118,7 +118,7 @@ describe("notificações da aplicação", () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "cliente@example.com",
-        subject: "Sua proposta de OrçaFácil Serviços — OrçaFácil",
+        subject: "Sua proposta de Vitriny Serviços — Vitriny",
         html: expect.stringContaining("https://app.test/proposta/token")
       })
     );
@@ -129,7 +129,7 @@ describe("notificações da aplicação", () => {
 
     await sendProposalResponseEmail({
       to: "prestador@example.com",
-      businessName: "OrçaFácil Serviços",
+      businessName: "Vitriny Serviços",
       customerName: "Maria",
       response: "APPROVED",
       proposalUrl: "https://app.test/proposta/token"
@@ -138,7 +138,7 @@ describe("notificações da aplicação", () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "prestador@example.com",
-        subject: "Proposta aprovada — OrçaFácil",
+        subject: "Proposta aprovada — Vitriny",
         html: expect.stringContaining("Maria aprovou a proposta")
       })
     );

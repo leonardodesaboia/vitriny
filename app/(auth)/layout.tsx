@@ -4,15 +4,21 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen text-ink">
       <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-leaf p-12 lg:flex">
-        <p className="font-fraunces text-2xl font-semibold text-white">OrçaFácil</p>
+        <p className="font-fraunces text-2xl font-semibold text-white">
+          Vitriny
+        </p>
 
         <div
           className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20"
-          style={{ background: "radial-gradient(circle, #D4EBD9, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #D4EBD9, transparent 70%)",
+          }}
         />
         <div
           className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full opacity-15"
-          style={{ background: "radial-gradient(circle, #F5E6D3, transparent 70%)" }}
+          style={{
+            background: "radial-gradient(circle, #F5E6D3, transparent 70%)",
+          }}
         />
 
         <blockquote>

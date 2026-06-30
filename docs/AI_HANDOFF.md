@@ -2,7 +2,7 @@
 
 ## Resumo rápido
 
-OrçaFácil é um MVP de microSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.
+Vitriny é um MVP de microSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.
 
 O MVP principal está implementado.
 
@@ -74,7 +74,7 @@ Limites centralizados em `lib/plan-limits.ts`:
 - `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
-Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de serviço fixo: o OrçaFácil mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
+Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de serviço fixo: o Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
 
 ## Comandos principais
 
@@ -229,7 +229,7 @@ Se mudar banco:
 npm run prisma:migrate -- --name nome-da-migration
 npm run prisma:generate
 # Replicar no banco de teste:
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil_test" npx prisma db push
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/orcafacil_test" npx prisma db push
 ```
 
 Em produção, usar:
@@ -251,6 +251,7 @@ npx prisma migrate deploy
 - `components/billing/AsyncInvoiceList.tsx` — busca as faturas depois do primeiro paint e renderiza loading/erro.
 
 Variáveis de ambiente obrigatórias:
+
 - `STRIPE_SECRET_KEY` — chave secreta da Stripe (`sk_test_...` em dev, `sk_live_...` em prod).
 - `STRIPE_WEBHOOK_SECRET` — segredo do endpoint do webhook (`whsec_...`).
 - `STRIPE_PRO_PRICE_ID` — ID do preço mensal PRO (`price_...`). Diferente entre test e live.
@@ -258,6 +259,7 @@ Variáveis de ambiente obrigatórias:
 - `NEXT_PUBLIC_APP_URL` — URL base para `return_url` do Checkout e retorno do portal.
 
 Regras críticas:
+
 - `plan` só vai para PRO via webhook (nunca via redirect de success_url ou front).
 - `stripeCustomerId` é criado uma única vez e reutilizado em checkouts futuros.
 - Webhook valida assinatura com `STRIPE_WEBHOOK_SECRET` em toda requisição.
@@ -265,6 +267,7 @@ Regras críticas:
 - Em produção: configurar endpoint no Stripe Dashboard → Developers → Webhooks.
 
 Lógica de plan por status Stripe:
+
 - `active`, `trialing` → PRO
 - `canceled`, `unpaid`, `incomplete_expired`, `paused` → FREE (downgrade)
 - `past_due`, `incomplete` → plan mantido (Stripe ainda tentará cobrar)

@@ -7,7 +7,11 @@ import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import { getHowItWorksContent } from "@/lib/utils/how-it-works";
-import { formatPhoneBR, phoneToTelHref, phoneToWhatsAppNumber } from "@/lib/utils/phone";
+import {
+  formatPhoneBR,
+  phoneToTelHref,
+  phoneToWhatsAppNumber,
+} from "@/lib/utils/phone";
 
 type PublicProviderProfilePageProps = {
   params: Promise<{
@@ -41,15 +45,15 @@ const getProfile = cache(async (slug: string) => {
           basePrice: true,
           pricingType: true,
           fixedServiceCheckoutMode: true,
-          imageUrl: true
-        }
-      }
-    }
+          imageUrl: true,
+        },
+      },
+    },
   });
 });
 
 export async function generateMetadata({
-  params
+  params,
 }: PublicProviderProfilePageProps): Promise<Metadata> {
   const { slug } = await params;
   const profile = await getProfile(slug);
@@ -58,9 +62,10 @@ export async function generateMetadata({
     return { robots: { index: false, follow: false } };
   }
 
-  const title = `${profile.businessName} · OrçaFácil`;
+  const title = `${profile.businessName} · Vitriny`;
   const description =
-    profile.description ?? `Solicite um orçamento para ${profile.businessName}.`;
+    profile.description ??
+    `Solicite um orçamento para ${profile.businessName}.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
 
   return {
@@ -71,18 +76,18 @@ export async function generateMetadata({
       title,
       description,
       url,
-      type: "website"
+      type: "website",
     },
     twitter: {
       card: "summary",
       title,
-      description
-    }
+      description,
+    },
   };
 }
 
 export default async function PublicProviderProfilePage({
-  params
+  params,
 }: PublicProviderProfilePageProps) {
   const { slug } = await params;
 
@@ -90,14 +95,20 @@ export default async function PublicProviderProfilePage({
 
   if (!profile || !profile.isPublished) notFound();
 
-  const pixConfigured = !!(profile.pixKey && profile.pixHolderName && profile.pixCity);
+  const pixConfigured = !!(
+    profile.pixKey &&
+    profile.pixHolderName &&
+    profile.pixCity
+  );
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   const profilePhoneDisplay = formatPhoneBR(profile.phone);
-  const whatsappNumber = profile.phone ? phoneToWhatsAppNumber(profile.phone) : null;
+  const whatsappNumber = profile.phone
+    ? phoneToWhatsAppNumber(profile.phone)
+    : null;
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        `Olá ${profile.businessName}, vi seu perfil no OrçaFácil e gostaria de solicitar um orçamento.`
+        `Olá ${profile.businessName}, vi seu perfil no Vitriny e gostaria de solicitar um orçamento.`,
       )}`
     : null;
 
@@ -107,7 +118,7 @@ export default async function PublicProviderProfilePage({
           label: "Telefone",
           value: profilePhoneDisplay,
           href: phoneToTelHref(profile.phone ?? ""),
-          whatsappHref
+          whatsappHref,
         }
       : null,
     profile.email
@@ -115,12 +126,17 @@ export default async function PublicProviderProfilePage({
           label: "E-mail",
           value: profile.email,
           href: `mailto:${profile.email}`,
-          whatsappHref: null
+          whatsappHref: null,
         }
       : null,
     location
-      ? { label: "Localização", value: location, href: null, whatsappHref: null }
-      : null
+      ? {
+          label: "Localização",
+          value: location,
+          href: null,
+          whatsappHref: null,
+        }
+      : null,
   ].filter(Boolean) as {
     label: string;
     value: string;
@@ -130,9 +146,8 @@ export default async function PublicProviderProfilePage({
 
   const hasServices = profile.services.length > 0;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
-  const { title: howItWorksTitle, steps: howItWorksSteps } = getHowItWorksContent(
-    profile.services
-  );
+  const { title: howItWorksTitle, steps: howItWorksSteps } =
+    getHowItWorksContent(profile.services);
 
   return (
     <main
@@ -177,7 +192,9 @@ export default async function PublicProviderProfilePage({
                   </p>
                   {c.whatsappHref ? (
                     <>
-                      <p className="mt-1 text-sm font-semibold text-ink">{c.value}</p>
+                      <p className="mt-1 text-sm font-semibold text-ink">
+                        {c.value}
+                      </p>
                       <div className="mt-3 flex gap-2">
                         <a
                           href={c.whatsappHref}
@@ -240,7 +257,7 @@ export default async function PublicProviderProfilePage({
                 ...s,
                 basePrice: s.basePrice?.toString() ?? null,
                 imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null,
-                pixConfigured
+                pixConfigured,
               }))}
               slug={slug}
             />
@@ -277,7 +294,7 @@ export default async function PublicProviderProfilePage({
           {/* Powered by */}
           <p className="mt-8 text-center text-xs text-ink-muted/60">
             Powered by{" "}
-            <span className="font-semibold text-ink-muted">OrçaFácil</span>
+            <span className="font-semibold text-ink-muted">Vitriny</span>
           </p>
         </div>
       </div>

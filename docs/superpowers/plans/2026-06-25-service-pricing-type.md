@@ -12,33 +12,34 @@
 
 ## Mapa de arquivos
 
-| Arquivo | Ação |
-|---------|------|
-| `prisma/schema.prisma` | Alterar — enum + campo |
-| `lib/validations/service.ts` | Alterar — pricingType + superRefine |
-| `lib/validations/quote-request.ts` | Alterar — description opcional |
-| `tests/unit/validations/service.test.ts` | Alterar — fixture + novos casos |
-| `tests/unit/validations/quote-request.test.ts` | Alterar — caso description vazia ok |
-| `types/service.ts` | Alterar — 3 tipos |
-| `types/quote-request.ts` | Alterar — include service pricingType+basePrice |
-| `lib/actions/services.ts` | Alterar — parse + persist pricingType |
-| `components/services/ServiceForm.tsx` | Alterar — toggle FIXED/CUSTOM |
-| `components/services/ServiceList.tsx` | Alterar — badge de tipo |
-| `app/u/[slug]/page.tsx` | Alterar — selecionar pricingType |
-| `components/public/PublicServicesGrid.tsx` | Alterar — preço vs "Sob orçamento", CTA |
-| `app/u/[slug]/orcamento/page.tsx` | Alterar — selecionar pricingType, linguagem |
-| `components/quote-request/QuoteRequestForm.tsx` | Alterar — linguagem por tipo |
-| `app/(dashboard)/dashboard/pedidos/page.tsx` | Alterar — incluir pricingType+basePrice |
-| `components/quote-request/QuoteRequestList.tsx` | Alterar — serializar service.basePrice |
-| `components/quote-request/QuoteRequestCard.tsx` | Alterar — badge + CTA por tipo |
-| `docs/DATABASE.md` | Alterar |
-| `docs/AI_HANDOFF.md` | Alterar |
+| Arquivo                                         | Ação                                            |
+| ----------------------------------------------- | ----------------------------------------------- |
+| `prisma/schema.prisma`                          | Alterar — enum + campo                          |
+| `lib/validations/service.ts`                    | Alterar — pricingType + superRefine             |
+| `lib/validations/quote-request.ts`              | Alterar — description opcional                  |
+| `tests/unit/validations/service.test.ts`        | Alterar — fixture + novos casos                 |
+| `tests/unit/validations/quote-request.test.ts`  | Alterar — caso description vazia ok             |
+| `types/service.ts`                              | Alterar — 3 tipos                               |
+| `types/quote-request.ts`                        | Alterar — include service pricingType+basePrice |
+| `lib/actions/services.ts`                       | Alterar — parse + persist pricingType           |
+| `components/services/ServiceForm.tsx`           | Alterar — toggle FIXED/CUSTOM                   |
+| `components/services/ServiceList.tsx`           | Alterar — badge de tipo                         |
+| `app/u/[slug]/page.tsx`                         | Alterar — selecionar pricingType                |
+| `components/public/PublicServicesGrid.tsx`      | Alterar — preço vs "Sob orçamento", CTA         |
+| `app/u/[slug]/orcamento/page.tsx`               | Alterar — selecionar pricingType, linguagem     |
+| `components/quote-request/QuoteRequestForm.tsx` | Alterar — linguagem por tipo                    |
+| `app/(dashboard)/dashboard/pedidos/page.tsx`    | Alterar — incluir pricingType+basePrice         |
+| `components/quote-request/QuoteRequestList.tsx` | Alterar — serializar service.basePrice          |
+| `components/quote-request/QuoteRequestCard.tsx` | Alterar — badge + CTA por tipo                  |
+| `docs/DATABASE.md`                              | Alterar                                         |
+| `docs/AI_HANDOFF.md`                            | Alterar                                         |
 
 ---
 
 ## Task 1 — Schema Prisma + migration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **1.1 — Adicionar enum e campo**
@@ -114,6 +115,7 @@ git commit -m "feat(schema): adiciona ServicePricingType FIXED/CUSTOM em Service
 ## Task 2 — Validação de serviço + testes
 
 **Files:**
+
 - Modify: `lib/validations/service.ts`
 - Modify: `tests/unit/validations/service.test.ts`
 
@@ -132,7 +134,7 @@ describe("serviceSchema", () => {
     description: "",
     basePrice: "",
     pricingType: "CUSTOM",
-    isActive: true
+    isActive: true,
   };
 
   it("aceita dados válidos sem preço e sem descrição (CUSTOM)", () => {
@@ -148,7 +150,7 @@ describe("serviceSchema", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       description: "Pintura interna e externa",
-      basePrice: "350.00"
+      basePrice: "350.00",
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -158,22 +160,31 @@ describe("serviceSchema", () => {
   });
 
   it("rejeita nome com menos de 2 caracteres", () => {
-    expect(serviceSchema.safeParse({ ...valid, name: "A" }).success).toBe(false);
+    expect(serviceSchema.safeParse({ ...valid, name: "A" }).success).toBe(
+      false,
+    );
   });
 
   it("rejeita nome com mais de 120 caracteres", () => {
-    expect(serviceSchema.safeParse({ ...valid, name: "A".repeat(121) }).success).toBe(false);
+    expect(
+      serviceSchema.safeParse({ ...valid, name: "A".repeat(121) }).success,
+    ).toBe(false);
   });
 
   it("rejeita descrição com mais de 600 caracteres", () => {
     expect(
-      serviceSchema.safeParse({ ...valid, description: "A".repeat(601) }).success
+      serviceSchema.safeParse({ ...valid, description: "A".repeat(601) })
+        .success,
     ).toBe(false);
   });
 
   it("rejeita preço em formato inválido", () => {
-    expect(serviceSchema.safeParse({ ...valid, basePrice: "abc" }).success).toBe(false);
-    expect(serviceSchema.safeParse({ ...valid, basePrice: "-10" }).success).toBe(false);
+    expect(
+      serviceSchema.safeParse({ ...valid, basePrice: "abc" }).success,
+    ).toBe(false);
+    expect(
+      serviceSchema.safeParse({ ...valid, basePrice: "-10" }).success,
+    ).toBe(false);
   });
 
   it("aceita preço com vírgula como separador decimal", () => {
@@ -189,7 +200,9 @@ describe("serviceSchema", () => {
   });
 
   it("rejeita preço com mais de 2 casas decimais", () => {
-    expect(serviceSchema.safeParse({ ...valid, basePrice: "100.123" }).success).toBe(false);
+    expect(
+      serviceSchema.safeParse({ ...valid, basePrice: "100.123" }).success,
+    ).toBe(false);
   });
 
   // Novos casos — pricingType FIXED
@@ -197,7 +210,7 @@ describe("serviceSchema", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       pricingType: "FIXED",
-      basePrice: "200.00"
+      basePrice: "200.00",
     });
     expect(result.success).toBe(true);
     if (result.success) {
@@ -210,7 +223,7 @@ describe("serviceSchema", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       pricingType: "FIXED",
-      basePrice: ""
+      basePrice: "",
     });
     expect(result.success).toBe(false);
   });
@@ -219,7 +232,7 @@ describe("serviceSchema", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       pricingType: "FIXED",
-      basePrice: null
+      basePrice: null,
     });
     expect(result.success).toBe(false);
   });
@@ -228,7 +241,7 @@ describe("serviceSchema", () => {
     const result = serviceSchema.safeParse({
       ...valid,
       pricingType: "CUSTOM",
-      basePrice: ""
+      basePrice: "",
     });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.basePrice).toBeNull();
@@ -236,7 +249,7 @@ describe("serviceSchema", () => {
 
   it("rejeita pricingType inválido", () => {
     expect(
-      serviceSchema.safeParse({ ...valid, pricingType: "HORA" }).success
+      serviceSchema.safeParse({ ...valid, pricingType: "HORA" }).success,
     ).toBe(false);
   });
 });
@@ -275,7 +288,7 @@ const optionalPrice = z
     z
       .string()
       .regex(/^\d+(\.\d{1,2})?$/, "Informe um valor válido.")
-      .nullable()
+      .nullable(),
   );
 
 export const serviceSchema = z
@@ -286,18 +299,18 @@ export const serviceSchema = z
       .min(2, "Informe o nome do serviço.")
       .max(120, "Use no máximo 120 caracteres."),
     description: optionalText.pipe(
-      z.string().max(600, "Use no máximo 600 caracteres.").nullable()
+      z.string().max(600, "Use no máximo 600 caracteres.").nullable(),
     ),
     pricingType: z.enum(["FIXED", "CUSTOM"]),
     basePrice: optionalPrice,
-    isActive: z.boolean()
+    isActive: z.boolean(),
   })
   .superRefine((data, ctx) => {
     if (data.pricingType === "FIXED" && !data.basePrice) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Informe o preço para serviço com preço fixo.",
-        path: ["basePrice"]
+        path: ["basePrice"],
       });
     }
   });
@@ -325,6 +338,7 @@ git commit -m "feat(validation): adiciona pricingType FIXED/CUSTOM com validaç�
 ## Task 3 — Validação de quote-request (description opcional)
 
 **Files:**
+
 - Modify: `lib/validations/quote-request.ts`
 - Modify: `tests/unit/validations/quote-request.test.ts`
 
@@ -347,7 +361,7 @@ it("aceita description nula (pedido de serviço com preço fixo)", () => {
     customerEmail: "",
     customerPhone: "",
     serviceId: "",
-    description: ""
+    description: "",
   });
   expect(result.success).toBe(true);
   if (result.success) {
@@ -361,7 +375,7 @@ it("rejeita description com menos de 10 caracteres quando preenchida", () => {
     customerEmail: "",
     customerPhone: "",
     serviceId: "",
-    description: "Curta"
+    description: "Curta",
   });
   expect(result.success).toBe(false);
 });
@@ -380,19 +394,18 @@ Esperado: o caso "aceita description nula" falha.
 Em `lib/validations/quote-request.ts`, substituir o campo `description` por:
 
 ```ts
-  description: z
-    .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
-    .pipe(
-      z.union([
-        z.null(),
-        z
-          .string()
-          .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
-          .max(1200, "Use no máximo 1200 caracteres.")
-      ])
-    )
+description: z.string()
+  .trim()
+  .transform((v) => (v === "" ? null : v))
+  .pipe(
+    z.union([
+      z.null(),
+      z
+        .string()
+        .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
+        .max(1200, "Use no máximo 1200 caracteres."),
+    ]),
+  );
 ```
 
 O arquivo completo fica:
@@ -413,7 +426,7 @@ const optionalPhone = optionalText.pipe(
     .max(30, "Use no máximo 30 caracteres.")
     .nullable()
     .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
-    .transform((value) => (value ? formatPhoneBR(value) : null))
+    .transform((value) => (value ? formatPhoneBR(value) : null)),
 );
 
 export const quoteRequestSchema = z.object({
@@ -427,7 +440,7 @@ export const quoteRequestSchema = z.object({
       .string()
       .email("Informe um e-mail válido.")
       .max(120, "Use no máximo 120 caracteres.")
-      .nullable()
+      .nullable(),
   ),
   customerPhone: optionalPhone,
   serviceId: optionalText.pipe(z.string().cuid().nullable()),
@@ -441,9 +454,9 @@ export const quoteRequestSchema = z.object({
         z
           .string()
           .min(10, "Descreva o que você precisa com pelo menos 10 caracteres.")
-          .max(1200, "Use no máximo 1200 caracteres.")
-      ])
-    )
+          .max(1200, "Use no máximo 1200 caracteres."),
+      ]),
+    ),
 });
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
@@ -469,6 +482,7 @@ git commit -m "feat(validation): torna description de pedido opcional para servi
 ## Task 4 — Types
 
 **Files:**
+
 - Modify: `types/service.ts`
 - Modify: `types/quote-request.ts`
 
@@ -570,6 +584,7 @@ git commit -m "feat(types): adiciona pricingType e basePrice em ServiceSummary, 
 ## Task 5 — Action de serviços
 
 **Files:**
+
 - Modify: `lib/actions/services.ts`
 
 - [ ] **5.1 — Adicionar pricingType no parseServiceForm e persistência**
@@ -585,7 +600,7 @@ function parseServiceForm(formData: FormData) {
     description: formData.get("description"),
     pricingType: formData.get("pricingType"),
     basePrice: formData.get("basePrice"),
-    isActive: formData.get("isActive") === "on"
+    isActive: formData.get("isActive") === "on",
   });
 }
 ```
@@ -593,31 +608,31 @@ function parseServiceForm(formData: FormData) {
 No `prisma.service.create`, adicionar `pricingType`:
 
 ```ts
-  await prisma.service.create({
-    data: {
-      providerId: profile.id,
-      name: parsed.data.name,
-      description: parsed.data.description,
-      pricingType: parsed.data.pricingType,
-      basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
-    }
-  });
+await prisma.service.create({
+  data: {
+    providerId: profile.id,
+    name: parsed.data.name,
+    description: parsed.data.description,
+    pricingType: parsed.data.pricingType,
+    basePrice: toDecimal(parsed.data.basePrice),
+    isActive: parsed.data.isActive,
+  },
+});
 ```
 
 No `prisma.service.update`, adicionar `pricingType`:
 
 ```ts
-  await prisma.service.update({
-    where: { id: service.id },
-    data: {
-      name: parsed.data.name,
-      description: parsed.data.description,
-      pricingType: parsed.data.pricingType,
-      basePrice: toDecimal(parsed.data.basePrice),
-      isActive: parsed.data.isActive
-    }
-  });
+await prisma.service.update({
+  where: { id: service.id },
+  data: {
+    name: parsed.data.name,
+    description: parsed.data.description,
+    pricingType: parsed.data.pricingType,
+    basePrice: toDecimal(parsed.data.basePrice),
+    isActive: parsed.data.isActive,
+  },
+});
 ```
 
 - [ ] **5.2 — Commit**
@@ -632,6 +647,7 @@ git commit -m "feat(actions): persiste pricingType ao criar e atualizar serviço
 ## Task 6 — ServiceForm (dashboard)
 
 **Files:**
+
 - Modify: `components/services/ServiceForm.tsx`
 
 - [ ] **6.1 — Reescrever ServiceForm com toggle FIXED/CUSTOM**
@@ -656,10 +672,10 @@ export function ServiceForm({ service }: ServiceFormProps) {
   const action = service ? updateService : createService;
   const [state, formAction, isPending] = useActionState<ActionResult, FormData>(
     action,
-    undefined
+    undefined,
   );
   const [pricingType, setPricingType] = useState<"FIXED" | "CUSTOM">(
-    service?.pricingType ?? "CUSTOM"
+    service?.pricingType ?? "CUSTOM",
   );
 
   return (
@@ -667,7 +683,9 @@ export function ServiceForm({ service }: ServiceFormProps) {
       action={formAction}
       className="grid gap-4 rounded-lg border border-stone-200 bg-white p-5"
     >
-      {service ? <input name="serviceId" type="hidden" value={service.id} /> : null}
+      {service ? (
+        <input name="serviceId" type="hidden" value={service.id} />
+      ) : null}
       <input name="pricingType" type="hidden" value={pricingType} />
 
       {state?.error ? (
@@ -732,7 +750,8 @@ export function ServiceForm({ service }: ServiceFormProps) {
           className="text-sm font-semibold text-ink"
           htmlFor={`description-${service?.id ?? "new"}`}
         >
-          Descrição <span className="font-normal text-ink-muted">(opcional)</span>
+          Descrição{" "}
+          <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
         <textarea
           className="min-h-24 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
@@ -752,7 +771,9 @@ export function ServiceForm({ service }: ServiceFormProps) {
             {pricingType === "FIXED" ? (
               <span className="ml-1 text-red-500">*</span>
             ) : (
-              <span className="ml-1 font-normal text-ink-muted">(opcional)</span>
+              <span className="ml-1 font-normal text-ink-muted">
+                (opcional)
+              </span>
             )}
           </label>
           <CurrencyInput
@@ -784,7 +805,11 @@ export function ServiceForm({ service }: ServiceFormProps) {
         disabled={isPending}
         type="submit"
       >
-        {isPending ? "Salvando..." : service ? "Salvar serviço" : "Cadastrar serviço"}
+        {isPending
+          ? "Salvando..."
+          : service
+            ? "Salvar serviço"
+            : "Cadastrar serviço"}
       </button>
     </form>
   );
@@ -811,6 +836,7 @@ git commit -m "feat(services): toggle FIXED/CUSTOM no formulário de serviço"
 ## Task 7 — ServiceList (dashboard)
 
 **Files:**
+
 - Modify: `components/services/ServiceList.tsx`
 
 - [ ] **7.1 — Adicionar badge de tipo no card de serviço**
@@ -828,12 +854,12 @@ type ServiceListProps = {
 
 const pricingTypeBadge: Record<"FIXED" | "CUSTOM", string> = {
   FIXED: "bg-mint text-leaf border border-mint",
-  CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft"
+  CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft",
 };
 
 const pricingTypeLabel: Record<"FIXED" | "CUSTOM", string> = {
   FIXED: "Preço fixo",
-  CUSTOM: "Sob orçamento"
+  CUSTOM: "Sob orçamento",
 };
 
 export function ServiceList({ services }: ServiceListProps) {
@@ -850,7 +876,10 @@ export function ServiceList({ services }: ServiceListProps) {
   return (
     <div className="grid gap-5">
       {services.map((service) => (
-        <article className="rounded-lg border border-stone-200 bg-paper p-5" key={service.id}>
+        <article
+          className="rounded-lg border border-stone-200 bg-paper p-5"
+          key={service.id}
+        >
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-lg font-bold text-ink">{service.name}</h3>
@@ -916,6 +945,7 @@ git commit -m "feat(services): badge de tipo de precificação na lista de servi
 ## Task 8 — Página pública + PublicServicesGrid
 
 **Files:**
+
 - Modify: `app/u/[slug]/page.tsx`
 - Modify: `components/public/PublicServicesGrid.tsx`
 
@@ -963,13 +993,13 @@ import type { PublicService } from "@/types";
 function formatMoney(value: string) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(Number(value));
 }
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.09 } }
+  show: { transition: { staggerChildren: 0.09 } },
 };
 
 const item = {
@@ -977,13 +1007,13 @@ const item = {
   show: {
     opacity: 1,
     y: 0,
-    transition: { type: "spring" as const, stiffness: 280, damping: 28 }
-  }
+    transition: { type: "spring" as const, stiffness: 280, damping: 28 },
+  },
 };
 
 export function PublicServicesGrid({
   services,
-  slug
+  slug,
 }: {
   services: PublicService[];
   slug: string;
@@ -1035,7 +1065,9 @@ export function PublicServicesGrid({
             href={`/u/${slug}/orcamento?serviceId=${service.id}`}
             className="mt-4 inline-flex min-h-9 w-fit items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
           >
-            {service.pricingType === "FIXED" ? "Solicitar serviço →" : "Pedir orçamento →"}
+            {service.pricingType === "FIXED"
+              ? "Solicitar serviço →"
+              : "Pedir orçamento →"}
           </Link>
         </motion.article>
       ))}
@@ -1056,6 +1088,7 @@ git commit -m "feat(public): exibe preço fixo vs 'Sob orçamento' e CTA correto
 ## Task 9 — Formulário público de orçamento/solicitação
 
 **Files:**
+
 - Modify: `app/u/[slug]/orcamento/page.tsx`
 - Modify: `components/quote-request/QuoteRequestForm.tsx`
 
@@ -1074,40 +1107,40 @@ Adicionar `pricingType` e `basePrice` na query de serviços:
 Adicionar derivação do serviço selecionado e serializar `basePrice`:
 
 ```ts
-  const selectedServiceId = profile.services.some(
-    (service) => service.id === query.serviceId
-  )
-    ? query.serviceId
-    : null;
+const selectedServiceId = profile.services.some(
+  (service) => service.id === query.serviceId,
+)
+  ? query.serviceId
+  : null;
 
-  const selectedService = selectedServiceId
-    ? profile.services.find((s) => s.id === selectedServiceId) ?? null
-    : null;
+const selectedService = selectedServiceId
+  ? (profile.services.find((s) => s.id === selectedServiceId) ?? null)
+  : null;
 ```
 
 Atualizar o `<QuoteRequestForm>` para receber `selectedService` (serializado):
 
 ```tsx
-            <QuoteRequestForm
-              selectedServiceId={selectedServiceId}
-              selectedService={
-                selectedService
-                  ? {
-                      id: selectedService.id,
-                      name: selectedService.name,
-                      pricingType: selectedService.pricingType,
-                      basePrice: selectedService.basePrice?.toString() ?? null
-                    }
-                  : null
-              }
-              services={profile.services.map((s) => ({
-                id: s.id,
-                name: s.name,
-                pricingType: s.pricingType,
-                basePrice: s.basePrice?.toString() ?? null
-              }))}
-              slug={slug}
-            />
+<QuoteRequestForm
+  selectedServiceId={selectedServiceId}
+  selectedService={
+    selectedService
+      ? {
+          id: selectedService.id,
+          name: selectedService.name,
+          pricingType: selectedService.pricingType,
+          basePrice: selectedService.basePrice?.toString() ?? null,
+        }
+      : null
+  }
+  services={profile.services.map((s) => ({
+    id: s.id,
+    name: s.name,
+    pricingType: s.pricingType,
+    basePrice: s.basePrice?.toString() ?? null,
+  }))}
+  slug={slug}
+/>
 ```
 
 - [ ] **9.2 — Atualizar QuoteRequestForm**
@@ -1136,12 +1169,13 @@ type QuoteRequestFormProps = {
 const inputClass =
   "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
 
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
+const labelClass =
+  "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
 function formatMoney(value: string) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
-    currency: "BRL"
+    currency: "BRL",
   }).format(Number(value));
 }
 
@@ -1149,7 +1183,7 @@ export function QuoteRequestForm({
   slug,
   services,
   selectedServiceId,
-  selectedService
+  selectedService,
 }: QuoteRequestFormProps) {
   const action = createQuoteRequest.bind(null, slug);
   const isFixed = selectedService?.pricingType === "FIXED";
@@ -1239,9 +1273,7 @@ export function QuoteRequestForm({
 
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="description">
-          {isFixed
-            ? "Observações adicionais"
-            : "Descreva o que você precisa *"}
+          {isFixed ? "Observações adicionais" : "Descreva o que você precisa *"}
         </label>
         <textarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
@@ -1272,21 +1304,21 @@ export function QuoteRequestForm({
 Em `app/u/[slug]/orcamento/page.tsx`, atualizar o cabeçalho para usar linguagem contextual:
 
 ```tsx
-        <div className="mt-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            {selectedService?.pricingType === "FIXED"
-              ? "Solicitação de serviço"
-              : "Pedido de orçamento"}
-          </p>
-          <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-            {profile.businessName}
-          </h1>
-          <p className="mt-3 text-sm leading-6 text-ink-muted">
-            {selectedService?.pricingType === "FIXED"
-              ? "Preencha seus dados para confirmar a solicitação do serviço."
-              : "Envie as informações iniciais para que o prestador avalie seu pedido."}
-          </p>
-        </div>
+<div className="mt-8">
+  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+    {selectedService?.pricingType === "FIXED"
+      ? "Solicitação de serviço"
+      : "Pedido de orçamento"}
+  </p>
+  <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
+    {profile.businessName}
+  </h1>
+  <p className="mt-3 text-sm leading-6 text-ink-muted">
+    {selectedService?.pricingType === "FIXED"
+      ? "Preencha seus dados para confirmar a solicitação do serviço."
+      : "Envie as informações iniciais para que o prestador avalie seu pedido."}
+  </p>
+</div>
 ```
 
 - [ ] **9.4 — Commit**
@@ -1301,6 +1333,7 @@ git commit -m "feat(public): adapta formulário de pedido para serviços FIXED v
 ## Task 10 — Painel de pedidos
 
 **Files:**
+
 - Modify: `app/(dashboard)/dashboard/pedidos/page.tsx`
 - Modify: `components/quote-request/QuoteRequestList.tsx`
 - Modify: `components/quote-request/QuoteRequestCard.tsx`
@@ -1325,21 +1358,21 @@ Na query `prisma.providerProfile.findUnique`, dentro de `quoteRequests.include.s
 Em `components/quote-request/QuoteRequestList.tsx`, atualizar a serialização para incluir `service.basePrice`:
 
 ```tsx
-        const serialized: SerializedQuoteRequest = {
-          ...quoteRequest,
-          service: quoteRequest.service
-            ? {
-                ...quoteRequest.service,
-                basePrice: quoteRequest.service.basePrice?.toString() ?? null
-              }
-            : null,
-          proposal: quoteRequest.proposal
-            ? {
-                ...quoteRequest.proposal,
-                depositAmount: quoteRequest.proposal.depositAmount?.toString() ?? null
-              }
-            : null
-        };
+const serialized: SerializedQuoteRequest = {
+  ...quoteRequest,
+  service: quoteRequest.service
+    ? {
+        ...quoteRequest.service,
+        basePrice: quoteRequest.service.basePrice?.toString() ?? null,
+      }
+    : null,
+  proposal: quoteRequest.proposal
+    ? {
+        ...quoteRequest.proposal,
+        depositAmount: quoteRequest.proposal.depositAmount?.toString() ?? null,
+      }
+    : null,
+};
 ```
 
 - [ ] **10.3 — Atualizar tipos em QuoteRequestCard.tsx**
@@ -1354,7 +1387,10 @@ type SerializedService = {
   basePrice: string | null;
 };
 
-export type SerializedQuoteRequest = Omit<QuoteRequestWithRelations, "proposal" | "service"> & {
+export type SerializedQuoteRequest = Omit<
+  QuoteRequestWithRelations,
+  "proposal" | "service"
+> & {
   service: SerializedService | null;
   proposal: SerializedProposal | null;
 };
@@ -1365,28 +1401,28 @@ export type SerializedQuoteRequest = Omit<QuoteRequestWithRelations, "proposal" 
 Localizar a seção que exibe serviceLabel no card colapsado e adicionar o badge de tipo logo após:
 
 ```tsx
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-fraunces text-base font-bold text-ink">
-                {quoteRequest.customerName}
-              </span>
-              {serviceLabel ? (
-                <span className="text-xs text-ink-muted">· {serviceLabel}</span>
-              ) : null}
-              {quoteRequest.service?.pricingType === "FIXED" ? (
-                <span className="rounded-full bg-mint px-2.5 py-0.5 text-xs font-semibold text-leaf border border-mint">
-                  Preço fixo
-                  {quoteRequest.service.basePrice
-                    ? ` · ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(quoteRequest.service.basePrice))}`
-                    : ""}
-                </span>
-              ) : null}
-            </div>
-            <p className="mt-0.5 text-xs text-ink-muted">
-              {formatDateShort(quoteRequest.createdAt)}
-              {customerPhoneDisplay ? ` · ${customerPhoneDisplay}` : ""}
-            </p>
-          </div>
+<div className="min-w-0 flex-1">
+  <div className="flex flex-wrap items-center gap-2">
+    <span className="font-fraunces text-base font-bold text-ink">
+      {quoteRequest.customerName}
+    </span>
+    {serviceLabel ? (
+      <span className="text-xs text-ink-muted">· {serviceLabel}</span>
+    ) : null}
+    {quoteRequest.service?.pricingType === "FIXED" ? (
+      <span className="rounded-full bg-mint px-2.5 py-0.5 text-xs font-semibold text-leaf border border-mint">
+        Preço fixo
+        {quoteRequest.service.basePrice
+          ? ` · ${new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(quoteRequest.service.basePrice))}`
+          : ""}
+      </span>
+    ) : null}
+  </div>
+  <p className="mt-0.5 text-xs text-ink-muted">
+    {formatDateShort(quoteRequest.createdAt)}
+    {customerPhoneDisplay ? ` · ${customerPhoneDisplay}` : ""}
+  </p>
+</div>
 ```
 
 Localizar o bloco que exibe o CTA "Criar proposta" (quando não há proposta) e diferenciar por tipo:
@@ -1430,6 +1466,7 @@ git commit -m "feat(pedidos): badge preço fixo e CTA diferenciado para pedidos 
 ## Task 11 — Atualização de docs
 
 **Files:**
+
 - Modify: `docs/DATABASE.md`
 - Modify: `docs/AI_HANDOFF.md`
 
@@ -1521,7 +1558,7 @@ Esperado: todos os testes passando (unit + actions).
 - [ ] **12.5 — Replicar migration no banco de teste**
 
 ```bash
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil_test" npx prisma db push
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/orcafacil_test" npx prisma db push
 ```
 
 Esperado: banco de teste atualizado.

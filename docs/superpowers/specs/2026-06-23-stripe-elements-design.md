@@ -5,7 +5,7 @@
 
 ## Objetivo
 
-Substituir o redirect para Stripe Checkout por um modal de pagamento dentro do próprio site, usando Stripe Elements (`PaymentElement`). O usuário assina o plano PRO sem sair do OrçaFácil.
+Substituir o redirect para Stripe Checkout por um modal de pagamento dentro do próprio site, usando Stripe Elements (`PaymentElement`). O usuário assina o plano PRO sem sair do Vitriny.
 
 ## Contexto
 
@@ -54,26 +54,26 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_...
 
 ### Criados
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `lib/stripe-client.ts` | Singleton client-side `loadStripe()` com `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
-| `components/billing/SubscriptionModal.tsx` | Modal com `<Elements>`, `<PaymentElement>`, botões e tratamento de erro |
+| Arquivo                                    | Responsabilidade                                                              |
+| ------------------------------------------ | ----------------------------------------------------------------------------- |
+| `lib/stripe-client.ts`                     | Singleton client-side `loadStripe()` com `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| `components/billing/SubscriptionModal.tsx` | Modal com `<Elements>`, `<PaymentElement>`, botões e tratamento de erro       |
 
 ### Modificados
 
-| Arquivo | Mudança |
-|---|---|
-| `lib/actions/billing.ts` | Remove `createCheckoutSession`, adiciona `createSubscriptionIntent` |
-| `components/billing/BillingCard.tsx` | Botão "Assinar PRO" abre modal em vez de chamar redirect |
-| `.env.example` | Adiciona `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| Arquivo                              | Mudança                                                             |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| `lib/actions/billing.ts`             | Remove `createCheckoutSession`, adiciona `createSubscriptionIntent` |
+| `components/billing/BillingCard.tsx` | Botão "Assinar PRO" abre modal em vez de chamar redirect            |
+| `.env.example`                       | Adiciona `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`                       |
 
 ### Sem alterações
 
-| Arquivo | Motivo |
-|---|---|
-| `app/api/stripe/webhook/route.ts` | `customer.subscription.updated` já trata o upgrade |
+| Arquivo                                      | Motivo                                                    |
+| -------------------------------------------- | --------------------------------------------------------- |
+| `app/api/stripe/webhook/route.ts`            | `customer.subscription.updated` já trata o upgrade        |
 | `app/(dashboard)/dashboard/billing/page.tsx` | Passa `stripePublishableKey` como prop para `BillingCard` |
-| `prisma/schema.prisma` | Sem mudanças de schema |
+| `prisma/schema.prisma`                       | Sem mudanças de schema                                    |
 
 ## Componentes
 
@@ -83,12 +83,15 @@ Singleton client-side. Usa `loadStripe()` do `@stripe/stripe-js` com a chave pú
 
 ```typescript
 import { loadStripe } from "@stripe/stripe-js";
-export const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+export const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
 ```
 
 ### `lib/actions/billing.ts` — `createSubscriptionIntent`
 
 Server Action que:
+
 1. Verifica sessão autenticada
 2. Verifica que `profile.plan !== 'PRO'`
 3. Cria/reutiliza `stripeCustomerId`
@@ -97,10 +100,10 @@ Server Action que:
    stripe.subscriptions.create({
      customer: customerId,
      items: [{ price: process.env.STRIPE_PRO_PRICE_ID! }],
-     payment_behavior: 'default_incomplete',
-     payment_settings: { save_default_payment_method: 'on_subscription' },
-     expand: ['latest_invoice.payment_intent'],
-   })
+     payment_behavior: "default_incomplete",
+     payment_settings: { save_default_payment_method: "on_subscription" },
+     expand: ["latest_invoice.payment_intent"],
+   });
    ```
 5. Salva `stripeSubscriptionId` no banco
 6. Retorna `{ clientSecret: string }` ou `{ error: string }`
@@ -110,10 +113,12 @@ Server Action que:
 Client component. Recebe `clientSecret` e `onClose` como props.
 
 Estados internos:
+
 - `loading`: enquanto `confirmPayment` está em andamento
 - `error`: mensagem de erro do Stripe (cartão recusado, etc.)
 
 Estrutura visual:
+
 - Overlay escuro (`fixed inset-0 bg-ink/40 z-50`)
 - Modal centralizado (`bg-white rounded-xl border border-paper-soft shadow-card p-6 max-w-md w-full`)
 - Header: "Assinar plano PRO" + botão X
@@ -126,6 +131,7 @@ Estrutura visual:
 Adiciona estado `showModal: boolean` e `clientSecret: string | null`.
 
 Ao clicar "Assinar PRO":
+
 1. Chama `createSubscriptionIntent()`
 2. Se retornar `clientSecret`: abre modal
 3. Se retornar `error`: exibe erro inline
@@ -142,12 +148,12 @@ npm install @stripe/stripe-js @stripe/react-stripe-js
 
 ## Tratamento de erros
 
-| Cenário | Comportamento |
-|---|---|
-| `createSubscriptionIntent` retorna `error` | Erro exibido inline no BillingCard, modal não abre |
-| Cartão recusado no PaymentElement | Erro exibido inline no modal, usuário pode tentar novamente |
-| Subscription já existe (PRO) | Server Action retorna `{ error: "Você já tem o plano PRO." }` |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` ausente | `loadStripe` retorna null, modal mostra erro genérico |
+| Cenário                                      | Comportamento                                                 |
+| -------------------------------------------- | ------------------------------------------------------------- |
+| `createSubscriptionIntent` retorna `error`   | Erro exibido inline no BillingCard, modal não abre            |
+| Cartão recusado no PaymentElement            | Erro exibido inline no modal, usuário pode tentar novamente   |
+| Subscription já existe (PRO)                 | Server Action retorna `{ error: "Você já tem o plano PRO." }` |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` ausente | `loadStripe` retorna null, modal mostra erro genérico         |
 
 ## O que não muda
 

@@ -4,7 +4,7 @@
 
 **Goal:** Permitir que o prestador autenticado assine o plano PRO mensal via Stripe Checkout com assinatura recorrente, atualizando `ProviderProfile.plan` via webhook assinado.
 
-**Architecture:** Stripe Checkout (mode: subscription) hospedado pelo Stripe — o OrçaFácil nunca toca dados de cartão. Um Route Handler em `/api/stripe/webhook` recebe eventos, valida a assinatura com `STRIPE_WEBHOOK_SECRET` e atualiza `ProviderProfile` no banco. O `plan` só sobe para `PRO` via webhook; o front nunca altera diretamente.
+**Architecture:** Stripe Checkout (mode: subscription) hospedado pelo Stripe — o Vitriny nunca toca dados de cartão. Um Route Handler em `/api/stripe/webhook` recebe eventos, valida a assinatura com `STRIPE_WEBHOOK_SECRET` e atualiza `ProviderProfile` no banco. O `plan` só sobe para `PRO` via webhook; o front nunca altera diretamente.
 
 **Tech Stack:** `stripe` (Node SDK), Prisma (PostgreSQL), Next.js App Router Server Actions + Route Handler, Zod, TypeScript.
 
@@ -23,6 +23,7 @@
 ### 2. Onde armazenar campos da Stripe
 
 Em `ProviderProfile`. Justificativa:
+
 - Já é 1:1 com `User` — não há motivo para mais uma entidade nesta etapa.
 - Os limites de uso já vivem em `ProviderProfile.plan` — manter tudo no mesmo model evita joins.
 - `stripeCustomerId` precisa de `@unique` para que o webhook encontre o perfil sem busca por email (mais rápido e sem ambiguidade).
@@ -32,6 +33,7 @@ Não criar uma entidade `Subscription` separada agora — YAGNI. Se precisar de 
 ### 3. Necessidade de alterar schema Prisma
 
 Sim. Adicionar ao `ProviderProfile`:
+
 - `stripeCustomerId String? @unique`
 - `stripeSubscriptionId String? @unique`
 - `stripePriceId String?`
@@ -48,11 +50,11 @@ Cria enum `SubscriptionStatus` e adiciona as 5 colunas nullable ao `ProviderProf
 
 ### 5. Rotas e actions necessárias
 
-| Arquivo | Tipo | Responsabilidade |
-|---|---|---|
-| `lib/actions/billing.ts` | Server Action | `createCheckoutSession` — cria/reutiliza customer, cria Checkout Session, redireciona para Stripe |
-| `app/api/stripe/webhook/route.ts` | Route Handler (POST) | Recebe eventos Stripe, valida assinatura, atualiza ProviderProfile |
-| `app/(dashboard)/dashboard/billing/page.tsx` | Server Component | Página de billing: mostra plano atual, status, data de renovação |
+| Arquivo                                      | Tipo                 | Responsabilidade                                                                                  |
+| -------------------------------------------- | -------------------- | ------------------------------------------------------------------------------------------------- |
+| `lib/actions/billing.ts`                     | Server Action        | `createCheckoutSession` — cria/reutiliza customer, cria Checkout Session, redireciona para Stripe |
+| `app/api/stripe/webhook/route.ts`            | Route Handler (POST) | Recebe eventos Stripe, valida assinatura, atualiza ProviderProfile                                |
+| `app/(dashboard)/dashboard/billing/page.tsx` | Server Component     | Página de billing: mostra plano atual, status, data de renovação                                  |
 
 ### 6. Variáveis de ambiente necessárias
 
@@ -65,12 +67,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### 7. Eventos de webhook tratados
 
-| Evento | Por quê |
-|---|---|
-| `checkout.session.completed` | Momento em que o pagamento inicial foi concluído — salva stripeCustomerId, stripeSubscriptionId, atualiza plan |
-| `customer.subscription.updated` | Cobre renovações, mudanças de status (past_due → active), cancelamento agendado, reativação |
-| `customer.subscription.deleted` | Cancelamento definitivo — derruba para FREE |
-| `invoice.payment_failed` | Marca subscriptionStatus como PAST_DUE sem derrubar plan (Stripe ainda tentará cobrar novamente) |
+| Evento                          | Por quê                                                                                                        |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `checkout.session.completed`    | Momento em que o pagamento inicial foi concluído — salva stripeCustomerId, stripeSubscriptionId, atualiza plan |
+| `customer.subscription.updated` | Cobre renovações, mudanças de status (past_due → active), cancelamento agendado, reativação                    |
+| `customer.subscription.deleted` | Cancelamento definitivo — derruba para FREE                                                                    |
+| `invoice.payment_failed`        | Marca subscriptionStatus como PAST_DUE sem derrubar plan (Stripe ainda tentará cobrar novamente)               |
 
 `invoice.paid` **não** é necessário separadamente — `customer.subscription.updated` com status `active` cobre o mesmo caso.
 
@@ -93,6 +95,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ### 9. Arquivos criados e alterados
 
 **Criados:**
+
 - `lib/stripe.ts`
 - `lib/actions/billing.ts`
 - `app/api/stripe/webhook/route.ts`
@@ -100,6 +103,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 - `components/billing/BillingCard.tsx`
 
 **Alterados:**
+
 - `prisma/schema.prisma`
 - `components/billing/PlanUsageCard.tsx`
 - `components/layout/Sidebar.tsx`
@@ -172,6 +176,7 @@ incomplete   → manter plan atual (pagamento inicial pendente)
 ## Task 1: Schema Prisma + migration
 
 **Files:**
+
 - Modify: `prisma/schema.prisma`
 
 - [ ] **Step 1.1: Adicionar enum SubscriptionStatus e campos ao ProviderProfile**
@@ -239,6 +244,7 @@ git commit -m "feat(billing): add Stripe fields and SubscriptionStatus enum to P
 ## Task 2: Instalar Stripe SDK e criar singleton
 
 **Files:**
+
 - Create: `lib/stripe.ts`
 
 - [ ] **Step 2.1: Instalar stripe**
@@ -256,7 +262,7 @@ import Stripe from "stripe";
 
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2025-01-27.acacia",
-  typescript: true
+  typescript: true,
 });
 ```
 
@@ -280,6 +286,7 @@ git commit -m "feat(billing): install Stripe SDK and create singleton"
 ## Task 3: Server Action createCheckoutSession
 
 **Files:**
+
 - Create: `lib/actions/billing.ts`
 
 - [ ] **Step 3.1: Criar `lib/actions/billing.ts`**
@@ -300,7 +307,7 @@ export async function createCheckoutSession(): Promise<{ error: string }> {
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, stripeCustomerId: true, plan: true }
+    select: { id: true, stripeCustomerId: true, plan: true },
   });
 
   if (!profile) {
@@ -316,20 +323,20 @@ export async function createCheckoutSession(): Promise<{ error: string }> {
   if (!customerId) {
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { email: true, name: true }
+      select: { email: true, name: true },
     });
 
     const customer = await stripe.customers.create({
       email: user?.email ?? undefined,
       name: user?.name ?? undefined,
-      metadata: { providerProfileId: profile.id }
+      metadata: { providerProfileId: profile.id },
     });
 
     customerId = customer.id;
 
     await prisma.providerProfile.update({
       where: { id: profile.id },
-      data: { stripeCustomerId: customerId }
+      data: { stripeCustomerId: customerId },
     });
   }
 
@@ -341,11 +348,11 @@ export async function createCheckoutSession(): Promise<{ error: string }> {
     line_items: [
       {
         price: process.env.STRIPE_PRO_PRICE_ID!,
-        quantity: 1
-      }
+        quantity: 1,
+      },
     ],
     success_url: `${appUrl}/dashboard/billing?success=1`,
-    cancel_url: `${appUrl}/dashboard/billing?canceled=1`
+    cancel_url: `${appUrl}/dashboard/billing?canceled=1`,
   });
 
   if (!checkoutSession.url) {
@@ -376,6 +383,7 @@ git commit -m "feat(billing): add createCheckoutSession Server Action"
 ## Task 4: Webhook Route Handler
 
 **Files:**
+
 - Create: `app/api/stripe/webhook/route.ts`
 
 - [ ] **Step 4.1: Criar `app/api/stripe/webhook/route.ts`**
@@ -400,11 +408,16 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err) {
-    console.error("Webhook signature verification failed:", (err as Error).message);
-    return new Response(`Webhook Error: ${(err as Error).message}`, { status: 400 });
+    console.error(
+      "Webhook signature verification failed:",
+      (err as Error).message,
+    );
+    return new Response(`Webhook Error: ${(err as Error).message}`, {
+      status: 400,
+    });
   }
 
   try {
@@ -437,8 +450,8 @@ async function handleStripeEvent(event: Stripe.Event) {
           stripePriceId: subscription.items.data[0]?.price.id ?? null,
           subscriptionStatus: status,
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          ...(plan !== null ? { plan } : {})
-        }
+          ...(plan !== null ? { plan } : {}),
+        },
       });
       break;
     }
@@ -456,8 +469,8 @@ async function handleStripeEvent(event: Stripe.Event) {
           stripePriceId: subscription.items.data[0]?.price.id ?? null,
           subscriptionStatus: status,
           currentPeriodEnd: new Date(subscription.current_period_end * 1000),
-          ...(plan !== null ? { plan } : {})
-        }
+          ...(plan !== null ? { plan } : {}),
+        },
       });
       break;
     }
@@ -473,8 +486,8 @@ async function handleStripeEvent(event: Stripe.Event) {
           stripePriceId: null,
           subscriptionStatus: "CANCELED",
           currentPeriodEnd: null,
-          plan: "FREE"
-        }
+          plan: "FREE",
+        },
       });
       break;
     }
@@ -485,7 +498,7 @@ async function handleStripeEvent(event: Stripe.Event) {
 
       await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
-        data: { subscriptionStatus: "PAST_DUE" }
+        data: { subscriptionStatus: "PAST_DUE" },
       });
       break;
     }
@@ -516,7 +529,7 @@ function mapStripeStatus(stripeStatus: string): SubscriptionStatus {
     incomplete: "INCOMPLETE",
     incomplete_expired: "INCOMPLETE_EXPIRED",
     unpaid: "UNPAID",
-    paused: "PAUSED"
+    paused: "PAUSED",
   };
   return map[stripeStatus] ?? "INCOMPLETE";
 }
@@ -533,6 +546,7 @@ Esperado: sem erros de tipo.
 - [ ] **Step 4.3: Testar webhook localmente com Stripe CLI**
 
 Instalar Stripe CLI se necessário:
+
 ```bash
 # macOS
 brew install stripe/stripe-cli/stripe
@@ -544,11 +558,13 @@ sudo apt update && sudo apt install stripe
 ```
 
 Autenticar:
+
 ```bash
 stripe login
 ```
 
 Em um terminal separado, iniciar o listener:
+
 ```bash
 stripe listen --forward-to localhost:3000/api/stripe/webhook
 ```
@@ -556,6 +572,7 @@ stripe listen --forward-to localhost:3000/api/stripe/webhook
 O CLI exibirá o `STRIPE_WEBHOOK_SECRET` para uso local (começando com `whsec_`). Copiar para `.env`.
 
 Disparar evento de teste:
+
 ```bash
 stripe trigger checkout.session.completed
 ```
@@ -574,6 +591,7 @@ git commit -m "feat(billing): add Stripe webhook handler with subscription event
 ## Task 5: Componente BillingCard
 
 **Files:**
+
 - Create: `components/billing/BillingCard.tsx`
 
 - [ ] **Step 5.1: Criar `components/billing/BillingCard.tsx`**
@@ -594,7 +612,7 @@ const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   INCOMPLETE: "Aguardando pagamento inicial",
   INCOMPLETE_EXPIRED: "Expirada",
   UNPAID: "Não paga",
-  PAUSED: "Pausada"
+  PAUSED: "Pausada",
 };
 
 type BillingCardProps = {
@@ -606,7 +624,7 @@ type BillingCardProps = {
 export function BillingCard({
   plan,
   subscriptionStatus,
-  currentPeriodEnd
+  currentPeriodEnd,
 }: BillingCardProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useTransitionError();
@@ -642,7 +660,7 @@ export function BillingCard({
               {currentPeriodEnd.toLocaleDateString("pt-BR", {
                 day: "2-digit",
                 month: "long",
-                year: "numeric"
+                year: "numeric",
               })}
             </p>
           ) : null}
@@ -716,7 +734,7 @@ const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   INCOMPLETE: "Aguardando pagamento inicial",
   INCOMPLETE_EXPIRED: "Expirada",
   UNPAID: "Não paga",
-  PAUSED: "Pausada"
+  PAUSED: "Pausada",
 };
 
 type BillingCardProps = {
@@ -728,7 +746,7 @@ type BillingCardProps = {
 export function BillingCard({
   plan,
   subscriptionStatus,
-  currentPeriodEnd
+  currentPeriodEnd,
 }: BillingCardProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -764,7 +782,7 @@ export function BillingCard({
               {currentPeriodEnd.toLocaleDateString("pt-BR", {
                 day: "2-digit",
                 month: "long",
-                year: "numeric"
+                year: "numeric",
               })}
             </p>
           ) : null}
@@ -832,6 +850,7 @@ git commit -m "feat(billing): add BillingCard component with subscribe button"
 ## Task 6: Página de Billing
 
 **Files:**
+
 - Create: `app/(dashboard)/dashboard/billing/page.tsx`
 
 - [ ] **Step 6.1: Criar `app/(dashboard)/dashboard/billing/page.tsx`**
@@ -845,7 +864,7 @@ import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 
 export default async function BillingPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: Promise<{ success?: string; canceled?: string }>;
 }) {
@@ -866,8 +885,8 @@ export default async function BillingPage({
       services: { select: { id: true, isActive: true } },
       quoteRequests: { select: { id: true, createdAt: true } },
       proposals: { select: { id: true, createdAt: true } },
-      proposalTemplates: { select: { id: true } }
-    }
+      proposalTemplates: { select: { id: true } },
+    },
   });
 
   if (!profile) {
@@ -876,10 +895,10 @@ export default async function BillingPage({
 
   const limits = getPlanLimits(profile.plan);
   const monthlyQuoteRequests = profile.quoteRequests.filter(
-    (r) => r.createdAt >= monthRange.start && r.createdAt < monthRange.end
+    (r) => r.createdAt >= monthRange.start && r.createdAt < monthRange.end,
   ).length;
   const monthlyProposals = profile.proposals.filter(
-    (p) => p.createdAt >= monthRange.start && p.createdAt < monthRange.end
+    (p) => p.createdAt >= monthRange.start && p.createdAt < monthRange.end,
   ).length;
 
   return (
@@ -897,7 +916,8 @@ export default async function BillingPage({
       {success ? (
         <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm font-semibold text-green-800">
-            Assinatura realizada com sucesso! Seu plano será atualizado em instantes.
+            Assinatura realizada com sucesso! Seu plano será atualizado em
+            instantes.
           </p>
         </div>
       ) : null}
@@ -924,23 +944,23 @@ export default async function BillingPage({
           {
             current: profile.services.filter((s) => s.isActive).length,
             limit: limits.activeServices,
-            resource: "activeServices"
+            resource: "activeServices",
           },
           {
             current: monthlyQuoteRequests,
             limit: limits.monthlyQuoteRequests,
-            resource: "monthlyQuoteRequests"
+            resource: "monthlyQuoteRequests",
           },
           {
             current: monthlyProposals,
             limit: limits.monthlyProposals,
-            resource: "monthlyProposals"
+            resource: "monthlyProposals",
           },
           {
             current: profile.proposalTemplates.length,
             limit: limits.proposalTemplates,
-            resource: "proposalTemplates"
-          }
+            resource: "proposalTemplates",
+          },
         ]}
       />
     </div>
@@ -968,6 +988,7 @@ git commit -m "feat(billing): add billing page with plan info and usage"
 ## Task 7: Adicionar link Billing na Sidebar
 
 **Files:**
+
 - Modify: `components/layout/Sidebar.tsx`
 
 - [ ] **Step 7.1: Adicionar item "Billing" ao array `navItems`**
@@ -1007,6 +1028,7 @@ git commit -m "feat(billing): add Billing link to sidebar"
 ## Task 8: Atualizar PlanUsageCard com CTA de upgrade
 
 **Files:**
+
 - Modify: `components/billing/PlanUsageCard.tsx`
 
 - [ ] **Step 8.1: Remover placeholder antigo e adicionar CTA para FREE**
@@ -1014,28 +1036,32 @@ git commit -m "feat(billing): add Billing link to sidebar"
 No `PlanUsageCard.tsx`, substituir o bloco:
 
 ```tsx
-{plan === "FREE" ? (
-  <p className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink-muted">
-    Preparado para upgrade futuro
-  </p>
-) : null}
+{
+  plan === "FREE" ? (
+    <p className="rounded-full bg-paper px-3 py-1 text-xs font-semibold text-ink-muted">
+      Preparado para upgrade futuro
+    </p>
+  ) : null;
+}
 ```
 
 Por:
 
 ```tsx
-{plan === "FREE" ? (
-  <a
-    href="/dashboard/billing"
-    className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-  >
-    Assinar PRO
-  </a>
-) : (
-  <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
-    Plano PRO ativo
-  </span>
-)}
+{
+  plan === "FREE" ? (
+    <a
+      href="/dashboard/billing"
+      className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+    >
+      Assinar PRO
+    </a>
+  ) : (
+    <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
+      Plano PRO ativo
+    </span>
+  );
+}
 ```
 
 - [ ] **Step 8.2: Verificar tipos**
@@ -1056,6 +1082,7 @@ git commit -m "feat(billing): update PlanUsageCard with PRO upgrade CTA"
 ## Task 9: Atualizar .env.example e documentação
 
 **Files:**
+
 - Modify: `.env.example`
 - Modify: `docs/AI_HANDOFF.md`
 - Modify: `docs/ARCHITECTURE.md`
@@ -1067,7 +1094,7 @@ Substituir o conteúdo atual por:
 
 ```env
 # Banco de dados
-DATABASE_URL="postgresql://orcafacil:orcafacil@localhost:5432/orcafacil"
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/vitriny"
 
 # Auth.js
 AUTH_SECRET="gere-um-segredo-com-openssl-rand-base64-33"
@@ -1125,6 +1152,7 @@ Adicionar seção `## Billing / Stripe` ao final:
 - `components/billing/BillingCard.tsx` — card com plano, status, botão "Assinar PRO".
 
 Regras críticas:
+
 - `plan` só vai para PRO via webhook (nunca via redirect de success_url).
 - `stripeCustomerId` é criado uma única vez e reutilizado.
 - Webhook valida assinatura com `STRIPE_WEBHOOK_SECRET` sempre.
@@ -1132,12 +1160,14 @@ Regras críticas:
 - Em produção: configurar endpoint no Dashboard Stripe → Developers → Webhooks.
 
 Eventos tratados:
+
 - `checkout.session.completed` → salva stripeSubscriptionId, atualiza plan se status for active/trialing.
 - `customer.subscription.updated` → atualiza status e plan conforme lógica de mapeamento.
 - `customer.subscription.deleted` → zera subscription, derruba para FREE.
 - `invoice.payment_failed` → marca subscriptionStatus como PAST_DUE (plano mantido temporariamente).
 
 Lógica de plan por status Stripe:
+
 - active, trialing → PRO
 - canceled, unpaid, incomplete_expired, paused → FREE
 - past_due, incomplete → sem alteração de plan

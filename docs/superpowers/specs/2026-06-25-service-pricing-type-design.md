@@ -7,7 +7,7 @@
 
 ## Problema
 
-Todo pedido no OrçaFácil hoje exige criação de proposta manual. Para serviços com preço fixo, isso é desnecessário: o prestador já sabe o valor e o cliente só precisa solicitar o serviço.
+Todo pedido no Vitriny hoje exige criação de proposta manual. Para serviços com preço fixo, isso é desnecessário: o prestador já sabe o valor e o cliente só precisa solicitar o serviço.
 
 ---
 
@@ -56,12 +56,12 @@ Operação: adicionar enum + coluna com default. Aditiva, sem impacto em dados e
 
 ## Regras de negócio
 
-| Situação | Regra |
-|----------|-------|
-| `pricingType = FIXED` | `basePrice` obrigatório e > 0 |
-| `pricingType = CUSTOM` | `basePrice` opcional |
-| Serviços antigos (sem pricingType) | Ficam como `CUSTOM` pelo default do banco |
-| Proposta | Pode ser criada para qualquer tipo de pedido |
+| Situação                           | Regra                                        |
+| ---------------------------------- | -------------------------------------------- |
+| `pricingType = FIXED`              | `basePrice` obrigatório e > 0                |
+| `pricingType = CUSTOM`             | `basePrice` opcional                         |
+| Serviços antigos (sem pricingType) | Ficam como `CUSTOM` pelo default do banco    |
+| Proposta                           | Pode ser criada para qualquer tipo de pedido |
 
 ---
 
@@ -69,21 +69,21 @@ Operação: adicionar enum + coluna com default. Aditiva, sem impacto em dados e
 
 ### Serviço FIXED
 
-| Camada | Comportamento |
-|--------|---------------|
-| Cadastro | Exige `basePrice > 0`; toggle indica "Preço fixo" |
-| Página pública `/u/[slug]` | Mostra preço em BRL; CTA "Solicitar serviço →" |
+| Camada                                      | Comportamento                                                                                    |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Cadastro                                    | Exige `basePrice > 0`; toggle indica "Preço fixo"                                                |
+| Página pública `/u/[slug]`                  | Mostra preço em BRL; CTA "Solicitar serviço →"                                                   |
 | Formulário `/u/[slug]/orcamento?serviceId=` | Título "Solicitar serviço"; mostra preço; campo de descrição opcional; botão "Solicitar serviço" |
-| Painel de pedidos | Badge "Preço fixo" + valor; CTA "Criar proposta" aparece como ação secundária (não primária) |
+| Painel de pedidos                           | Badge "Preço fixo" + valor; CTA "Criar proposta" aparece como ação secundária (não primária)     |
 
 ### Serviço CUSTOM
 
-| Camada | Comportamento |
-|--------|---------------|
-| Cadastro | `basePrice` opcional; toggle indica "Sob orçamento" |
-| Página pública `/u/[slug]` | Mostra "Sob orçamento"; CTA "Pedir orçamento →" |
+| Camada                                      | Comportamento                                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Cadastro                                    | `basePrice` opcional; toggle indica "Sob orçamento"                                 |
+| Página pública `/u/[slug]`                  | Mostra "Sob orçamento"; CTA "Pedir orçamento →"                                     |
 | Formulário `/u/[slug]/orcamento?serviceId=` | Título "Pedido de orçamento"; campo de descrição obrigatório; botão "Enviar pedido" |
-| Painel de pedidos | Sem badge especial; CTA "Criar proposta" primário (comportamento atual) |
+| Painel de pedidos                           | Sem badge especial; CTA "Criar proposta" primário (comportamento atual)             |
 
 ---
 
@@ -103,9 +103,15 @@ Não há adaptação dinâmica via client-side ao mudar o select. O CTA nos card
 ```ts
 // types/service.ts
 
-ServiceSummary:   { id, name, pricingType, basePrice }
-PublicService:    { id, name, description, basePrice, pricingType }
-ServiceForClient: { id, name, description, basePrice, isActive, pricingType }
+ServiceSummary: {
+  (id, name, pricingType, basePrice);
+}
+PublicService: {
+  (id, name, description, basePrice, pricingType);
+}
+ServiceForClient: {
+  (id, name, description, basePrice, isActive, pricingType);
+}
 ```
 
 ```ts
@@ -117,23 +123,23 @@ service: { id, name, pricingType, basePrice } | null
 
 ## Arquivos criados / alterados
 
-| Arquivo | Tipo |
-|---------|------|
-| `prisma/schema.prisma` | Alterado |
-| `lib/validations/service.ts` | Alterado |
-| `lib/actions/services.ts` | Alterado |
-| `types/service.ts` | Alterado |
-| `types/quote-request.ts` | Alterado |
-| `components/services/ServiceForm.tsx` | Alterado |
-| `components/services/ServiceList.tsx` | Alterado |
-| `components/public/PublicServicesGrid.tsx` | Alterado |
-| `app/u/[slug]/page.tsx` | Alterado |
-| `app/u/[slug]/orcamento/page.tsx` | Alterado |
+| Arquivo                                         | Tipo     |
+| ----------------------------------------------- | -------- |
+| `prisma/schema.prisma`                          | Alterado |
+| `lib/validations/service.ts`                    | Alterado |
+| `lib/actions/services.ts`                       | Alterado |
+| `types/service.ts`                              | Alterado |
+| `types/quote-request.ts`                        | Alterado |
+| `components/services/ServiceForm.tsx`           | Alterado |
+| `components/services/ServiceList.tsx`           | Alterado |
+| `components/public/PublicServicesGrid.tsx`      | Alterado |
+| `app/u/[slug]/page.tsx`                         | Alterado |
+| `app/u/[slug]/orcamento/page.tsx`               | Alterado |
 | `components/quote-request/QuoteRequestForm.tsx` | Alterado |
-| `app/(dashboard)/dashboard/pedidos/page.tsx` | Alterado |
+| `app/(dashboard)/dashboard/pedidos/page.tsx`    | Alterado |
 | `components/quote-request/QuoteRequestCard.tsx` | Alterado |
-| `docs/DATABASE.md` | Alterado |
-| `docs/AI_HANDOFF.md` | Alterado |
+| `docs/DATABASE.md`                              | Alterado |
+| `docs/AI_HANDOFF.md`                            | Alterado |
 
 ---
 

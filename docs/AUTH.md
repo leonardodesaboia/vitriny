@@ -82,7 +82,7 @@ AUTH_URL="http://localhost:3000"
 AUTH_GOOGLE_ID="google-client-id"
 AUTH_GOOGLE_SECRET="google-client-secret"
 RESEND_API_KEY="re_sua_api_key"
-EMAIL_FROM="OrçaFácil <contato@seu-dominio.com>"
+EMAIL_FROM="Vitriny <contato@seu-dominio.com>"
 ```
 
 Em produção, `AUTH_URL` deve apontar para o domínio real.
@@ -105,7 +105,7 @@ providers: [Google, Credentials({ ... })]
 O adapter usa:
 
 ```ts
-PrismaAdapter(prisma)
+PrismaAdapter(prisma);
 ```
 
 `pages.signIn: "/login"` garante que erros OAuth (ex.: `OAuthAccountNotLinked`) caiam na página de login própria do projeto, não na página padrão do Auth.js.

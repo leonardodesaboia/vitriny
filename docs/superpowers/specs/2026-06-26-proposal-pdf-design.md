@@ -37,15 +37,15 @@ Prestador clica "Baixar PDF"
 
 ### Arquivos novos
 
-| Arquivo | Responsabilidade |
-|---|---|
-| `app/api/proposals/[id]/pdf/route.ts` | Route handler: autenticação, ownership, geração e stream do PDF |
-| `components/proposals/ProposalPdf.tsx` | Componente React PDF com layout e design tokens |
+| Arquivo                                | Responsabilidade                                                |
+| -------------------------------------- | --------------------------------------------------------------- |
+| `app/api/proposals/[id]/pdf/route.ts`  | Route handler: autenticação, ownership, geração e stream do PDF |
+| `components/proposals/ProposalPdf.tsx` | Componente React PDF com layout e design tokens                 |
 
 ### Arquivo alterado
 
-| Arquivo | Alteração |
-|---|---|
+| Arquivo                                         | Alteração                                                                                                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | `components/quote-request/QuoteRequestCard.tsx` | Adiciona `<a href="/api/proposals/[id]/pdf" download>` na seção de proposta quando status é `APPROVED` ou `REJECTED` |
 
 ---
@@ -82,12 +82,12 @@ prisma.proposal.findFirst({
   include: {
     provider: { select: { businessName, email, phone, city, state } },
     quoteRequest: {
-      include: { service: { select: { name } } }
+      include: { service: { select: { name } } },
     },
     items: { orderBy: { createdAt: "asc" } },
-    statusHistory: { orderBy: { createdAt: "asc" } }
-  }
-})
+    statusHistory: { orderBy: { createdAt: "asc" } },
+  },
+});
 ```
 
 ---
@@ -98,14 +98,14 @@ Usa `@react-pdf/renderer` com as primitivas `Document`, `Page`, `View`, `Text`, 
 
 ### Design tokens aplicados
 
-| Token Tailwind | Valor hex | Uso no PDF |
-|---|---|---|
-| `leaf` | `#1B5E3B` | Cabeçalho, títulos de seção, total |
-| `paper` | `#F5F0E8` | Fundo de cards e linhas alternadas da tabela |
-| `paper-soft` | `#EDE8DE` | Bordas, header da tabela de itens |
-| `ink` | `#1C1917` | Texto principal |
-| `ink-muted` | `#78716C` | Labels, subtítulos |
-| `amber` | `#C97D3F` | Badge "Entrada" |
+| Token Tailwind | Valor hex | Uso no PDF                                   |
+| -------------- | --------- | -------------------------------------------- |
+| `leaf`         | `#1B5E3B` | Cabeçalho, títulos de seção, total           |
+| `paper`        | `#F5F0E8` | Fundo de cards e linhas alternadas da tabela |
+| `paper-soft`   | `#EDE8DE` | Bordas, header da tabela de itens            |
+| `ink`          | `#1C1917` | Texto principal                              |
+| `ink-muted`    | `#78716C` | Labels, subtítulos                           |
+| `amber`        | `#C97D3F` | Badge "Entrada"                              |
 
 ### Fontes
 
@@ -137,15 +137,15 @@ Document > Page (A4, padding 40px)
   ├── Histórico de status
   │     └── Lista cronológica: status, ator, data
   └── Rodapé do documento
-        └── "Gerado via OrçaFácil em [data]"
+        └── "Gerado via Vitriny em [data]"
 ```
 
 ### Status badges no PDF
 
-| Status | Cor de fundo | Cor do texto |
-|---|---|---|
+| Status     | Cor de fundo     | Cor do texto     |
+| ---------- | ---------------- | ---------------- |
 | `APPROVED` | `#D4EBD9` (mint) | `#1B5E3B` (leaf) |
-| `REJECTED` | `#FEF2F2` | `#B91C1C` |
+| `REJECTED` | `#FEF2F2`        | `#B91C1C`        |
 
 ---
 
@@ -155,7 +155,7 @@ Document > Page (A4, padding 40px)
 
 ```ts
 quoteRequest.proposal?.status === "APPROVED" ||
-quoteRequest.proposal?.status === "REJECTED"
+  quoteRequest.proposal?.status === "REJECTED";
 ```
 
 ### Markup

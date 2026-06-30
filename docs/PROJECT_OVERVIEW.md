@@ -2,11 +2,11 @@
 
 ## Produto
 
-OrçaFácil é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, criarem propostas e compartilharem um link para o cliente aprovar ou recusar.
+Vitriny é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, criarem propostas e compartilharem um link para o cliente aprovar ou recusar.
 
 ## Problema
 
-Prestadores costumam receber pedidos por canais soltos, como mensagens e ligações. Isso dificulta organizar informações, acompanhar status e enviar uma proposta clara. O OrçaFácil cria um fluxo mínimo e rastreável.
+Prestadores costumam receber pedidos por canais soltos, como mensagens e ligações. Isso dificulta organizar informações, acompanhar status e enviar uma proposta clara. O Vitriny cria um fluxo mínimo e rastreável.
 
 ## Fluxo principal do prestador
 
@@ -98,4 +98,4 @@ Route handlers autenticados ou server-to-server:
 - O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
 - Gateway de pagamento do cliente final, confirmação automática de Pix, WhatsApp API, editor avançado de PDF e IA estão fora do MVP.
-- Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de serviço `FIXED`. O OrçaFácil gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
+- Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de serviço `FIXED`. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
