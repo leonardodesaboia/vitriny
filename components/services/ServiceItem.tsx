@@ -24,7 +24,7 @@ const saleModeBadge: Record<ServiceSaleMode, string> = {
 
 const itemTypeLabel: Record<"SERVICE" | "PRODUCT", string> = {
   SERVICE: "Serviço",
-  PRODUCT: "Produto"
+  PRODUCT: "Produto",
 };
 
 function formatPrice(price: string | null): string | null {
@@ -54,7 +54,6 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
         className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50"
       >
         <div className="flex min-w-0 items-center gap-3">
-          {/* Thumbnail */}
           {service.imageUrl ? (
             <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -67,7 +66,6 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
             </div>
           ) : null}
 
-          {/* Name + badges */}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-ink" title={service.name}>
               {service.name}
@@ -76,9 +74,7 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
               <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
                 {itemTypeLabel[service.itemType]}
               </span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}
-              >
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}>
                 {SALE_MODE_BADGE_LABEL[saleMode]}
               </span>
               {formattedPrice ? (
@@ -91,7 +87,6 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
           </div>
         </div>
 
-        {/* Chevron */}
         <svg
           className={`h-4 w-4 shrink-0 text-ink-muted transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
           fill="none"

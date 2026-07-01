@@ -154,16 +154,6 @@ export function PublicServicesGrid({
           );
         })}
       </motion.div>
-
-      <p className="mt-6 text-center text-sm text-ink-muted">
-        Não encontrou o que procura?{" "}
-        <Link
-          href={`/u/${slug}/orcamento`}
-          className="font-semibold text-leaf transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-        >
-          Envie sua solicitação →
-        </Link>
-      </p>
     </>
   );
 }
