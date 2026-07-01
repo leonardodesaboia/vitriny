@@ -34,7 +34,7 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 
 - `User`: usuário autenticado.
 - `ProviderProfile`: perfil do prestador.
-- `Service`: serviço oferecido.
+- `Service`: item oferecido na vitrine, classificado como `PRODUCT` ou `SERVICE` por `itemType`.
 - `QuoteRequest`: pedido público de orçamento.
 - `QuoteRequestStatusHistory`: histórico de status do pedido.
 - `QuoteRequestInternalNote`: nota interna do pedido.
@@ -52,6 +52,7 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 - Negócio: usuário autenticado que apresenta produtos ou serviços.
 - Cliente: pessoa pública que envia pedido ou responde proposta.
 - Item da vitrine: termo da UI para o model interno `Service`.
+- Tipo do item: classificação visual `Produto` (`PRODUCT`) ou `Serviço` (`SERVICE`), sem efeito nas regras de preço, Pix ou proposta.
 - Vitrine pública: termo da UI para o `ProviderProfile` publicado em `/u/[slug]`.
 - Pedido ou solicitação: termos da UI para o model interno `QuoteRequest`.
 - Slug: identificador público da vitrine em `/u/[slug]`.

@@ -40,6 +40,9 @@ export function ServiceForm({
   const [pricingType, setPricingType] = useState<"FIXED" | "CUSTOM">(
     service?.pricingType ?? "CUSTOM",
   );
+  const [itemType, setItemType] = useState<"SERVICE" | "PRODUCT">(
+    service?.itemType ?? "SERVICE",
+  );
   const [checkoutMode, setCheckoutMode] = useState<
     "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT"
   >(service?.fixedServiceCheckoutMode ?? "REQUEST_ONLY");
@@ -178,6 +181,7 @@ export function ServiceForm({
       {service ? (
         <input name="serviceId" type="hidden" value={service.id} />
       ) : null}
+      <input name="itemType" type="hidden" value={itemType} />
       <input name="pricingType" type="hidden" value={pricingType} />
       <input
         name="fixedServiceCheckoutMode"
@@ -220,7 +224,7 @@ export function ServiceForm({
             id={`name-${service?.id ?? "new"}`}
             maxLength={120}
             name="name"
-            placeholder="Ex: Pintura residencial, Corte de cabelo"
+            placeholder="Ex: Kit presenteável, Pintura residencial"
             required
             type="text"
           />
@@ -244,6 +248,41 @@ export function ServiceForm({
             placeholder="Descreva o item, o que está incluso e seus diferenciais…"
           />
           <p className="text-xs text-ink-muted">Máximo 600 caracteres.</p>
+        </div>
+
+        <div className="grid min-w-0 gap-2">
+          <p className="text-sm font-semibold text-ink">Este item é um:</p>
+          <div className="flex min-w-0 rounded-xl border border-paper-soft bg-paper p-1">
+            <button
+              aria-pressed={itemType === "PRODUCT"}
+              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
+                itemType === "PRODUCT"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+              onClick={() => setItemType("PRODUCT")}
+              type="button"
+            >
+              Produto
+            </button>
+            <button
+              aria-pressed={itemType === "SERVICE"}
+              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
+                itemType === "SERVICE"
+                  ? "bg-white text-ink shadow-sm"
+                  : "text-ink-muted hover:text-ink"
+              }`}
+              onClick={() => setItemType("SERVICE")}
+              type="button"
+            >
+              Serviço
+            </button>
+          </div>
+          <p className="text-xs leading-5 text-ink-muted">
+            {itemType === "PRODUCT"
+              ? "Use para itens físicos, digitais, kits, encomendas ou produtos vendidos pela sua vitrine."
+              : "Use para atendimentos, consultorias, trabalhos personalizados ou serviços prestados."}
+          </p>
         </div>
       </div>
 

@@ -17,7 +17,7 @@ beforeEach(async () => {
 });
 
 const validServiceForm = () =>
-  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on", pricingType: "CUSTOM" });
+  makeFormData({ name: "Pintura residencial", description: "", basePrice: "", isActive: "on", itemType: "SERVICE", pricingType: "CUSTOM" });
 
 describe("createService", () => {
   it("cria serviço e retorna serviceId em caso de sucesso", async () => {
@@ -29,6 +29,34 @@ describe("createService", () => {
 
     expect(result).toEqual({ serviceId: "new-service-id" });
     expect(db.service.create).toHaveBeenCalledOnce();
+  });
+
+  it("persiste PRODUCT sem alterar as regras de precificação", async () => {
+    db.service.count.mockResolvedValue(0);
+    db.service.create.mockResolvedValue({ id: "new-product-id" });
+
+    const form = makeFormData({
+      name: "Kit presenteável",
+      description: "",
+      basePrice: "120,00",
+      isActive: "on",
+      itemType: "PRODUCT",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUEST_ONLY"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    const result = await createService(undefined, form);
+
+    expect(result).toEqual({ serviceId: "new-product-id" });
+    expect(db.service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          itemType: "PRODUCT",
+          pricingType: "FIXED",
+          fixedServiceCheckoutMode: "REQUEST_ONLY"
+        })
+      })
+    );
   });
 
   it("redireciona para /login quando não há sessão", async () => {
@@ -158,6 +186,7 @@ describe("updateService", () => {
       description: "",
       basePrice: "",
       isActive: "on",
+      itemType: "SERVICE",
       pricingType: "CUSTOM"
     });
 
@@ -173,6 +202,27 @@ describe("updateService", () => {
 
     expect(result).toEqual({ serviceId: "service-1" });
     expect(db.service.update).toHaveBeenCalledOnce();
+  });
+
+  it("atualiza a classificação para PRODUCT", async () => {
+    const form = makeFormData({
+      serviceId: "service-1",
+      name: "Produto personalizado",
+      description: "",
+      basePrice: "",
+      isActive: "on",
+      itemType: "PRODUCT",
+      pricingType: "CUSTOM"
+    });
+    const { updateService } = await import("@/lib/actions/services");
+    const result = await updateService(undefined, form);
+
+    expect(result).toEqual({ serviceId: "service-1" });
+    expect(db.service.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ itemType: "PRODUCT" })
+      })
+    );
   });
 
   it("retorna erro de validação quando o nome é inválido", async () => {

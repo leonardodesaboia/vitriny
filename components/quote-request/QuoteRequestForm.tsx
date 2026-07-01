@@ -11,6 +11,7 @@ type SelectedService = {
   id: string;
   name: string;
   description: string | null;
+  itemType: "SERVICE" | "PRODUCT";
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
   requiresSchedulingDetails: boolean;
@@ -94,6 +95,9 @@ export function QuoteRequestForm({
           <p className="mt-1 break-words font-fraunces text-lg font-bold text-ink">
             {selectedService.name}
           </p>
+          <span className="mt-2 inline-flex w-fit rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+            {selectedService.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+          </span>
           {selectedService.description ? (
             <p className="mt-2 break-words text-sm leading-6 text-ink-muted">
               {selectedService.description}

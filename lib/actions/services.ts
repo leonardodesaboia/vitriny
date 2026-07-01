@@ -22,6 +22,7 @@ function parseServiceForm(formData: FormData) {
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
     isActive: formData.get("isActive") === "on",
+    itemType: formData.get("itemType") ?? "SERVICE",
     pricingType,
     fixedServiceCheckoutMode:
       pricingType === "FIXED"
@@ -83,6 +84,7 @@ export async function createService(
       providerId: profile.id,
       name: parsed.data.name,
       description: parsed.data.description,
+      itemType: parsed.data.itemType,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,
@@ -158,6 +160,7 @@ export async function updateService(
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
+      itemType: parsed.data.itemType,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,

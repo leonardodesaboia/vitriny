@@ -6,6 +6,8 @@ Vitriny usa Next.js App Router com Server Components, Server Actions, Prisma e P
 
 Na interface, `Service`, `ProviderProfile` e `QuoteRequest` são apresentados respectivamente como item da vitrine, vitrine pública e pedido/solicitação. A nomenclatura técnica, as rotas e os models permanecem inalterados.
 
+`Service.itemType` classifica o item como `PRODUCT` ou `SERVICE`. É um atributo visual e organizacional; as regras de proposta, Pix e pedidos continuam baseadas em `pricingType` e `fixedServiceCheckoutMode`.
+
 Fluxo simplificado:
 
 ```text

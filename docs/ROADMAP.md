@@ -12,6 +12,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Dashboard protegido
 - Dados do negócio
 - Cadastro de itens da vitrine
+- Classificação visual de itens como Produto ou Serviço
 - Vitrine pública do negócio
 - Pedido público de orçamento
 - Painel de pedidos recebidos

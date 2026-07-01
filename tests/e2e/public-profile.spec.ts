@@ -16,6 +16,7 @@ test.describe("Vitrine pública do negócio", () => {
 
   test("exibe itens ativos da vitrine", async ({ page }) => {
     await expect(page.locator("text=Pintura residencial")).toBeVisible();
+    await expect(page.getByText("Serviço", { exact: true }).first()).toBeVisible();
   });
 
   test("exibe botão ou link para enviar solicitação", async ({ page }) => {

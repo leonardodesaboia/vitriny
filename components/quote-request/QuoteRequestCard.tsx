@@ -36,6 +36,7 @@ type SerializedProposal = {
 type SerializedService = {
   id: string;
   name: string;
+  itemType: "SERVICE" | "PRODUCT";
   pricingType: "FIXED" | "CUSTOM";
   fixedServiceCheckoutMode: "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT";
   basePrice: string | null;
@@ -176,6 +177,11 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             <span className="shrink-0 text-xs text-ink-muted">
               {formatDateShort(quoteRequest.createdAt)}
             </span>
+            {quoteRequest.service ? (
+              <span className="hidden shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 sm:inline-flex">
+                {quoteRequest.service.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+              </span>
+            ) : null}
             {quoteRequest.service?.pricingType === "FIXED" ? (
               <span className="hidden shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf sm:inline-flex">
                 Preço fixo

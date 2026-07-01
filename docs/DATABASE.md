@@ -76,6 +76,7 @@ Serviço oferecido pelo prestador.
 
 Campos importantes:
 
+- `itemType`: natureza do item (`SERVICE` ou `PRODUCT`). Default `SERVICE`. Não altera regras de preço, proposta ou Pix.
 - `basePrice`: `Decimal? @db.Decimal(10, 2)`.
 - `isActive`: controla se aparece publicamente.
 - `pricingType`: tipo de precificação (`FIXED` ou `CUSTOM`). Default `CUSTOM`. Controla se o serviço tem preço fixo exibido publicamente ou se está sob orçamento.
@@ -234,6 +235,13 @@ O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o
 - `FIXED`: serviço com preço fixo. `basePrice` é obrigatório e exibido publicamente.
 - `CUSTOM`: serviço sob orçamento. `basePrice` é opcional.
 
+### CatalogItemType
+
+- `SERVICE`: atendimento, consultoria, trabalho personalizado ou serviço prestado.
+- `PRODUCT`: item físico ou digital, kit, encomenda ou produto da vitrine.
+
+`CatalogItemType` é apenas classificatório. Todas as combinações com `ServicePricingType` são válidas.
+
 ### FixedServiceCheckoutMode
 
 Controla o fluxo de conversão de serviços com `pricingType = FIXED`.
@@ -273,6 +281,7 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Senha de usuário sempre armazenada como hash bcrypt, nunca texto puro.
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).
 - Serviços antigos sem `pricingType` explícito ficam como `CUSTOM` pelo default.
+- Itens antigos ficam como `SERVICE` pelo default de `itemType`.
 - `QuoteRequest.description` é nullable; pedidos de serviços FIXED não exigem descrição do cliente.
 - `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento em que o pagamento antecipado é criado. Nunca atualizar após criação do pedido.
 - `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.

@@ -31,6 +31,7 @@ export const serviceSchema = z
     description: optionalText.pipe(
       z.string().max(600, "Use no máximo 600 caracteres.").nullable()
     ),
+    itemType: z.enum(["SERVICE", "PRODUCT"]).default("SERVICE"),
     pricingType: z.enum(["FIXED", "CUSTOM"]),
     fixedServiceCheckoutMode: z
       .enum(["REQUEST_ONLY", "REQUIRE_PIX_PAYMENT"])

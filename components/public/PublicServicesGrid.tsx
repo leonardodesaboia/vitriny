@@ -100,6 +100,9 @@ export function PublicServicesGrid({
               ) : null}
 
               <div className="flex flex-1 flex-col p-6">
+                <span className="mb-2 w-fit rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                  {service.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+                </span>
                 <h3 className="line-clamp-2 break-words font-jakarta text-base font-bold text-ink">
                   {service.name}
                 </h3>

@@ -21,6 +21,11 @@ const pricingTypeLabel: Record<"FIXED" | "CUSTOM", string> = {
   CUSTOM: "Sob consulta"
 };
 
+const itemTypeLabel: Record<"SERVICE" | "PRODUCT", string> = {
+  SERVICE: "Serviço",
+  PRODUCT: "Produto"
+};
+
 function formatPrice(price: string | null): string | null {
   if (!price) return null;
   const num = parseFloat(price);
@@ -63,6 +68,9 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
               {service.name}
             </p>
             <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+                {itemTypeLabel[service.itemType]}
+              </span>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${pricingTypeBadge[service.pricingType]}`}
               >

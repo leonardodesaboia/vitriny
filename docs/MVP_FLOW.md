@@ -64,6 +64,8 @@ Compatibilidade legada — Pagamento Pix direto:
 
 - Acesse `/dashboard/servicos`.
 - Cadastre serviço ativo.
+- Escolha se o item é `Produto` ou `Serviço` e valide que o badge aparece no painel e na vitrine pública.
+- Confirme que `Produto` e `Serviço` aceitam tanto preço fixo quanto preço sob consulta.
 - Para serviços `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
 - Esperado: serviço aparece na listagem.
 

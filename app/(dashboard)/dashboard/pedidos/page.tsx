@@ -78,6 +78,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             select: {
               id: true,
               name: true,
+              itemType: true,
               pricingType: true,
               fixedServiceCheckoutMode: true,
               basePrice: true
@@ -120,7 +121,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           }
         }
       },
-      services: { select: { id: true, name: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true } }
+      services: { select: { id: true, name: true, itemType: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true } }
     }
   });
 

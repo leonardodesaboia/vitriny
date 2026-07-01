@@ -54,6 +54,7 @@ export default async function PublicQuoteRequestPage({
           id: true,
           name: true,
           description: true,
+          itemType: true,
           pricingType: true,
           fixedServiceCheckoutMode: true,
           basePrice: true,
@@ -185,6 +186,7 @@ export default async function PublicQuoteRequestPage({
                       id: selectedService.id,
                       name: selectedService.name,
                       description: selectedService.description,
+                      itemType: selectedService.itemType,
                       pricingType: selectedService.pricingType,
                       basePrice: selectedService.basePrice?.toString() ?? null,
                       requiresSchedulingDetails:
@@ -196,6 +198,7 @@ export default async function PublicQuoteRequestPage({
                 id: s.id,
                 name: s.name,
                 description: s.description,
+                itemType: s.itemType,
                 pricingType: s.pricingType,
                 fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
                 basePrice: s.basePrice?.toString() ?? null,

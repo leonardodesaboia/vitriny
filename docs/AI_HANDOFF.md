@@ -7,11 +7,13 @@ Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e se
 ## Linguagem da interface
 
 - `Service` aparece para o usuário como **item da vitrine**;
+- `Service.itemType` classifica visualmente o item como **Produto** (`PRODUCT`) ou **Serviço** (`SERVICE`), com default `SERVICE`;
 - `ProviderProfile` publicado aparece como **vitrine pública**;
 - `QuoteRequest` aparece como **pedido** ou **solicitação**;
 - `Proposal` continua sendo **proposta** no fluxo de itens sob consulta;
 - rotas, models, enums e identificadores internos não foram renomeados;
 - Pix do cliente final continua manual, sem processamento ou confirmação automática pela plataforma.
+- `itemType` não participa de regras de Pix, proposta, pedidos, checkout ou limites; essas regras continuam em `pricingType` e `fixedServiceCheckoutMode`.
 
 O MVP principal está implementado.
 

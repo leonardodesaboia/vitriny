@@ -112,6 +112,7 @@ model Service {
   providerId                String
   name                      String
   description               String?
+  itemType                  CatalogItemType          @default(SERVICE)
   basePrice                 Decimal?           @db.Decimal(10, 2)
   isActive                  Boolean            @default(true)
   pricingType               ServicePricingType       @default(CUSTOM)
@@ -317,6 +318,11 @@ enum SubscriptionStatus {
 enum ServicePricingType {
   FIXED
   CUSTOM
+}
+
+enum CatalogItemType {
+  SERVICE
+  PRODUCT
 }
 
 enum FixedServiceCheckoutMode {

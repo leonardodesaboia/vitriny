@@ -17,12 +17,15 @@ Público-alvo:
 A interface usa uma linguagem ampla sem renomear a arquitetura interna:
 
 - **item da vitrine** corresponde ao model interno `Service`;
+- **Produto** ou **Serviço** corresponde a `Service.itemType` (`PRODUCT` ou `SERVICE`) e serve apenas como classificação visual;
 - **vitrine pública** corresponde ao `ProviderProfile` publicado em `/u/[slug]`;
 - **pedido** ou **solicitação** corresponde ao model interno `QuoteRequest`;
 - **proposta** corresponde ao model `Proposal` e permanece no fluxo de itens sob consulta;
 - **pagamento via Pix** é manual e feito diretamente ao negócio; o Vitriny não processa nem confirma o pagamento automaticamente.
 
 Rotas, models, enums e nomes técnicos mantêm a nomenclatura original nesta fase.
+
+`itemType` não altera preço, Pix, propostas, pedidos ou limites. Essas regras continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
 
 ## Stack
 
@@ -44,6 +47,7 @@ MVP funcional implementado:
 - dashboard protegido com onboarding por tipo de serviço, métricas mensais, pendências operacionais e atividade recente;
 - dados do negócio;
 - cadastro de itens da vitrine;
+- classificação dos itens como Produto ou Serviço;
 - vitrine pública do negócio em `/u/[slug]`;
 - pedido público em `/u/[slug]/orcamento`, com item pré-selecionado, contato obrigatório e validação server-side por tipo de item;
 - painel de pedidos recebidos;
@@ -325,6 +329,7 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] Dashboard protegido
 - [x] Dados do negócio
 - [x] Cadastro de itens da vitrine
+- [x] Classificação visual de itens como Produto ou Serviço
 - [x] Vitrine pública do negócio
 - [x] Pedido público
 - [x] Painel de pedidos recebidos

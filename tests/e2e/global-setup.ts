@@ -38,6 +38,7 @@ export default async function globalSetup() {
         providerId: profile.id,
         name: "Pintura residencial",
         description: "Pintura completa de interiores",
+        itemType: "SERVICE",
         basePrice: 500,
         isActive: true
       }

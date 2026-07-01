@@ -23,16 +23,45 @@ beforeEach(async () => {
 });
 
 describe("createService (integração)", () => {
+  it("mantém SERVICE como padrão para itens antigos sem itemType explícito", async () => {
+    const service = await seedService(profileId, { name: "Item legado" });
+
+    expect(service.itemType).toBe("SERVICE");
+  });
+
+  it("persiste PRODUCT sem alterar pricingType", async () => {
+    const { createService } = await import("@/lib/actions/services");
+    const form = makeFormData({
+      name: "Kit presenteável",
+      description: "Produto personalizado",
+      basePrice: "150.00",
+      isActive: "on",
+      itemType: "PRODUCT",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUEST_ONLY"
+    });
+
+    await createService(undefined, form);
+
+    const service = await testDb.service.findFirst({ where: { providerId: profileId } });
+    expect(service?.itemType).toBe("PRODUCT");
+    expect(service?.pricingType).toBe("FIXED");
+  });
+
   it("persiste serviço no banco com os dados corretos", async () => {
     const { createService } = await import("@/lib/actions/services");
     const form = makeFormData({
       name: "Pintura residencial",
       description: "Serviço completo",
       basePrice: "500.00",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "FIXED",
+      fixedServiceCheckoutMode: "REQUEST_ONLY"
     });
 
-    await expect(createService(undefined, form)).rejects.toThrow("/dashboard/servicos");
+    const result = await createService(undefined, form);
+    expect(result).toEqual({ serviceId: expect.any(String) });
 
     const service = await testDb.service.findFirst({ where: { providerId: profileId } });
     expect(service?.name).toBe("Pintura residencial");
@@ -51,7 +80,9 @@ describe("createService (integração)", () => {
       name: "Serviço 4",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
     });
 
     const result = await createService(undefined, form);
@@ -75,10 +106,13 @@ describe("createService (integração)", () => {
       name: "Serviço 4 PRO",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
     });
 
-    await expect(createService(undefined, form)).rejects.toThrow("/dashboard/servicos");
+    const result = await createService(undefined, form);
+    expect(result).toEqual({ serviceId: expect.any(String) });
 
     const count = await testDb.service.count({
       where: { providerId: profileId, isActive: true }
@@ -92,9 +126,16 @@ describe("createService (integração)", () => {
     }
 
     const { createService } = await import("@/lib/actions/services");
-    const form = makeFormData({ name: "Serviço Inativo", description: "", basePrice: "" });
+    const form = makeFormData({
+      name: "Serviço Inativo",
+      description: "",
+      basePrice: "",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
+    });
 
-    await expect(createService(undefined, form)).rejects.toThrow("/dashboard/servicos");
+    const result = await createService(undefined, form);
+    expect(result).toEqual({ serviceId: expect.any(String) });
 
     const inactive = await testDb.service.findFirst({
       where: { providerId: profileId, isActive: false }
@@ -113,10 +154,13 @@ describe("updateService (integração)", () => {
       name: "Nome Novo",
       description: "Desc atualizada",
       basePrice: "999.90",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
     });
 
-    await expect(updateService(undefined, form)).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, form);
+    expect(result).toEqual({ serviceId: service.id });
 
     const updated = await testDb.service.findUnique({ where: { id: service.id } });
     expect(updated?.name).toBe("Nome Novo");
@@ -136,7 +180,9 @@ describe("updateService (integração)", () => {
       name: "Inativo",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
     });
 
     const result = await updateService(undefined, form);
@@ -158,10 +204,13 @@ describe("updateService (integração)", () => {
       name: "Alvo Renomeado",
       description: "",
       basePrice: "",
-      isActive: "on"
+      isActive: "on",
+      itemType: "SERVICE",
+      pricingType: "CUSTOM"
     });
 
-    await expect(updateService(undefined, form)).rejects.toThrow("/dashboard/servicos");
+    const result = await updateService(undefined, form);
+    expect(result).toEqual({ serviceId: target.id });
 
     const updated = await testDb.service.findUnique({ where: { id: target.id } });
     expect(updated?.name).toBe("Alvo Renomeado");

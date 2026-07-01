@@ -42,6 +42,7 @@ const getProfile = cache(async (slug: string) => {
           id: true,
           name: true,
           description: true,
+          itemType: true,
           basePrice: true,
           pricingType: true,
           fixedServiceCheckoutMode: true,
