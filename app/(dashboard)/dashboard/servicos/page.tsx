@@ -19,7 +19,7 @@ const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do item.",
   profile: "Cadastre os dados do negócio antes de adicionar itens.",
   "not-found": "Item não encontrado.",
-  "limit-active-services": LIMIT_ERROR_MESSAGES["limit-active-services"]
+  "limit-active-services": LIMIT_ERROR_MESSAGES["limit-active-services"],
 };
 
 export default async function ServicesPage({ searchParams }: ServicesPageProps) {
@@ -31,11 +31,10 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
   }
 
   const profile = await prisma.providerProfile.findUnique({
-    where: {
-      userId: session.user.id
-    },
+    where: { userId: session.user.id },
     select: {
       plan: true,
+      businessType: true,
       services: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -48,11 +47,29 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           pricingType: true,
           fixedServiceCheckoutMode: true,
           requiresSchedulingDetails: true,
-          imageUrl: true
-        }
-      }
-    }
+          imageUrl: true,
+        },
+      },
+    },
   });
+
+  const businessType = profile?.businessType ?? "SERVICES";
+  const defaultItemType =
+    businessType === "PRODUCTS" ? "PRODUCT" : "SERVICE";
+
+  const pageSubtitle =
+    businessType === "PRODUCTS"
+      ? "Cadastre os produtos que serão exibidos na sua vitrine pública."
+      : businessType === "SERVICES"
+        ? "Cadastre os serviços que serão exibidos na sua vitrine pública."
+        : "Cadastre os produtos e serviços que serão exibidos na sua vitrine pública.";
+
+  const newItemLabel =
+    businessType === "PRODUCTS"
+      ? "Novo produto"
+      : businessType === "SERVICES"
+        ? "Novo serviço"
+        : "Novo item";
 
   return (
     <div className="min-w-0 overflow-x-hidden p-4 sm:p-6 md:p-8">
@@ -63,7 +80,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
         Cadastro de itens
       </h1>
       <p className="mt-2 text-sm text-ink-muted">
-        Cadastre os produtos e serviços que serão exibidos na sua vitrine pública e usados nos pedidos.
+        {pageSubtitle}
       </p>
 
       {params.success === "saved" && !params.image_error ? (
@@ -103,10 +120,13 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
         <div className="mt-8 grid w-full min-w-0 gap-8">
           <section className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              Novo item
+              {newItemLabel}
             </p>
             <div className="mt-4 min-w-0">
-              <ServiceForm isPro={profile.plan === "PRO"} />
+              <ServiceForm
+                isPro={profile.plan === "PRO"}
+                defaultItemType={defaultItemType}
+              />
             </div>
           </section>
 
@@ -127,7 +147,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
                   pricingType: s.pricingType,
                   fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
                   requiresSchedulingDetails: s.requiresSchedulingDetails,
-                  imageUrl: s.imageUrl ?? null
+                  imageUrl: s.imageUrl ?? null,
                 }))}
               />
             </div>

@@ -96,6 +96,7 @@ model ProviderProfile {
   pixKeyType    String?
   pixHolderName String?
   pixCity       String?
+  businessType BusinessType @default(SERVICES)
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -288,6 +289,12 @@ enum ProposalStatus {
 enum ProposalPricingMode {
   SIMPLE
   ITEMIZED
+}
+
+enum BusinessType {
+  PRODUCTS
+  SERVICES
+  BOTH
 }
 
 enum PlanTier {

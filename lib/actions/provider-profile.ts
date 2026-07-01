@@ -2,7 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { ProviderThemePreset } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { BusinessType, ProviderThemePreset } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
@@ -22,6 +23,7 @@ export type ProviderProfileFormValues = {
   pixHolderName: string;
   pixCity: string;
   themePreset: ProviderThemePreset;
+  businessType: BusinessType;
 };
 
 export type ProviderProfileFormState =
@@ -41,6 +43,7 @@ function readProviderProfileFormValues(
   formData: FormData
 ): ProviderProfileFormValues {
   const themePreset = formValue(formData, "themePreset");
+  const businessType = formValue(formData, "businessType");
 
   return {
     businessName: formValue(formData, "businessName"),
@@ -55,7 +58,8 @@ function readProviderProfileFormValues(
     pixKeyType: formValue(formData, "pixKeyType"),
     pixHolderName: formValue(formData, "pixHolderName"),
     pixCity: formValue(formData, "pixCity"),
-    themePreset: (themePreset || "DEFAULT") as ProviderThemePreset
+    themePreset: (themePreset || "DEFAULT") as ProviderThemePreset,
+    businessType: (businessType || "SERVICES") as BusinessType
   };
 }
 
@@ -102,11 +106,22 @@ export async function saveProviderProfile(
         : currentProfile?.themePreset ?? "DEFAULT"
   };
 
-  await prisma.providerProfile.upsert({
-    where: { userId },
-    create: { ...dataToSave, userId },
-    update: dataToSave
-  });
+  try {
+    await prisma.providerProfile.upsert({
+      where: { userId },
+      create: { ...dataToSave, userId },
+      update: dataToSave
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      // Session references a user that no longer exists in the DB (stale JWT after a DB reset).
+      redirect("/api/auth/signout?callbackUrl=/login");
+    }
+    throw error;
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/perfil");

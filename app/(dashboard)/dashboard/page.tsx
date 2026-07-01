@@ -38,6 +38,7 @@ export default async function DashboardPage() {
         }
       },
       businessName: true,
+      businessType: true,
       id: true,
       isPublished: true,
       plan: true,
@@ -156,12 +157,22 @@ export default async function DashboardPage() {
     },
     {
       id: "service",
-      label: "Cadastrar pelo menos 1 item ativo",
+      label:
+        profile?.businessType === "PRODUCTS"
+          ? "Cadastrar pelo menos 1 produto ativo"
+          : profile?.businessType === "SERVICES"
+            ? "Cadastrar pelo menos 1 serviço ativo"
+            : "Cadastrar pelo menos 1 item ativo",
       description:
         "Os itens aparecem na vitrine pública e ajudam clientes a entender o que você oferece.",
       done: activeServicesCount > 0,
       href: "/dashboard/servicos",
-      actionLabel: "Cadastrar item"
+      actionLabel:
+        profile?.businessType === "PRODUCTS"
+          ? "Cadastrar produto"
+          : profile?.businessType === "SERVICES"
+            ? "Cadastrar serviço"
+            : "Cadastrar item"
     },
     {
       id: "link",

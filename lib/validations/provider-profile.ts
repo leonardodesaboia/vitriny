@@ -11,6 +11,8 @@ const providerThemePresetSchema = z.enum([
   "BOLD"
 ]);
 
+const businessTypeSchema = z.enum(["PRODUCTS", "SERVICES", "BOTH"]);
+
 const optionalText = z
   .preprocess((value) => (value == null ? "" : value), z.string())
   .transform((value) => value.trim())
@@ -70,7 +72,8 @@ export const providerProfileSchema = z
     pixCity: optionalText.pipe(
       z.string().max(80, "Use no máximo 80 caracteres.").nullable()
     ),
-    themePreset: providerThemePresetSchema.default("DEFAULT")
+    themePreset: providerThemePresetSchema.default("DEFAULT"),
+    businessType: businessTypeSchema.default("SERVICES")
   })
   .superRefine((data, ctx) => {
     const hasPixKey = Boolean(data.pixKey);
