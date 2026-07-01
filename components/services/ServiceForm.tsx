@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { createService, updateService } from "@/lib/actions/services";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import {
+  getServiceSaleMode,
+  getTechnicalSaleMode,
+  SALE_MODE_OPTIONS,
+  type ServiceSaleMode,
+} from "@/lib/service-sale-mode";
 import type { ActionResult } from "@/types";
 import type { ServiceForClient } from "@/types/service";
 
@@ -37,15 +43,17 @@ export function ServiceForm({
     action,
     undefined,
   );
-  const [pricingType, setPricingType] = useState<"FIXED" | "CUSTOM">(
-    service?.pricingType ?? "CUSTOM",
+  const [saleMode, setSaleMode] = useState<ServiceSaleMode>(
+    service
+      ? getServiceSaleMode({
+          pricingType: service.pricingType,
+          fixedServiceCheckoutMode: service.fixedServiceCheckoutMode,
+        })
+      : "CUSTOM",
   );
   const [itemType, setItemType] = useState<"SERVICE" | "PRODUCT">(
     service?.itemType ?? "SERVICE",
   );
-  const [checkoutMode, setCheckoutMode] = useState<
-    "REQUEST_ONLY" | "REQUIRE_PIX_PAYMENT"
-  >(service?.fixedServiceCheckoutMode ?? "REQUEST_ONLY");
   const [isActive, setIsActive] = useState(service?.isActive ?? true);
   const [requiresScheduling, setRequiresScheduling] = useState(
     service?.requiresSchedulingDetails ?? false,
@@ -182,11 +190,11 @@ export function ServiceForm({
         <input name="serviceId" type="hidden" value={service.id} />
       ) : null}
       <input name="itemType" type="hidden" value={itemType} />
-      <input name="pricingType" type="hidden" value={pricingType} />
+      <input name="pricingType" type="hidden" value={getTechnicalSaleMode(saleMode).pricingType} />
       <input
         name="fixedServiceCheckoutMode"
         type="hidden"
-        value={pricingType === "FIXED" ? checkoutMode : "REQUEST_ONLY"}
+        value={getTechnicalSaleMode(saleMode).fixedServiceCheckoutMode}
       />
       <input name="isActive" type="hidden" value={isActive ? "on" : ""} />
       <input
@@ -286,95 +294,57 @@ export function ServiceForm({
         </div>
       </div>
 
-      {/* ── Precificação ───────────────────────── */}
+      {/* ── Como este item é vendido? ──────────── */}
       <div className="grid min-w-0 gap-4">
-        <SectionLabel>Precificação</SectionLabel>
+        <SectionLabel>Como este item é vendido?</SectionLabel>
 
-        <div>
-          <div className="flex min-w-0 rounded-xl border border-paper-soft bg-paper p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setPricingType("CUSTOM");
-                setCheckoutMode("REQUEST_ONLY");
-              }}
-              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
-                pricingType === "CUSTOM"
-                  ? "bg-white shadow-sm text-ink"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              Sob consulta
-            </button>
-            <button
-              type="button"
-              onClick={() => setPricingType("FIXED")}
-              className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
-                pricingType === "FIXED"
-                  ? "bg-white shadow-sm text-ink"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              Preço fixo
-            </button>
-          </div>
-          <p className="mt-1.5 text-xs text-ink-muted">
-            {pricingType === "FIXED"
-              ? "O preço é exibido publicamente e o cliente solicita diretamente, sem precisar enviar mensagem."
-              : "O cliente envia um pedido descrevendo o que precisa e você responde com uma proposta."}
-          </p>
+        <div className="grid min-w-0 gap-2">
+          {SALE_MODE_OPTIONS.map((opt) => {
+            const selected = saleMode === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setSaleMode(opt.value)}
+                className={`flex w-full min-w-0 items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
+                  selected
+                    ? "border-leaf/40 bg-mint/30"
+                    : "border-paper-soft bg-paper hover:border-stone-300"
+                }`}
+              >
+                <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 border-current">
+                  {selected ? (
+                    <div className="h-2 w-2 rounded-full bg-leaf" />
+                  ) : null}
+                </div>
+                <div className="grid min-w-0 gap-0.5">
+                  <span className="break-words text-sm font-semibold text-ink">
+                    {opt.label}
+                  </span>
+                  <span className="break-words text-xs leading-5 text-ink-muted">
+                    {opt.description}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+
+          {saleMode === "FIXED_PIX" ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              Requer dados Pix configurados no perfil. O pagamento é feito
+              diretamente para você e a confirmação é manual.
+            </p>
+          ) : null}
         </div>
-
-        {pricingType === "FIXED" ? (
-          <button
-            type="button"
-            onClick={() =>
-              setCheckoutMode((m) =>
-                m === "REQUEST_ONLY" ? "REQUIRE_PIX_PAYMENT" : "REQUEST_ONLY",
-              )
-            }
-            className={`flex w-full min-w-0 cursor-pointer items-start gap-3 rounded-xl border p-3 text-left transition sm:gap-4 sm:p-4 ${
-              checkoutMode === "REQUIRE_PIX_PAYMENT"
-                ? "border-leaf/40 bg-mint/30"
-                : "border-paper-soft bg-paper"
-            }`}
-          >
-            <div className="relative mt-0.5 h-6 w-11 shrink-0">
-              <div
-                className={`h-6 w-11 rounded-full transition-colors duration-200 ${
-                  checkoutMode === "REQUIRE_PIX_PAYMENT"
-                    ? "bg-leaf"
-                    : "bg-stone-300"
-                }`}
-              />
-              <div
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                  checkoutMode === "REQUIRE_PIX_PAYMENT"
-                    ? "translate-x-5"
-                    : "translate-x-0.5"
-                }`}
-              />
-            </div>
-            <div className="grid min-w-0 gap-0.5">
-              <span className="break-words text-sm font-semibold text-ink">
-                Exigir pagamento via Pix
-              </span>
-              <span className="break-words text-xs leading-5 text-ink-muted">
-                {checkoutMode === "REQUIRE_PIX_PAYMENT"
-                  ? "O cliente precisará pagar via Pix para concluir a solicitação. O pagamento é feito diretamente para você e a confirmação continua sendo manual."
-                  : "O cliente apenas envia uma solicitação. Sem opção de pagamento antecipado."}
-              </span>
-            </div>
-          </button>
-        ) : null}
 
         <div className="grid min-w-0 gap-2">
           <label
             className="text-sm font-semibold text-ink"
             htmlFor={`basePrice-${service?.id ?? "new"}`}
           >
-            {pricingType === "FIXED" ? "Preço" : "Preço base"}
-            {pricingType === "FIXED" ? (
+            {saleMode !== "CUSTOM" ? "Preço" : "Preço base"}
+            {saleMode !== "CUSTOM" ? (
               <span className="ml-1 text-red-500">*</span>
             ) : (
               <span className="ml-1 font-normal text-ink-muted">
@@ -389,7 +359,7 @@ export function ServiceForm({
             name="basePrice"
           />
           <p className="text-xs text-ink-muted">
-            {pricingType === "FIXED"
+            {saleMode !== "CUSTOM"
               ? "Exibido publicamente no card do item."
               : "Referência interna. Não é exibido ao cliente."}
           </p>

@@ -11,6 +11,10 @@ import {
 } from "@/lib/actions/quote-request-notes";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import {
+  getServiceSaleMode,
+  SALE_MODE_BADGE_LABEL,
+} from "@/lib/service-sale-mode";
+import {
   buildWaUrl,
   pixDepositMessage,
   proposalApprovedMessage,
@@ -182,10 +186,19 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                 {quoteRequest.service.itemType === "PRODUCT" ? "Produto" : "Serviço"}
               </span>
             ) : null}
-            {quoteRequest.service?.pricingType === "FIXED" ? (
-              <span className="hidden shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf sm:inline-flex">
-                Preço fixo
-              </span>
+            {quoteRequest.service ? (
+              (() => {
+                const sm = getServiceSaleMode({
+                  pricingType: quoteRequest.service.pricingType,
+                  fixedServiceCheckoutMode:
+                    quoteRequest.service.fixedServiceCheckoutMode,
+                });
+                return sm !== "CUSTOM" ? (
+                  <span className="hidden shrink-0 rounded-full border border-mint bg-mint px-2 py-0.5 text-xs font-semibold text-leaf sm:inline-flex">
+                    {SALE_MODE_BADGE_LABEL[sm]}
+                  </span>
+                ) : null;
+              })()
             ) : null}
             {quoteRequest.pixReservationRequestedAt ? (
               <span

@@ -145,7 +145,7 @@ export function PublicServicesGrid({
                     className="mt-4 inline-flex min-h-9 w-fit flex-none items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
                   >
                     {service.pricingType === "FIXED"
-                      ? "Solicitar item →"
+                      ? "Solicitar →"
                       : "Solicitar orçamento →"}
                   </span>
                 )}

@@ -4,6 +4,11 @@ import { useState } from "react";
 
 import { DeleteServiceButton } from "@/components/services/DeleteServiceButton";
 import { ServiceForm } from "@/components/services/ServiceForm";
+import {
+  getServiceSaleMode,
+  SALE_MODE_BADGE_LABEL,
+  type ServiceSaleMode,
+} from "@/lib/service-sale-mode";
 import type { ServiceForClient } from "@/types/service";
 
 type ServiceItemProps = {
@@ -11,14 +16,10 @@ type ServiceItemProps = {
   isPro?: boolean;
 };
 
-const pricingTypeBadge: Record<"FIXED" | "CUSTOM", string> = {
-  FIXED: "bg-mint text-leaf border border-mint",
-  CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft"
-};
-
-const pricingTypeLabel: Record<"FIXED" | "CUSTOM", string> = {
-  FIXED: "Preço fixo",
-  CUSTOM: "Sob consulta"
+const saleModeBadge: Record<ServiceSaleMode, string> = {
+  CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft",
+  FIXED_REQUEST: "bg-mint text-leaf border border-mint",
+  FIXED_PIX: "bg-mint text-leaf border border-mint",
 };
 
 const itemTypeLabel: Record<"SERVICE" | "PRODUCT", string> = {
@@ -36,6 +37,10 @@ function formatPrice(price: string | null): string | null {
 export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
   const [expanded, setExpanded] = useState(false);
   const formattedPrice = formatPrice(service.basePrice);
+  const saleMode = getServiceSaleMode({
+    pricingType: service.pricingType,
+    fixedServiceCheckoutMode: service.fixedServiceCheckoutMode,
+  });
 
   return (
     <article
@@ -72,9 +77,9 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
                 {itemTypeLabel[service.itemType]}
               </span>
               <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${pricingTypeBadge[service.pricingType]}`}
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}
               >
-                {pricingTypeLabel[service.pricingType]}
+                {SALE_MODE_BADGE_LABEL[saleMode]}
               </span>
               {formattedPrice ? (
                 <span className="min-w-0 break-words text-xs text-ink-muted">{formattedPrice}</span>

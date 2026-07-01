@@ -248,9 +248,9 @@ export function QuoteRequestForm({
         {isPending
           ? "Enviando..."
           : requiresPixPayment
-            ? "Continuar para pagamento Pix →"
+            ? "Continuar para pagar com Pix →"
             : isFixed
-              ? "Solicitar item"
+              ? "Solicitar"
               : "Enviar pedido"}
       </button>
     </form>
