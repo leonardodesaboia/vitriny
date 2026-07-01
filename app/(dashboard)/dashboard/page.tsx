@@ -139,35 +139,35 @@ export default async function DashboardPage() {
   const onboardingSteps: OnboardingStep[] = [
     {
       id: "profile",
-      label: "Criar perfil do prestador",
+      label: "Cadastrar dados do negócio",
       description:
         "Adicione o nome do seu negócio, descrição e informações de contato.",
       done: !!profile,
       href: "/dashboard/perfil",
-      actionLabel: "Criar perfil"
+      actionLabel: "Cadastrar negócio"
     },
     {
       id: "publish",
-      label: "Publicar perfil",
-      description: "Ative seu perfil público para que clientes encontrem você.",
+      label: "Publicar vitrine",
+      description: "Ative sua vitrine pública para que clientes encontrem seu negócio.",
       done: profile?.isPublished ?? false,
       href: "/dashboard/perfil",
-      actionLabel: "Publicar perfil"
+      actionLabel: "Publicar vitrine"
     },
     {
       id: "service",
-      label: "Cadastrar pelo menos 1 serviço ativo",
+      label: "Cadastrar pelo menos 1 item ativo",
       description:
-        "Serviços aparecem na página pública e ajudam clientes a entender o que você oferece.",
+        "Os itens aparecem na vitrine pública e ajudam clientes a entender o que você oferece.",
       done: activeServicesCount > 0,
       href: "/dashboard/servicos",
-      actionLabel: "Cadastrar serviço"
+      actionLabel: "Cadastrar item"
     },
     {
       id: "link",
       label: "Copiar ou acessar link público",
       description:
-        "Compartilhe o link do seu perfil com clientes para receber pedidos.",
+        "Compartilhe o link da sua vitrine com clientes para receber pedidos.",
       done: false,
       isCopyStep: true,
       actionLabel: "Copiar link"
@@ -240,7 +240,7 @@ export default async function DashboardPage() {
             Olá, {session.user.name?.split(" ")[0]}
           </h1>
           <p className="mt-2 text-sm text-ink-muted">
-            Gerencie seu perfil, serviços e pedidos em um único painel.
+            Gerencie sua vitrine, seus itens e pedidos em um único painel.
           </p>
         </div>
         <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf" />
@@ -299,41 +299,41 @@ export default async function DashboardPage() {
       <div className="mt-8 grid gap-4 md:grid-cols-3">
         <Card hoverable className="p-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Perfil
+            Vitrine
           </p>
           <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            {profile ? profile.businessName : "Criar perfil"}
+            {profile ? profile.businessName : "Criar vitrine"}
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
             {profile
               ? profile.isPublished
                 ? `Publicado em /u/${profile.slug}`
-                : "Perfil criado, mas não publicado"
-              : "Você ainda não criou seu perfil público."}
+                : "Vitrine criada, mas não publicada"
+              : "Você ainda não criou sua vitrine pública."}
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
-            {profile ? "Editar perfil" : "Criar perfil"}
+            {profile ? "Editar vitrine" : "Criar vitrine"}
           </Link>
         </Card>
 
         <Card hoverable className="p-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Serviços
+            Itens da vitrine
           </p>
           <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            Seus serviços
+            Seus produtos e serviços
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Cadastre os serviços que você oferece para exibir no perfil público.
+            Cadastre os itens que você oferece para exibir na vitrine pública.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
             href="/dashboard/servicos"
           >
-            Gerenciar serviços
+            Gerenciar itens
           </Link>
         </Card>
 
@@ -345,7 +345,7 @@ export default async function DashboardPage() {
             Pedidos recebidos
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Veja os pedidos enviados pelo formulário público e crie propostas.
+            Veja os pedidos enviados pela vitrine e crie propostas quando necessário.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"

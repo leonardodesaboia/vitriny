@@ -88,7 +88,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
           defaultValue={template?.description ?? ""}
           id={`description-${template?.id ?? "new"}`}
           name="description"
-          placeholder="Ex: Detalhes gerais do serviço prestado."
+          placeholder="Ex: Detalhes gerais do pedido ou item solicitado."
         />
       </div>
 

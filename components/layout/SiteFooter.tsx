@@ -40,8 +40,7 @@ export function SiteFooter() {
               Vitriny
             </Link>
             <p className="mt-3 max-w-xs text-sm leading-6 text-ink-muted">
-              Orçamentos profissionais para prestadores de serviço. Do pedido à
-              aprovação, online.
+              Uma vitrine online para produtos, serviços, pedidos e propostas.
             </p>
             <div className="mt-5 flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full bg-leaf" />

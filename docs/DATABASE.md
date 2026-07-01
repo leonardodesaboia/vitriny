@@ -4,6 +4,8 @@
 
 O banco usa PostgreSQL com Prisma. O schema fica em `prisma/schema.prisma`.
 
+A linguagem da interface não altera o schema: `Service` é exibido como item da vitrine, `ProviderProfile` como vitrine pública e `QuoteRequest` como pedido ou solicitação. Os nomes abaixo permanecem técnicos e canônicos no código.
+
 ## Models
 
 ### User

@@ -1,16 +1,28 @@
 # Vitriny
 
-Vitriny é um microSaaS para prestadores de serviço criarem um perfil público, receberem pedidos de orçamento, enviarem propostas e permitirem que clientes aprovem ou recusem por link.
+Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas e oferecerem pagamento via Pix manual.
 
 ## Visão geral
 
-O produto resolve um problema simples: muitos prestadores recebem pedidos soltos por mensagens, perdem contexto e precisam montar propostas manualmente. O Vitriny centraliza esse fluxo em um painel simples.
+O produto resolve um problema simples: pequenos negócios recebem pedidos soltos por mensagens, perdem contexto e precisam organizar retornos e propostas manualmente. O Vitriny centraliza esse fluxo em um painel simples.
 
 Público-alvo:
 
-- prestadores autônomos;
-- pequenos negócios de serviços;
-- profissionais que precisam enviar propostas simples por link.
+- pequenos negócios que vendem produtos ou serviços;
+- profissionais autônomos;
+- negócios que recebem encomendas, pedidos personalizados ou solicitações sob consulta.
+
+## Glossário da interface
+
+A interface usa uma linguagem ampla sem renomear a arquitetura interna:
+
+- **item da vitrine** corresponde ao model interno `Service`;
+- **vitrine pública** corresponde ao `ProviderProfile` publicado em `/u/[slug]`;
+- **pedido** ou **solicitação** corresponde ao model interno `QuoteRequest`;
+- **proposta** corresponde ao model `Proposal` e permanece no fluxo de itens sob consulta;
+- **pagamento via Pix** é manual e feito diretamente ao negócio; o Vitriny não processa nem confirma o pagamento automaticamente.
+
+Rotas, models, enums e nomes técnicos mantêm a nomenclatura original nesta fase.
 
 ## Stack
 
@@ -30,10 +42,10 @@ MVP funcional implementado:
 - landing page;
 - login/logout;
 - dashboard protegido com onboarding por tipo de serviço, métricas mensais, pendências operacionais e atividade recente;
-- perfil do prestador;
-- cadastro de serviços;
-- página pública do prestador em `/u/[slug]`;
-- pedido público de orçamento em `/u/[slug]/orcamento`, com serviço pré-selecionado, contato obrigatório e validação server-side por tipo de serviço;
+- dados do negócio;
+- cadastro de itens da vitrine;
+- vitrine pública do negócio em `/u/[slug]`;
+- pedido público em `/u/[slug]/orcamento`, com item pré-selecionado, contato obrigatório e validação server-side por tipo de item;
 - painel de pedidos recebidos;
 - criação de proposta;
 - página pública da proposta em `/proposta/[publicToken]`;
@@ -44,8 +56,8 @@ MVP funcional implementado:
 - templates de proposta no dashboard;
 - filtro de pedidos por status em `/dashboard/pedidos`;
 - visões rápidas de pedidos abertas pela dashboard: mês atual, pedidos em aberto, propostas aprovadas, pagamentos Pix e entradas pendentes;
-- serviços com preço fixo ou sob orçamento, agendamento opcional e imagem para PRO;
-- Pix manual para entrada de proposta e pagamento antecipado obrigatório de serviço fixo;
+- itens com preço fixo ou sob consulta, agendamento opcional e imagem para PRO;
+- Pix manual para entrada de proposta e pagamento obrigatório de item com preço fixo;
 - download autenticado da proposta em PDF após aprovação ou recusa;
 - personalização global de cores e fontes para usuários PRO;
 - tela de assinatura com faturas carregadas em segundo plano, sem travar o dashboard;
@@ -76,8 +88,8 @@ Planos:
 
 Limites do plano `FREE`:
 
-- até 3 serviços ativos;
-- até 10 pedidos de orçamento por mês;
+- até 3 itens ativos;
+- até 10 pedidos por mês;
 - até 5 propostas por mês;
 - até 1 template de proposta.
 
@@ -99,7 +111,7 @@ A página `/dashboard/billing` permite assinar, cancelar e reativar o PRO, atual
 
 ## Feature PRO: Imagem por serviço
 
-Usuários no plano PRO podem adicionar 1 imagem por serviço (JPEG, PNG ou WebP, máximo 2 MB). A imagem é exibida no card do serviço na página pública `/u/[slug]`.
+Usuários no plano PRO podem adicionar 1 imagem por item (JPEG, PNG ou WebP, máximo 2 MB). A imagem é exibida no card do item na vitrine pública `/u/[slug]`.
 
 O storage usa MinIO (compatível com S3 via `@aws-sdk/client-s3`). As credenciais ficam exclusivamente server-side — nunca expostas ao browser.
 
@@ -257,12 +269,12 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
-   Quando o serviço fixo exige pagamento antecipado, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`. `/u/[slug]/pagamento/[requestId]` permanece apenas para links legados.
-9. Prestador vê o pedido em `/dashboard/pedidos`.
-10. Prestador cria proposta em `/dashboard/propostas/nova?requestId=...`.
+   Quando o item com preço fixo exige pagamento, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`. `/u/[slug]/pagamento/[requestId]` permanece apenas para links legados.
+9. Negócio vê o pedido em `/dashboard/pedidos`.
+10. Negócio cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.
 12. Cliente aprova ou recusa a proposta.
-13. Prestador confere status atualizado em `/dashboard/pedidos`.
+13. Negócio confere status atualizado em `/dashboard/pedidos`.
 
 ## Deploy
 
@@ -311,10 +323,10 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] PostgreSQL + Prisma
 - [x] Auth.js / NextAuth
 - [x] Dashboard protegido
-- [x] Perfil do prestador
-- [x] Cadastro de serviços
-- [x] Página pública do prestador
-- [x] Pedido público de orçamento
+- [x] Dados do negócio
+- [x] Cadastro de itens da vitrine
+- [x] Vitrine pública do negócio
+- [x] Pedido público
 - [x] Painel de pedidos recebidos
 - [x] Criação de proposta
 - [x] Página pública da proposta
@@ -325,9 +337,9 @@ Authorized redirect URI: https://seu-dominio.com/api/auth/callback/google
 - [x] Notas internas do pedido
 - [x] Templates de proposta
 - [x] Planos, limites e assinatura PRO via Stripe
-- [x] Pix manual para propostas e serviços fixos
+- [x] Pix manual para propostas e itens com preço fixo
 - [x] PDF de proposta
-- [x] Imagem por serviço para PRO
+- [x] Imagem por item para PRO
 - [x] Temas globais para PRO
 - [x] Filtro de pedidos por status
 - [x] Polimento visual, validações e preparação para deploy

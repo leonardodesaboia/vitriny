@@ -43,17 +43,17 @@ export function PublicServicesGrid({
     return (
       <div className="mt-6 rounded-xl border border-paper-soft bg-white p-8 shadow-card">
         <p className="font-fraunces text-lg font-bold text-ink">
-          Serviços personalizados
+          Solicitações personalizadas
         </p>
         <p className="mt-2 text-sm leading-6 text-ink-muted">
-          Este prestador aceita solicitações personalizadas. Descreva o que você
-          precisa e ele entrará em contato com uma proposta.
+          Este negócio aceita solicitações personalizadas. Descreva o que você
+          precisa e receba o retorno com uma proposta.
         </p>
         <Link
           href={`/u/${slug}/orcamento`}
           className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         >
-          Solicitar orçamento →
+          Enviar solicitação →
         </Link>
       </div>
     );
@@ -122,7 +122,7 @@ export function PublicServicesGrid({
                   )
                 ) : (
                   <p className="mt-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                    Sob orçamento
+                    Sob consulta
                   </p>
                 )}
                 {pixUnavailable ? (
@@ -142,8 +142,8 @@ export function PublicServicesGrid({
                     className="mt-4 inline-flex min-h-9 w-fit flex-none items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition-colors group-hover:border-leaf group-hover:text-leaf"
                   >
                     {service.pricingType === "FIXED"
-                      ? "Solicitar serviço →"
-                      : "Pedir orçamento →"}
+                      ? "Solicitar item →"
+                      : "Solicitar orçamento →"}
                   </span>
                 )}
               </div>

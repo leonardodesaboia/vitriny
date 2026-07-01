@@ -39,7 +39,7 @@ export function LandingHero() {
             className="inline-flex items-center gap-2 rounded-full border border-mint bg-white px-3 py-1 text-xs font-semibold text-leaf"
           >
             <span className="h-1.5 w-1.5 rounded-full bg-leaf" />
-            Para prestadores de serviço
+            Para pequenos negócios
           </motion.span>
 
           <motion.h1
@@ -49,10 +49,10 @@ export function LandingHero() {
             animate="show"
             className="mt-5 font-fraunces text-5xl font-bold leading-[1.1] tracking-tight text-ink md:text-6xl"
           >
-            Orçamentos
+            Sua vitrine
             <br />
             <span className="relative inline-block">
-              <span className="relative z-10 text-leaf">profissionais.</span>
+              <span className="relative z-10 text-leaf">online.</span>
               <motion.span
                 aria-hidden
                 initial={{ scaleX: 0 }}
@@ -62,7 +62,7 @@ export function LandingHero() {
               />
             </span>
             <br />
-            Aprovados online.
+            Pedidos organizados.
           </motion.h1>
 
           <motion.p
@@ -72,7 +72,7 @@ export function LandingHero() {
             animate="show"
             className="mt-6 text-base leading-7 text-ink-muted"
           >
-            Do pedido à aprovação do cliente — em um painel.
+            Produtos, serviços, pedidos e propostas — em um só painel.
             <br />
             Sem confusão.
           </motion.p>
@@ -205,7 +205,7 @@ export function LandingHero() {
                   { label: "Painel", active: false },
                   { label: "Pedidos", active: true },
                   { label: "Propostas", active: false },
-                  { label: "Perfil", active: false },
+                  { label: "Vitrine", active: false },
                 ].map((item) => (
                   <div
                     key={item.label}

@@ -92,7 +92,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
         <div className="grid gap-2">
           <label className={labelClass} htmlFor="slug">
-            Endereço do perfil <span className="text-red-500">*</span>
+            Endereço da vitrine <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-ink-muted">
@@ -144,7 +144,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
       {/* ── Contato e localização ──────────────────── */}
       <SectionHeader
         label="Contato e localização"
-        description="Exibidos no seu perfil público para os clientes entrarem em contato."
+        description="Exibidos na sua vitrine pública para os clientes entrarem em contato."
       />
 
       <div className="grid gap-5">
@@ -214,7 +214,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
       {/* ── Visibilidade ───────────────────────────── */}
       <SectionHeader
         label="Visibilidade"
-        description="Controla se clientes conseguem acessar seu perfil público e enviar pedidos."
+        description="Controla se clientes conseguem acessar sua vitrine pública e enviar pedidos."
       />
 
       <label
@@ -249,12 +249,12 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
         <div className="grid gap-0.5">
           <span className="text-sm font-semibold text-ink">
-            {isPublished ? "Perfil publicado" : "Perfil oculto"}
+            {isPublished ? "Vitrine publicada" : "Vitrine oculta"}
           </span>
           <span className="text-xs leading-5 text-ink-muted">
             {isPublished
-              ? "Clientes conseguem acessar seu perfil e enviar pedidos de orçamento."
-              : "Seu perfil está oculto. Ative para receber pedidos pelo link público."}
+              ? "Clientes conseguem acessar sua vitrine e enviar pedidos."
+              : "Sua vitrine está oculta. Ative para receber pedidos pelo link público."}
           </span>
           {slug && isPublished ? (
             <span className="mt-1 text-xs font-semibold text-leaf">
@@ -300,7 +300,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
                 <div>
                   <p className="text-sm font-semibold text-ink">Padrão</p>
                   <p className="text-xs text-ink-muted">
-                    Neutro e universal, combina com qualquer prestador.
+                    Neutro e universal, combina com qualquer negócio.
                   </p>
                 </div>
               </div>
@@ -427,7 +427,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           disabled={isPending}
           type="submit"
         >
-          {isPending ? "Salvando..." : "Salvar perfil"}
+          {isPending ? "Salvando..." : "Salvar dados"}
         </button>
       </div>
     </form>

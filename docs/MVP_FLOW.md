@@ -1,31 +1,33 @@
 # MVP Flow
 
+Na interface, produtos e serviços são chamados de itens da vitrine. Os nomes técnicos e as rotas descritos neste documento permanecem inalterados.
+
 ## Checklist completo
 
 1. Usuário acessa landing page.
 2. Usuário faz login.
 3. Usuário acessa dashboard.
 4. Usuário confere plano atual, uso dos limites, métricas do mês, pendências e as cinco movimentações mais recentes.
-5. Usuário cria/edita perfil.
-6. Usuário publica perfil.
-7. Usuário cadastra serviços.
+5. Usuário cadastra/edita os dados do negócio.
+6. Usuário publica a vitrine.
+7. Usuário cadastra itens da vitrine.
 8. Cliente acessa `/u/[slug]`.
 9. Cliente envia pedido; quando o serviço `FIXED` usa `REQUIRE_PIX_PAYMENT`, segue obrigatoriamente para o Pix.
-10. Prestador vê pedido.
-11. Prestador cria proposta (apenas para serviços CUSTOM).
+10. Negócio vê pedido.
+11. Negócio cria proposta (apenas para itens `CUSTOM`).
 12. Cliente acessa `/proposta/[publicToken]`.
 13. Cliente aprova ou recusa.
-14. Se houver entrada Pix, cliente paga diretamente ao prestador e envia comprovante.
-15. Prestador vê status atualizado e marca o entrada como recebido.
+14. Se houver entrada Pix, cliente paga diretamente ao negócio e envia comprovante.
+15. Negócio vê status atualizado e marca a entrada como recebida.
 
 Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
 
 9a. Cliente clica em "Pagar com Pix" no card do serviço.
 9b. Cliente preenche dados e envia formulário.
 9c. Cliente é redirecionado para `/u/[slug]/reserva/[requestId]` com QR Code + código copia e cola.
-9d. Cliente realiza o pagamento Pix diretamente ao prestador.
-9e. Cliente avisa o prestador e envia o comprovante.
-9f. Prestador acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
+9d. Cliente realiza o pagamento Pix diretamente ao negócio.
+9e. Cliente avisa o negócio e envia o comprovante.
+9f. Negócio acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
 9g. `pixReservationPaidAt` é preenchido e o painel exibe badge "Pagamento Pix confirmado".
 
 Compatibilidade legada — Pagamento Pix direto:
@@ -65,7 +67,7 @@ Compatibilidade legada — Pagamento Pix direto:
 - Para serviços `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
 - Esperado: serviço aparece na listagem.
 
-### 4. Página pública
+### 4. Vitrine pública
 
 - Acesse `/u/[slug]`.
 - Esperado: perfil e serviços ativos aparecem.
@@ -82,7 +84,7 @@ Compatibilidade legada — Pagamento Pix direto:
 - Para serviço `CUSTOM` ou `FIXED` em `REQUEST_ONLY`, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
 - Para serviço `FIXED` em `REQUIRE_PIX_PAYMENT`, esperado: `/u/[slug]/reserva/[requestId]` com QR Code e valor de `fixedServiceAmount`.
 - Se o Pix obrigatório deixou de estar configurado, esperado: o pedido não é criado e a página mostra `payment-unavailable`.
-- Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o prestador recebe e-mail avisando sobre o novo pedido.
+- Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o negócio recebe e-mail avisando sobre o novo pedido.
 
 ### 5a. Pagamento Pix obrigatório (serviços FIXED com REQUIRE_PIX_PAYMENT)
 
@@ -90,7 +92,7 @@ Compatibilidade legada — Pagamento Pix direto:
 - O formulário informa que o pagamento é obrigatório e exibe o valor em destaque.
 - Envie o formulário.
 - Esperado: redirecionamento para `/u/[slug]/reserva/[requestId]` com QR Code Pix e código copia e cola.
-- O valor exibido é o snapshot `fixedServiceAmount` — não muda mesmo se o prestador alterar o preço depois.
+- O valor exibido é o snapshot `fixedServiceAmount` — não muda mesmo se o negócio alterar o preço depois.
 
 Como verificar no banco:
 
@@ -134,17 +136,17 @@ Como verificar:
   - `Proposal.status` vira `APPROVED` ou `REJECTED`.
   - `Proposal.respondedAt` é preenchido.
   - `QuoteRequest.status` vira `CLOSED`.
-  - O prestador recebe e-mail avisando se a proposta foi aprovada ou recusada.
+  - O negócio recebe e-mail avisando se a proposta foi aprovada ou recusada.
 
 ### 10. Pix manual para entrada
 
-- Se a proposta aprovada tiver `depositAmount > 0` e o prestador tiver `pixKey`, `pixHolderName` e `pixCity`, a página pública mostra QR Code Pix e código Pix copia e cola.
+- Se a proposta aprovada tiver `depositAmount > 0` e o negócio tiver `pixKey`, `pixHolderName` e `pixCity`, a página pública mostra QR Code Pix e código Pix copia e cola.
 - Esperado: cliente vê as mensagens:
-  - "Pagamento feito diretamente ao prestador."
+  - "Pagamento feito diretamente ao negócio."
   - "O Vitriny não confirma esse pagamento automaticamente."
-  - "Após pagar, envie o comprovante ao prestador ou combine a confirmação diretamente com ele."
-- Cliente paga fora da plataforma e envia o comprovante ao prestador.
-- Prestador acessa `/dashboard/pedidos` e clica em `Marcar como recebido`.
+  - "Após pagar, envie o comprovante ao negócio ou combine a confirmação diretamente."
+- Cliente paga fora da plataforma e envia o comprovante ao negócio.
+- Negócio acessa `/dashboard/pedidos` e clica em `Marcar como recebido`.
 - Esperado: `Proposal.depositPaidAt` é preenchido e o painel mostra entrada recebido.
 
 ## Erros comuns
@@ -170,7 +172,7 @@ Verificar:
 - se o cliente informou e-mail no pedido (necessário para receber proposta)
 - se o perfil do prestador tem e-mail; caso contrário, o app tenta usar o e-mail da conta
 
-### Perfil público retorna 404
+### Vitrine pública retorna 404
 
 Verificar:
 

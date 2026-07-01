@@ -87,7 +87,7 @@ const proposalStatusBadge: Record<string, string> = {
 
 const actorLabels: Record<QuoteRequestStatusActor, string> = {
   CUSTOMER: "Cliente",
-  PROVIDER: "Prestador",
+  PROVIDER: "Negócio",
   SYSTEM: "Sistema"
 };
 
@@ -149,7 +149,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
   const customerWhatsAppUrl = quoteRequest.customerPhone
     ? buildWaUrl(
         quoteRequest.customerPhone,
-        `Oi, ${quoteRequest.customerName}! Recebi seu pedido de orçamento e vou te responder por aqui.`
+        `Oi, ${quoteRequest.customerName}! Recebi seu pedido e vou te responder por aqui.`
       )
     : "";
 
@@ -206,7 +206,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             {quoteRequest.customerName}
           </p>
           <p className="mt-1 line-clamp-1 text-xs text-ink-muted">
-            {serviceLabel ?? "Serviço não informado"}
+            {serviceLabel ?? "Item não informado"}
           </p>
         </div>
 
@@ -278,7 +278,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             </div>
             <div className="min-w-0 rounded-lg border border-paper-soft bg-paper px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                Serviço
+                Item
               </p>
               <p className="mt-1 break-words text-sm text-ink">
                 {serviceLabel ?? (
@@ -490,16 +490,16 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                           message={pixDepositMessage(
                             quoteRequest.customerName,
                             formattedDeposit,
-                            "(configure a chave Pix no perfil)",
-                            "(configure o titular no perfil)"
+                            "(configure a chave Pix nos dados do negócio)",
+                            "(configure o titular nos dados do negócio)"
                           )}
                           waUrl={buildWaUrl(
                             quoteRequest.customerPhone,
                             pixDepositMessage(
                               quoteRequest.customerName,
                               formattedDeposit,
-                              "(configure a chave Pix no perfil)",
-                              "(configure o titular no perfil)"
+                              "(configure a chave Pix nos dados do negócio)",
+                              "(configure o titular nos dados do negócio)"
                             )
                           )}
                         />
@@ -521,7 +521,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               ) : (
                 <div className="rounded-lg border border-mint bg-mint/30 px-4 py-3">
                   <p className="text-sm text-ink-muted">
-                    Serviço com preço fixo. Este pedido não precisa de proposta.
+                    Item com preço fixo. Este pedido não precisa de proposta.
                   </p>
                 </div>
               )}
@@ -530,7 +530,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               {quoteRequest.pixReservationRequestedAt ? (
                 <div className="rounded-xl border border-paper-soft bg-paper p-4 sm:p-5">
                   <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-                    Pagamento antecipado via Pix
+                    Pagamento Pix do pedido
                   </p>
                   {quoteRequest.fixedServiceAmount ? (
                     <p className="mt-1 font-fraunces text-xl font-bold text-ink">
@@ -654,7 +654,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                         </p>
                         <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                           <span className="break-words text-xs text-ink-muted">
-                            {note.author.name ?? note.author.email ?? "Prestador"} ·{" "}
+                            {note.author.name ?? note.author.email ?? "Profissional"} ·{" "}
                             {formatDate(note.createdAt)}
                           </span>
                           <div className="flex gap-3">

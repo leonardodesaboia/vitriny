@@ -24,7 +24,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <>
       <p className="font-fraunces text-3xl font-bold text-ink">Entrar</p>
       <p className="mt-3 text-sm leading-6 text-ink-muted">
-        Acesse o painel do prestador.
+        Acesse o painel do seu negócio.
       </p>
 
       {query.reset ? (

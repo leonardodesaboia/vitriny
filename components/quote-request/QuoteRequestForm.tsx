@@ -75,7 +75,7 @@ export function QuoteRequestForm({
       {requiresPixPayment && selectedService?.basePrice ? (
         <div className="rounded-xl border border-leaf/30 bg-mint/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Valor da reserva
+            Valor do pedido
           </p>
           <p className="mt-1 font-fraunces text-3xl font-bold text-ink">
             {formatMoney(selectedService.basePrice)}
@@ -89,7 +89,7 @@ export function QuoteRequestForm({
         <div className="min-w-0 overflow-hidden rounded-xl border border-paper-soft bg-white p-4">
           <input name="serviceId" type="hidden" value={selectedService.id} />
           <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-            Serviço selecionado
+            Item selecionado
           </p>
           <p className="mt-1 break-words font-fraunces text-lg font-bold text-ink">
             {selectedService.name}
@@ -150,7 +150,7 @@ export function QuoteRequestForm({
       {!selectedService && services.length > 0 ? (
         <div className="grid gap-2">
           <label className={labelClass} htmlFor="serviceId">
-            Serviço
+            Item
           </label>
           <select
             className={inputClass}
@@ -246,7 +246,7 @@ export function QuoteRequestForm({
           : requiresPixPayment
             ? "Continuar para pagamento Pix →"
             : isFixed
-              ? "Solicitar serviço"
+              ? "Solicitar item"
               : "Enviar pedido"}
       </button>
     </form>

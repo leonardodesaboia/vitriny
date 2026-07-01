@@ -49,7 +49,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const { profile, service } = await resolveService(session.user.id, serviceId);
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
   if (profile.plan !== "PRO") {
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   if (!service) {
-    return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
   }
 
   let formData: FormData;
@@ -136,7 +136,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const { profile, service } = await resolveService(session.user.id, serviceId);
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
   if (profile.plan !== "PRO") {
@@ -147,11 +147,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   }
 
   if (!service) {
-    return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
   }
 
   if (!service.imageStorageKey) {
-    return NextResponse.json({ error: "Este serviço não tem imagem." }, { status: 404 });
+    return NextResponse.json({ error: "Este item não tem imagem." }, { status: 404 });
   }
 
   try {

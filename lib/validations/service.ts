@@ -26,7 +26,7 @@ export const serviceSchema = z
     name: z
       .string()
       .trim()
-      .min(2, "Informe o nome do serviço.")
+      .min(2, "Informe o nome do item.")
       .max(120, "Use no máximo 120 caracteres."),
     description: optionalText.pipe(
       z.string().max(600, "Use no máximo 600 caracteres.").nullable()
@@ -44,7 +44,7 @@ export const serviceSchema = z
     if (data.pricingType === "FIXED" && (!data.basePrice || price <= 0)) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Informe o preço para serviço com preço fixo.",
+        message: "Informe o preço para o item com preço fixo.",
         path: ["basePrice"]
       });
     }

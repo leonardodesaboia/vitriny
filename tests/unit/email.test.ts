@@ -98,7 +98,7 @@ describe("notificações da aplicação", () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "prestador@example.com",
-        subject: "Novo pedido de orçamento — Vitriny",
+        subject: "Novo pedido — Vitriny",
         html: expect.stringContaining("Pintura")
       })
     );

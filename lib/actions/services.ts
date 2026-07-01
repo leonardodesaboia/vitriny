@@ -63,7 +63,7 @@ export async function createService(
     if (!pixConfigured) {
       return {
         error:
-          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+          "Configure sua chave Pix, nome do titular e cidade nos dados do negócio antes de ativar pagamento via Pix."
       };
     }
   }
@@ -129,7 +129,7 @@ export async function updateService(
     if (!pixConfigured) {
       return {
         error:
-          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+          "Configure sua chave Pix, nome do titular e cidade nos dados do negócio antes de ativar pagamento via Pix."
       };
     }
   }

@@ -24,7 +24,7 @@ export default async function RegisterPage({ searchParams }: RegisterPageProps) 
     <>
       <p className="font-fraunces text-3xl font-bold text-ink">Criar conta</p>
       <p className="mt-3 text-sm leading-6 text-ink-muted">
-        Cadastre-se para criar seu perfil de prestador.
+        Cadastre-se para criar sua vitrine online.
       </p>
 
       <GoogleButton className={googleButtonClassName} />

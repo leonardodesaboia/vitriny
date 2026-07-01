@@ -76,7 +76,7 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
         <div className="grid gap-5">
           <div className="grid gap-1.5">
             <label className="text-sm font-semibold text-ink" htmlFor="description-simple">
-              Descrição do serviço{" "}
+              Descrição do pedido{" "}
               <span className="font-normal text-ink-muted">(opcional)</span>
             </label>
             <textarea
@@ -112,7 +112,7 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
               defaultValue={initialValues?.description ?? ""}
               id="description-itemized"
               name="description"
-              placeholder="Ex: Detalhes gerais do serviço prestado."
+              placeholder="Ex: Detalhes gerais do pedido ou item solicitado."
             />
           </div>
 
@@ -129,7 +129,7 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
           Entrada (sinal)
         </p>
         <p className="mt-1 text-sm text-ink-muted">
-          Valor que o cliente paga antecipadamente para confirmar a reserva. Você recebe via Pix e marca como recebido manualmente.
+          Valor que o cliente paga antecipadamente para confirmar a contratação. Você recebe via Pix e marca como recebido manualmente.
         </p>
         <div className="mt-4 grid gap-1.5">
           <label className="text-sm font-semibold text-ink" htmlFor="depositAmount">

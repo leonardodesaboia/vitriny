@@ -84,7 +84,7 @@ export function ServiceForm({
             if (data?.error) {
               setImageMessage({
                 type: "error",
-                text: "Serviço salvo, mas a imagem falhou. Tente reenviar.",
+                text: "Item salvo, mas a imagem falhou. Tente reenviar.",
               });
             } else {
               setImageMessage(null);
@@ -103,7 +103,7 @@ export function ServiceForm({
           if (isEditing) {
             setImageMessage({
               type: "error",
-              text: "Serviço salvo, mas a imagem falhou. Tente reenviar.",
+              text: "Item salvo, mas a imagem falhou. Tente reenviar.",
             });
             router.refresh();
           } else {
@@ -193,7 +193,7 @@ export function ServiceForm({
 
       {savedSuccess ? (
         <p className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-          Serviço salvo com sucesso!
+          Item salvo com sucesso!
         </p>
       ) : null}
 
@@ -212,7 +212,7 @@ export function ServiceForm({
             className="text-sm font-semibold text-ink"
             htmlFor={`name-${service?.id ?? "new"}`}
           >
-            Nome do serviço
+            Nome do item
           </label>
           <input
             className="min-h-11 w-full min-w-0 rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
@@ -241,7 +241,7 @@ export function ServiceForm({
             id={`description-${service?.id ?? "new"}`}
             maxLength={600}
             name="description"
-            placeholder="Descreva o serviço, o que está incluso, diferenciais…"
+            placeholder="Descreva o item, o que está incluso e seus diferenciais…"
           />
           <p className="text-xs text-ink-muted">Máximo 600 caracteres.</p>
         </div>
@@ -265,7 +265,7 @@ export function ServiceForm({
                   : "text-ink-muted hover:text-ink"
               }`}
             >
-              Sob orçamento
+              Sob consulta
             </button>
             <button
               type="button"
@@ -318,7 +318,7 @@ export function ServiceForm({
             </div>
             <div className="grid min-w-0 gap-0.5">
               <span className="break-words text-sm font-semibold text-ink">
-                Exigir pagamento antecipado via Pix
+                Exigir pagamento via Pix
               </span>
               <span className="break-words text-xs leading-5 text-ink-muted">
                 {checkoutMode === "REQUIRE_PIX_PAYMENT"
@@ -351,7 +351,7 @@ export function ServiceForm({
           />
           <p className="text-xs text-ink-muted">
             {pricingType === "FIXED"
-              ? "Exibido publicamente no card do serviço."
+              ? "Exibido publicamente no card do item."
               : "Referência interna. Não é exibido ao cliente."}
           </p>
         </div>
@@ -389,8 +389,8 @@ export function ServiceForm({
             </span>
             <span className="break-words text-xs leading-5 text-ink-muted">
               {isActive
-                ? "Este serviço aparece no seu perfil e os clientes podem solicitá-lo."
-                : "Este serviço está oculto. Clientes não conseguem vê-lo nem solicitá-lo."}
+                ? "Este item aparece na sua vitrine e os clientes podem solicitá-lo."
+                : "Este item está oculto. Clientes não conseguem vê-lo nem solicitá-lo."}
             </span>
           </div>
         </button>
@@ -423,7 +423,7 @@ export function ServiceForm({
             </span>
             <span className="break-words text-xs leading-5 text-ink-muted">
               {requiresScheduling
-                ? "O formulário de pedido pedirá a data desejada, horário ou período e o local do serviço."
+                ? "O formulário de pedido pedirá a data desejada, horário ou período e o local do atendimento ou entrega."
                 : "O formulário de pedido não pede informações de agendamento."}
             </span>
           </div>
@@ -437,7 +437,7 @@ export function ServiceForm({
         {!isPro ? (
           <div className="flex min-w-0 items-center gap-3 rounded-xl border border-paper-soft bg-paper px-4 py-3">
             <p className="text-xs text-ink-muted">
-              Imagem por serviço está disponível no plano{" "}
+              Imagem por item está disponível no plano{" "}
               <span className="font-semibold text-ink">PRO</span>.
             </p>
           </div>
@@ -555,8 +555,8 @@ export function ServiceForm({
               ? "Salvando e enviando imagem..."
               : "Salvando..."
             : service
-              ? "Salvar serviço"
-              : "Cadastrar serviço"}
+              ? "Salvar item"
+              : "Cadastrar item"}
         </button>
         {onCancel ? (
           <button

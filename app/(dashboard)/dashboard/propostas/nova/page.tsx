@@ -17,7 +17,7 @@ type NewProposalPageProps = {
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados da proposta.",
   exists: "Este pedido já possui uma proposta.",
-  "fixed-price": "Pedidos de serviço com preço fixo não geram proposta.",
+  "fixed-price": "Pedidos de item com preço fixo não geram proposta.",
   "limit-monthly-proposals":
     LIMIT_ERROR_MESSAGES["limit-monthly-proposals"]
 };
@@ -107,7 +107,7 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           <div className="mt-8 rounded-lg border border-mint bg-mint/30 p-5">
             <h2 className="text-xl font-bold text-ink">Preço fixo</h2>
             <p className="mt-2 text-sm leading-6 text-stone-700">
-              Este pedido veio de um serviço com preço fixo, então não é possível criar proposta.
+              Este pedido veio de um item com preço fixo, então não é possível criar proposta.
             </p>
             <Link
               className="mt-3 inline-flex min-h-10 items-center justify-center rounded-md bg-leaf px-4 text-sm font-semibold text-white transition hover:bg-leaf-hover"

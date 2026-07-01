@@ -23,9 +23,9 @@ export function DeleteServiceButton({ serviceId, serviceName }: { serviceId: str
       <ConfirmModal
         open={open}
         title={`Excluir "${serviceName}"`}
-        description="O serviço será removido permanentemente. Pedidos já recebidos não serão afetados."
-        eyebrow="Serviços"
-        confirmLabel="Excluir serviço"
+        description="O item será removido permanentemente. Pedidos já recebidos não serão afetados."
+        eyebrow="Itens da vitrine"
+        confirmLabel="Excluir item"
         variant="danger"
         pending={isPending}
         pendingLabel="Excluindo..."

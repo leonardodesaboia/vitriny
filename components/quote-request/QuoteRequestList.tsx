@@ -9,7 +9,7 @@ type QuoteRequestListProps = {
 };
 
 export function QuoteRequestList({
-  emptyDescription = "Quando um cliente preencher o formulário do seu perfil, os pedidos aparecerão aqui.",
+  emptyDescription = "Quando um cliente preencher o formulário da sua vitrine, os pedidos aparecerão aqui.",
   emptyTitle = "Nenhum pedido ainda",
   quoteRequests,
   services

@@ -24,7 +24,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   });
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
   const proposal = await prisma.proposal.findFirst({

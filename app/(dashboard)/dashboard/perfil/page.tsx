@@ -11,7 +11,7 @@ type ProviderProfilePageProps = {
 };
 
 const errorMessages: Record<string, string> = {
-  invalid: "Revise os dados do perfil.",
+  invalid: "Revise os dados do negócio.",
   slug: "Este endereço público já está em uso."
 };
 
@@ -37,16 +37,16 @@ export default async function ProviderProfilePage({
         Configurações
       </p>
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-        {profile ? "Editar perfil" : "Criar perfil"}
+        {profile ? "Editar dados do negócio" : "Cadastrar negócio"}
       </h1>
       <p className="mt-2 text-sm text-ink-muted">
-        Estes dados aparecem na sua página pública e nas propostas enviadas.
+        Estes dados aparecem na sua vitrine pública e nas propostas enviadas.
       </p>
 
       {params.error ? (
         <div className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
-            {errorMessages[params.error] ?? "Não foi possível salvar o perfil."}
+            {errorMessages[params.error] ?? "Não foi possível salvar os dados do negócio."}
           </p>
         </div>
       ) : null}

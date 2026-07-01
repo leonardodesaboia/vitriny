@@ -46,7 +46,7 @@ function StepProfileCard() {
           ))}
         </div>
         <div className="mt-3 rounded-md bg-leaf px-3 py-1.5 text-center text-[11px] font-semibold text-white">
-          Pedir orçamento
+          Enviar pedido
         </div>
       </div>
     </div>
@@ -57,11 +57,11 @@ function StepRequestCard() {
   return (
     <div className="overflow-hidden rounded-xl border border-paper-soft bg-white">
       <div className="border-b border-paper-soft px-4 py-2.5">
-        <p className="text-xs font-semibold text-ink">Pedido de orçamento</p>
+        <p className="text-xs font-semibold text-ink">Novo pedido</p>
       </div>
       <div className="space-y-2.5 p-4">
         {[
-          { label: "Serviço", value: "Instalação elétrica" },
+          { label: "Item", value: "Instalação elétrica" },
           { label: "Nome", value: "Ana Lima" },
           { label: "Contato", value: "ana@email.com" },
         ].map((f) => (
@@ -161,7 +161,7 @@ function StepProposalCard() {
 const steps = [
   {
     n: "01",
-    title: "Publique seu perfil",
+    title: "Publique sua vitrine",
     text: "Seu link em minutos.",
     visual: <StepProfileCard />,
   },

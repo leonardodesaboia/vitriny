@@ -11,7 +11,7 @@ export function ServiceList({ services, isPro = false }: ServiceListProps) {
     return (
       <div className="rounded-xl border border-paper-soft bg-paper p-5">
         <p className="text-sm leading-6 text-ink-muted">
-          Nenhum serviço cadastrado ainda.
+          Nenhum item cadastrado ainda.
         </p>
       </div>
     );

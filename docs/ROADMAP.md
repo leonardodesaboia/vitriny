@@ -1,14 +1,18 @@
 # Roadmap
 
+## Direção de produto
+
+O Vitriny atende pequenos negócios que apresentam produtos e serviços. A interface usa “itens da vitrine”, “vitrine pública” e “pedidos”, enquanto models, enums e rotas mantêm a nomenclatura técnica original.
+
 ## Concluído
 
 - Base Next.js + TypeScript + Tailwind
 - PostgreSQL + Prisma
 - Auth.js / NextAuth
 - Dashboard protegido
-- Perfil do prestador
-- Cadastro de serviços
-- Página pública do prestador
+- Dados do negócio
+- Cadastro de itens da vitrine
+- Vitrine pública do negócio
 - Pedido público de orçamento
 - Painel de pedidos recebidos
 - Criação de proposta
@@ -26,11 +30,11 @@
 - Polimento visual, validações e preparação para deploy
 - Assinatura mensal PRO via Stripe Checkout embutido, gestão de pagamento, portal, faturas e webhook
 - Testes automatizados unitários, de actions, integração com banco real e E2E com Playwright
-- Tipos de preço de serviço: FIXED (preço exibido publicamente) e CUSTOM (sob orçamento)
+- Tipos de preço de item: `FIXED` (preço exibido publicamente) e `CUSTOM` (sob consulta)
 - Exclusão de serviço com confirmação
 - Edição de nota do cliente diretamente no card do pedido
 - Lista de serviços colapsável com padrão accordion (expandir ao clicar)
-- Pagamento antecipado Pix obrigatório para serviços fixos, com confirmação manual
+- Pagamento Pix obrigatório para itens com preço fixo, com confirmação manual
 - Entrada Pix em proposta aprovada
 - Imagem por serviço para usuários PRO
 - Geração autenticada de PDF de proposta
@@ -50,7 +54,7 @@
 
 - Criar página de detalhe do pedido.
 - Melhorar mensagens de erro por campo.
-- Adicionar página de configurações do prestador.
+- Adicionar página de configurações do negócio.
 - Criar página de detalhe da proposta.
 - Verificação de e-mail no cadastro por senha (não implementado nesta etapa).
 - Vínculo de contas entre Google e e-mail/senha quando o e-mail coincide (hoje bloqueado deliberadamente, sem auto-merge).

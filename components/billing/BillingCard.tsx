@@ -266,7 +266,7 @@ export function BillingCard({
             </p>
             <ul className="mt-3 grid gap-2 text-sm text-ink sm:grid-cols-2">
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Serviços ativos ilimitados
+                <span className="text-leaf">✓</span> Itens ativos ilimitados
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Pedidos ilimitados por mês

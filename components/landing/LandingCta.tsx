@@ -21,10 +21,10 @@ export function LandingCta() {
       >
         <h2 className="font-fraunces text-4xl font-bold leading-tight text-white md:text-5xl">
           Pronto para fechar
-          <br />mais serviços?
+          <br />mais produtos e serviços?
         </h2>
         <p className="mt-4 text-base text-white/70">
-          Crie sua conta e publique seu perfil em menos de 5 minutos.
+          Crie sua conta e publique sua vitrine em menos de 5 minutos.
         </p>
 
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

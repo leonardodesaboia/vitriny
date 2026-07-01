@@ -46,7 +46,7 @@ const navItems = [
   },
   {
     href: "/dashboard/servicos",
-    label: "Serviços",
+    label: "Itens da vitrine",
     icon: (
       <svg
         className="h-4 w-4"
@@ -109,7 +109,7 @@ const navItems = [
   },
   {
     href: "/dashboard/perfil",
-    label: "Perfil",
+    label: "Vitrine",
     icon: (
       <svg
         className="h-4 w-4"

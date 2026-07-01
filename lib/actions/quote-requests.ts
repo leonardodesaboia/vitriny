@@ -259,7 +259,7 @@ export async function updateQuoteRequestDescription(
   formData: FormData
 ): Promise<ActionResult> {
   const { profile } = await requireProviderProfile();
-  if (!profile) return { error: "Perfil não encontrado." };
+  if (!profile) return { error: "Dados do negócio não encontrados." };
 
   const requestId = String(formData.get("requestId") ?? "");
   const raw = String(formData.get("description") ?? "").trim();

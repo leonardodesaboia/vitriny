@@ -71,7 +71,7 @@ const statusLabels: Record<string, string> = {
 
 const actorLabels: Record<string, string> = {
   CUSTOMER: "Cliente",
-  PROVIDER: "Prestador",
+  PROVIDER: "Negócio",
   SYSTEM: "Sistema",
 };
 
@@ -436,13 +436,13 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
       <Page size="A4" style={s.page}>
         {/* ── Header ── */}
         <View style={s.header}>
-          <Text style={s.headerLabel}>ORÇAFÁCIL · PROPOSTA COMERCIAL</Text>
+          <Text style={s.headerLabel}>VITRINY · PROPOSTA COMERCIAL</Text>
           <Text style={s.headerTitle}>
             {proposal.title ?? proposal.provider.businessName}
           </Text>
           {proposal.quoteRequest.service?.name ? (
             <Text style={s.headerService}>
-              Serviço: {proposal.quoteRequest.service.name}
+              Item: {proposal.quoteRequest.service.name}
             </Text>
           ) : null}
           <View style={s.headerBadgeRow}>
@@ -462,7 +462,7 @@ export function ProposalPdf({ proposal }: { proposal: ProposalPdfData }) {
           {/* ── Prestador / Cliente ── */}
           <View style={s.partiesRow}>
             <View style={[s.partyCard, s.partyCardLeft]}>
-              <Text style={s.sectionLabelLeaf}>PRESTADOR</Text>
+              <Text style={s.sectionLabelLeaf}>NEGÓCIO</Text>
               <Text style={s.partyName}>{proposal.provider.businessName}</Text>
               {proposal.provider.email ? (
                 <View style={s.infoRow}>

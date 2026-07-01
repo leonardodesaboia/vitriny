@@ -24,7 +24,7 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Vitriny",
   description:
-    "MicroSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.",
+    "Vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas e oferecerem pagamento via Pix manual.",
 };
 
 export default function RootLayout({

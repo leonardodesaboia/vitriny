@@ -79,7 +79,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Descreva o que você precisa para solicitar um orçamento."
+      error: "Descreva o que você precisa para enviar a solicitação."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -106,7 +106,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Informe data, horário e local para este serviço."
+      error: "Informe data, horário e local para este item."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });

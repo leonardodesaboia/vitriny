@@ -2,7 +2,16 @@
 
 ## Resumo rápido
 
-Vitriny é um MVP de microSaaS para prestadores receberem pedidos de orçamento e enviarem propostas por link.
+Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas por link e oferecerem pagamento via Pix manual.
+
+## Linguagem da interface
+
+- `Service` aparece para o usuário como **item da vitrine**;
+- `ProviderProfile` publicado aparece como **vitrine pública**;
+- `QuoteRequest` aparece como **pedido** ou **solicitação**;
+- `Proposal` continua sendo **proposta** no fluxo de itens sob consulta;
+- rotas, models, enums e identificadores internos não foram renomeados;
+- Pix do cliente final continua manual, sem processamento ou confirmação automática pela plataforma.
 
 O MVP principal está implementado.
 

@@ -74,7 +74,7 @@ export function validateQuoteRequestForService(
   referenceDate = new Date()
 ) {
   if (service?.pricingType !== "FIXED" && !input.description) {
-    return "Descreva o que você precisa para solicitar um orçamento.";
+    return "Descreva o que você precisa para enviar a solicitação.";
   }
 
   if (
@@ -86,7 +86,7 @@ export function validateQuoteRequestForService(
 
   if (service?.requiresSchedulingDetails) {
     if (!input.desiredDate || !input.desiredTime || !input.location) {
-      return "Informe data, horário e local para este serviço.";
+      return "Informe data, horário e local para este item.";
     }
   }
 

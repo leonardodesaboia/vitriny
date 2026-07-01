@@ -137,7 +137,7 @@ describe("buildOnboardingOutcomeStep", () => {
     ).toMatchObject({
       done: true,
       id: "fixed-request",
-      label: "Receber primeiro pedido de serviço"
+      label: "Receber primeiro pedido"
     });
   });
 

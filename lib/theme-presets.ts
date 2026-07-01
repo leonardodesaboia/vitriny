@@ -16,7 +16,7 @@ export const THEME_PRESETS: Record<ProviderThemePreset, PublicThemePreset> = {
   DEFAULT: {
     id: "DEFAULT",
     name: "Padrão",
-    description: "Neutro e universal, combina com qualquer prestador.",
+    description: "Neutro e universal, combina com qualquer negócio.",
     fontLabel: "Fraunces + Plus Jakarta Sans",
     preview: {
       background: "bg-paper",
@@ -60,7 +60,7 @@ export const THEME_PRESETS: Record<ProviderThemePreset, PublicThemePreset> = {
   PREMIUM: {
     id: "PREMIUM",
     name: "Premium",
-    description: "Dourado sóbrio para serviços de maior valor.",
+    description: "Dourado sóbrio para itens de maior valor.",
     fontLabel: "Fraunces + Plus Jakarta Sans",
     preview: {
       background: "bg-paper",

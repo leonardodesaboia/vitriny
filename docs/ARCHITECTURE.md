@@ -4,6 +4,8 @@
 
 Vitriny usa Next.js App Router com Server Components, Server Actions, Prisma e PostgreSQL.
 
+Na interface, `Service`, `ProviderProfile` e `QuoteRequest` são apresentados respectivamente como item da vitrine, vitrine pública e pedido/solicitação. A nomenclatura técnica, as rotas e os models permanecem inalterados.
+
 Fluxo simplificado:
 
 ```text

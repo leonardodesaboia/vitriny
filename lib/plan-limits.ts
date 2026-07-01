@@ -22,7 +22,7 @@ export const PLAN_LIMIT_ERROR_CODES: Record<LimitedResource, PlanLimitCode> = {
 };
 
 export const PLAN_LIMIT_LABELS: Record<LimitedResource, string> = {
-  activeServices: "Serviços ativos",
+  activeServices: "Itens ativos",
   monthlyQuoteRequests: "Pedidos no mês",
   monthlyProposals: "Propostas no mês",
   proposalTemplates: "Templates de proposta"
@@ -50,7 +50,7 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
 
 export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   "limit-active-services":
-    "Limite de serviços ativos atingido para o plano atual.",
+    "Limite de itens ativos atingido para o plano atual.",
   "limit-monthly-quote-requests":
     "Limite mensal de pedidos atingido para o plano atual.",
   "limit-monthly-proposals":
@@ -62,7 +62,7 @@ export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
 export const PUBLIC_LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   ...LIMIT_ERROR_MESSAGES,
   "limit-monthly-quote-requests":
-    "Este prestador atingiu o limite mensal de pedidos no plano atual. Tente falar diretamente com ele pelos canais disponíveis."
+    "Este negócio atingiu o limite mensal de pedidos no plano atual. Tente entrar em contato pelos canais disponíveis."
 };
 
 export function getPlanLimits(plan: PlanTier): PlanLimits {

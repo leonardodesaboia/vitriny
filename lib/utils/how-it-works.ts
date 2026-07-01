@@ -29,19 +29,19 @@ export function getHowItWorksContent(services: ServiceInput[]): {
 
   if (hasCustom && hasFixed) {
     return {
-      title: "Serviços fixos e sob orçamento",
+      title: "Itens com preço fixo e sob consulta",
       steps: [
         {
           step: "1",
           title: "Escolha ou descreva",
           description:
-            "Selecione um serviço da lista ou descreva livremente o que precisa."
+            "Selecione um item da vitrine ou descreva livremente o que precisa."
         },
         {
           step: "2",
-          title: "Prestador avalia",
+          title: "O negócio avalia",
           description:
-            "O prestador analisa e confirma disponibilidade ou prepara uma proposta."
+            "O negócio analisa e confirma disponibilidade ou prepara uma proposta."
         },
         {
           step: "3",
@@ -70,7 +70,7 @@ export function getHowItWorksContent(services: ServiceInput[]): {
           step: "3",
           title: "Confirmação manual",
           description:
-            "O prestador confirma o recebimento e finaliza o agendamento."
+            "O negócio confirma o recebimento e combina os próximos passos."
         }
       ]
     };
@@ -82,18 +82,18 @@ export function getHowItWorksContent(services: ServiceInput[]): {
       steps: [
         {
           step: "1",
-          title: "Escolha o serviço",
-          description: "Selecione o serviço desejado e preencha seus dados."
+          title: "Escolha o item",
+          description: "Selecione o item desejado e preencha seus dados."
         },
         {
           step: "2",
-          title: "Prestador avalia",
+          title: "O negócio avalia",
           description:
-            "O prestador analisa a solicitação e confirma disponibilidade."
+            "O negócio analisa a solicitação e confirma disponibilidade."
         },
         {
           step: "3",
-          title: "Prestador entra em contato",
+          title: "O negócio entra em contato",
           description: "Você recebe o retorno pelo contato informado."
         }
       ]
@@ -111,9 +111,9 @@ export function getHowItWorksContent(services: ServiceInput[]): {
       },
       {
         step: "2",
-        title: "Prestador avalia",
+        title: "O negócio avalia",
         description:
-          "O prestador analisa seu pedido e prepara uma proposta personalizada."
+          "O negócio analisa seu pedido e prepara uma proposta personalizada."
       },
       {
         step: "3",

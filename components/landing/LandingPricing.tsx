@@ -4,9 +4,9 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 const free = [
-  "Perfil público com link próprio",
-  "Até 3 serviços ativos",
-  "10 pedidos de orçamento/mês",
+  "Vitrine pública com link próprio",
+  "Até 3 itens ativos",
+  "10 pedidos/mês",
   "5 propostas/mês",
   "1 template de proposta",
   "Aprovação online pelo cliente"
@@ -14,7 +14,7 @@ const free = [
 
 const pro = [
   "Tudo do plano Grátis",
-  "Serviços ilimitados",
+  "Itens da vitrine ilimitados",
   "Pedidos ilimitados",
   "Propostas ilimitadas",
   "Templates ilimitados",

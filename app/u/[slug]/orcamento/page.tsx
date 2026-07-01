@@ -21,9 +21,9 @@ type PublicQuoteRequestPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
-  service: "O serviço selecionado não está disponível.",
-  unavailable: "Este perfil não está disponível para pedidos.",
-  "scheduling-required": "Preencha data, horário e local para este serviço.",
+  service: "O item selecionado não está disponível.",
+  unavailable: "Esta vitrine não está disponível para pedidos.",
+  "scheduling-required": "Preencha data, horário e local para este item.",
   "limit-monthly-quote-requests":
     PUBLIC_LIMIT_ERROR_MESSAGES["limit-monthly-quote-requests"],
 };
@@ -98,7 +98,7 @@ export default async function PublicQuoteRequestPage({
           className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
           href={`/u/${slug}`}
         >
-          ← Voltar ao perfil
+          ← Voltar à vitrine
         </Link>
 
         {/* Header */}
@@ -107,7 +107,7 @@ export default async function PublicQuoteRequestPage({
             {requiresPixPayment
               ? "Pagamento com Pix"
               : selectedService?.pricingType === "FIXED"
-                ? "Solicitação de serviço"
+                ? "Solicitação de item"
                 : "Pedido de orçamento"}
           </p>
           <h1 className="mt-2 break-words font-fraunces text-4xl font-bold text-ink">
@@ -116,7 +116,7 @@ export default async function PublicQuoteRequestPage({
           <p className="mt-3 text-sm leading-6 text-ink-muted">
             {requiresPixPayment
               ? "Preencha seus dados. O pagamento via Pix é obrigatório para concluir a solicitação."
-              : "Envie as informações iniciais para que o prestador avalie seu pedido."}
+              : "Envie as informações iniciais para que o negócio avalie seu pedido."}
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export default async function PublicQuoteRequestPage({
               Pedido enviado!
             </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              Seu pedido foi registrado. O prestador avaliará as informações e
+              Seu pedido foi registrado. O negócio avaliará as informações e
               retornará pelo contato informado.
             </p>
             <div className="mt-4 flex flex-wrap gap-3">
@@ -162,7 +162,7 @@ export default async function PublicQuoteRequestPage({
                 className="inline-flex min-h-9 items-center justify-center rounded-md border border-mint px-4 text-xs font-semibold text-leaf transition hover:bg-mint/60"
                 href={`/u/${slug}`}
               >
-                Voltar ao perfil
+                Voltar à vitrine
               </Link>
             </div>
           </div>

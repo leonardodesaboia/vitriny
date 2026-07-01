@@ -65,7 +65,7 @@ export async function generateMetadata({
   const title = `${profile.businessName} · Vitriny`;
   const description =
     profile.description ??
-    `Solicite um orçamento para ${profile.businessName}.`;
+    `Conheça os produtos e serviços de ${profile.businessName} e envie seu pedido.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
 
   return {
@@ -108,7 +108,7 @@ export default async function PublicProviderProfilePage({
     : null;
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        `Olá ${profile.businessName}, vi seu perfil no Vitriny e gostaria de solicitar um orçamento.`,
+        `Olá ${profile.businessName}, vi sua vitrine no Vitriny e gostaria de pedir mais detalhes.`,
       )}`
     : null;
 
@@ -158,7 +158,7 @@ export default async function PublicProviderProfilePage({
       <div className="grain relative bg-leaf px-6 pb-16 pt-14">
         <div className="mx-auto max-w-4xl">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-            Prestador de serviço{location ? ` · ${location}` : ""}
+            Produtos e serviços{location ? ` · ${location}` : ""}
           </p>
           <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
             {profile.businessName}
@@ -172,7 +172,7 @@ export default async function PublicProviderProfilePage({
             href={`/u/${slug}/orcamento`}
             className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-6 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
           >
-            Solicitar orçamento →
+            Enviar solicitação →
           </Link>
         </div>
       </div>
@@ -236,7 +236,7 @@ export default async function PublicProviderProfilePage({
             {hasServices ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Serviços disponíveis
+                  Produtos e serviços
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
                   O que ofereço
@@ -245,7 +245,7 @@ export default async function PublicProviderProfilePage({
             ) : (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Orçamento personalizado
+                  Solicitação personalizada
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
                   Solicite o que precisa

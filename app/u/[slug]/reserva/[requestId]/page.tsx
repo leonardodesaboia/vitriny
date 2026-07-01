@@ -110,12 +110,12 @@ export default async function PixReservationPage({ params }: PixReservationPageP
           className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
           href={`/u/${slug}`}
         >
-          ← Voltar ao perfil
+          ← Voltar à vitrine
         </Link>
 
         <div className="mt-8">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-            Pagamento antecipado via Pix
+            Pagamento via Pix
           </p>
           <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
             {quoteRequest.service.name}
@@ -137,13 +137,13 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               Pagamento confirmado!
             </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              O prestador confirmou o recebimento do Pix. Sua solicitação está confirmada.
+              O negócio confirmou o recebimento do Pix. Seu pedido está confirmado.
             </p>
             <Link
               className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
               href={`/u/${slug}`}
             >
-              Voltar ao perfil
+              Voltar à vitrine
             </Link>
           </div>
         ) : expired ? (
@@ -152,13 +152,13 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               Código Pix expirado
             </p>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              O prazo para realizar este pagamento encerrou. Faça uma nova solicitação se ainda precisar do serviço.
+              O prazo para realizar este pagamento encerrou. Faça uma nova solicitação se ainda quiser o item.
             </p>
             <Link
               className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
               href={`/u/${slug}`}
             >
-              Voltar ao perfil
+              Voltar à vitrine
             </Link>
           </div>
         ) : (
@@ -204,8 +204,8 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               <ol className="mt-2 grid gap-1.5 pl-4">
                 {[
                   "Realize o pagamento via Pix usando o QR Code ou o código acima.",
-                  "Após pagar, avise o prestador e envie o comprovante.",
-                  "O prestador confirmará manualmente o recebimento nesta página."
+                  "Após pagar, avise o negócio e envie o comprovante.",
+                  "O recebimento será confirmado manualmente nesta página."
                 ].map((step, i) => (
                   <li key={i} className="list-decimal text-xs leading-5 text-ink-muted">
                     {step}
@@ -215,11 +215,11 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               {whatsappNumber ? (
                 <a
                   className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao serviço ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao item ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  Avisar prestador no WhatsApp
+                  Avisar no WhatsApp
                 </a>
               ) : null}
             </div>

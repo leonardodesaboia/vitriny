@@ -36,7 +36,7 @@ const statusColors: Record<string, string> = {
 
 const actorLabels: Record<string, string> = {
   CUSTOMER: "Cliente",
-  PROVIDER: "Prestador",
+  PROVIDER: "Negócio",
   SYSTEM: "Sistema",
 };
 
@@ -170,7 +170,7 @@ export default async function PublicProposalPage({
               </h1>
               {proposal.quoteRequest.service?.name ? (
                 <p className="mt-2 text-sm font-medium text-white/70">
-                  Serviço:{" "}
+                  Item:{" "}
                   <span className="text-white">
                     {proposal.quoteRequest.service.name}
                   </span>
@@ -222,7 +222,7 @@ export default async function PublicProposalPage({
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="rounded-xl border border-paper-soft bg-paper p-5">
                 <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-                  Prestador
+                  Negócio
                 </p>
                 <p className="mt-2 font-fraunces text-lg font-bold text-ink">
                   {proposal.provider.businessName}
@@ -412,7 +412,7 @@ export default async function PublicProposalPage({
                   </div>
                   {proposal.depositPaidAt ? (
                     <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
-                      Recebido pelo prestador
+                      Recebido pelo negócio
                     </span>
                   ) : (
                     <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
@@ -426,7 +426,7 @@ export default async function PublicProposalPage({
                   <p className="text-sm leading-6 text-ink-muted">
                     {proposal.status === "SENT"
                       ? "Esta proposta informa um valor de entrada previsto. As instruções de pagamento aparecem somente após a aprovação."
-                      : "Realize o pagamento de entrada via Pix para confirmar sua reserva."}
+                      : "Realize o pagamento de entrada via Pix para confirmar a contratação."}
                   </p>
 
                   {pixPayment ? (
@@ -489,13 +489,13 @@ export default async function PublicProposalPage({
                   {proposal.status === "APPROVED" ? (
                     <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
                       <p className="font-semibold">
-                        Pagamento feito diretamente ao prestador.
+                        Pagamento feito diretamente ao negócio.
                       </p>
                       <p>
                         O Vitriny não confirma esse pagamento automaticamente.
                       </p>
                       <p>
-                        Após pagar, envie o comprovante ao prestador ou combine
+                        Após pagar, envie o comprovante ao negócio ou combine
                         a confirmação diretamente com ele.
                       </p>
                     </div>

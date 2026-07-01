@@ -121,9 +121,9 @@ export async function createPortalSession(): Promise<
     select: { stripeCustomerId: true }
   });
 
-  if (!profile) return { error: "Perfil não encontrado." };
+  if (!profile) return { error: "Dados do negócio não encontrados." };
   if (!profile.stripeCustomerId)
-    return { error: "Nenhuma assinatura Stripe encontrada para este perfil." };
+    return { error: "Nenhuma assinatura Stripe encontrada para este negócio." };
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: profile.stripeCustomerId,
@@ -144,7 +144,7 @@ export async function createCheckoutSession(): Promise<
     select: { id: true, stripeCustomerId: true, plan: true }
   });
 
-  if (!profile) return { error: "Perfil não encontrado." };
+  if (!profile) return { error: "Dados do negócio não encontrados." };
   if (profile.plan === "PRO") return { error: "Você já tem o plano PRO." };
 
   let customerId = profile.stripeCustomerId;

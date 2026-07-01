@@ -105,7 +105,7 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
           className="mb-6 inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-ink-muted transition hover:text-leaf"
           href={`/u/${slug}`}
         >
-          ← Voltar ao perfil
+          ← Voltar à vitrine
         </Link>
 
         <div className="rounded-2xl border border-paper-soft bg-white shadow-card">
@@ -153,7 +153,7 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
               <div className="flex flex-wrap items-center justify-between gap-3 bg-amber-50 px-5 py-4">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
-                    Valor do serviço
+                    Valor do item
                   </p>
                   <p className="mt-1 font-fraunces text-3xl font-bold text-amber-800">
                     {formatMoney(amount)}
@@ -226,11 +226,11 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
                 {/* Disclaimer */}
                 <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
                   <p className="font-semibold">
-                    Pagamento feito diretamente ao prestador.
+                    Pagamento feito diretamente ao negócio.
                   </p>
                   <p>O Vitriny não confirma esse pagamento automaticamente.</p>
                   <p>
-                    Após pagar, envie o comprovante ao prestador ou combine a
+                    Após pagar, envie o comprovante ao negócio ou combine a
                     confirmação diretamente com ele.
                   </p>
                 </div>
@@ -244,8 +244,8 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
               <ol className="mt-4 grid gap-3">
                 {[
                   "Realize o pagamento via Pix usando o QR Code ou o código acima.",
-                  "Após pagar, avise o prestador e envie o comprovante.",
-                  "A confirmação é combinada diretamente com o prestador; o Vitriny não acompanha o status deste link antigo.",
+                  "Após pagar, avise o negócio e envie o comprovante.",
+                  "A confirmação é combinada diretamente com o negócio; o Vitriny não acompanha o status deste link antigo.",
                 ].map((step, i) => (
                   <li
                     key={i}
@@ -258,11 +258,11 @@ export default async function PixPaymentPage({ params }: PixPaymentPageProps) {
               {whatsappNumber ? (
                 <a
                   className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao serviço ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao item ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  Avisar prestador no WhatsApp
+                  Avisar no WhatsApp
                 </a>
               ) : null}
             </div>

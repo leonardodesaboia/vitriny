@@ -62,7 +62,7 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
           <p className="mt-0.5 text-xs text-ink-muted">
             {minItems >= 1
               ? "Obrigatório — pelo menos 1 item com valor."
-              : "Opcional — adicione serviços, materiais ou etapas com valores."}
+              : "Opcional — adicione produtos, serviços, materiais ou etapas com valores."}
           </p>
         </div>
         <button

@@ -155,11 +155,11 @@ export function buildOnboardingOutcomeStep({
     return {
       actionLabel: "Ver pedidos",
       description:
-        "Quando um cliente solicitar um serviço com preço fixo, o pedido aparecerá no painel.",
+        "Quando um cliente solicitar um item com preço fixo, o pedido aparecerá no painel.",
       done: fixedRequestCount > 0,
       href: "/dashboard/pedidos",
       id: "fixed-request",
-      label: "Receber primeiro pedido de serviço"
+      label: "Receber primeiro pedido"
     };
   }
 
@@ -178,7 +178,7 @@ export function buildOnboardingOutcomeStep({
   return {
     actionLabel: "Ir para pedidos",
     description:
-      "Atenda um pedido de preço fixo ou envie uma proposta para um serviço sob orçamento.",
+      "Atenda um pedido de preço fixo ou envie uma proposta para um item sob consulta.",
     done: fixedRequestCount > 0 || proposalCount > 0,
     href: "/dashboard/pedidos",
     id: "first-service",

@@ -171,14 +171,14 @@ export async function sendQuoteRequestReceivedEmail({
 }: QuoteRequestReceivedEmailInput) {
   await sendAppEmail({
     to,
-    subject: "Novo pedido de orçamento — Vitriny",
-    preview: `${customerName} enviou um novo pedido de orçamento.`,
+    subject: "Novo pedido — Vitriny",
+    preview: `${customerName} enviou um novo pedido.`,
     html: [
       paragraph(`Olá, ${businessName}.`),
       paragraph(
         serviceName
-          ? `${customerName} enviou um novo pedido para o serviço ${serviceName}.`
-          : `${customerName} enviou um novo pedido de orçamento.`
+          ? `${customerName} enviou um novo pedido para o item ${serviceName}.`
+          : `${customerName} enviou um novo pedido.`
       ),
       emailButton("Ver pedido no painel", dashboardUrl)
     ].join("")
@@ -213,22 +213,22 @@ export async function sendQuoteRequestConfirmationToCustomerEmail({
   profileUrl,
   pixReservaUrl
 }: QuoteRequestConfirmationEmailInput) {
-  const serviceLabel = serviceName ? ` para o serviço ${serviceName}` : "";
+  const serviceLabel = serviceName ? ` para o item ${serviceName}` : "";
 
   const body = isPixPayment
     ? [
         paragraph(`Olá, ${customerName}.`),
         paragraph(
-          `Sua solicitação${serviceLabel} foi registrada por ${businessName}. Complete o pagamento Pix para confirmar sua reserva.`
+          `Sua solicitação${serviceLabel} foi registrada por ${businessName}. Complete o pagamento Pix para confirmar seu pedido.`
         ),
         pixReservaUrl ? emailButton("Completar pagamento Pix", pixReservaUrl) : ""
       ].join("")
     : [
         paragraph(`Olá, ${customerName}.`),
         paragraph(
-          `Sua solicitação${serviceLabel} foi recebida por ${businessName}. O prestador avaliará em breve e retornará pelo contato informado.`
+          `Sua solicitação${serviceLabel} foi recebida por ${businessName}. O negócio avaliará em breve e retornará pelo contato informado.`
         ),
-        emailButton("Ver perfil do prestador", profileUrl)
+        emailButton("Ver vitrine do negócio", profileUrl)
       ].join("");
 
   await sendAppEmail({

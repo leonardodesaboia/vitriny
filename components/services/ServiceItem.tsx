@@ -18,7 +18,7 @@ const pricingTypeBadge: Record<"FIXED" | "CUSTOM", string> = {
 
 const pricingTypeLabel: Record<"FIXED" | "CUSTOM", string> = {
   FIXED: "Preço fixo",
-  CUSTOM: "Sob orçamento"
+  CUSTOM: "Sob consulta"
 };
 
 function formatPrice(price: string | null): string | null {

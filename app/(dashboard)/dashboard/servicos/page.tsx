@@ -16,9 +16,9 @@ type ServicesPageProps = {
 };
 
 const errorMessages: Record<string, string> = {
-  invalid: "Revise os dados do serviço.",
-  profile: "Crie o perfil do prestador antes de cadastrar serviços.",
-  "not-found": "Serviço não encontrado.",
+  invalid: "Revise os dados do item.",
+  profile: "Cadastre os dados do negócio antes de adicionar itens.",
+  "not-found": "Item não encontrado.",
   "limit-active-services": LIMIT_ERROR_MESSAGES["limit-active-services"]
 };
 
@@ -56,53 +56,53 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
   return (
     <div className="min-w-0 overflow-x-hidden p-4 sm:p-6 md:p-8">
       <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-        Serviços
+        Itens da vitrine
       </p>
       <h1 className="mt-2 font-fraunces text-2xl sm:text-3xl md:text-4xl font-bold text-ink">
-        Cadastro de serviços
+        Cadastro de itens
       </h1>
       <p className="mt-2 text-sm text-ink-muted">
-        Cadastre os serviços que serão exibidos no seu perfil público e usados nos pedidos de orçamento.
+        Cadastre os produtos e serviços que serão exibidos na sua vitrine pública e usados nos pedidos.
       </p>
 
       {params.success === "saved" && !params.image_error ? (
         <p className="mt-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
-          Serviço salvo com sucesso!
+          Item salvo com sucesso!
         </p>
       ) : null}
 
       {params.image_error ? (
         <p className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-          Serviço salvo, mas o envio da imagem falhou. Edite o serviço para reenviar.
+          Item salvo, mas o envio da imagem falhou. Edite o item para reenviar.
         </p>
       ) : null}
 
       {params.error ? (
         <p className="mt-5 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
-          {errorMessages[params.error] ?? "Não foi possível salvar o serviço."}
+          {errorMessages[params.error] ?? "Não foi possível salvar o item."}
         </p>
       ) : null}
 
       {!profile ? (
         <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
           <h2 className="font-fraunces text-xl font-bold text-ink">
-            Crie seu perfil primeiro
+            Cadastre seu negócio primeiro
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Serviços ficam vinculados ao perfil do prestador.
+            Os itens ficam vinculados aos dados do negócio.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
-            Criar perfil
+            Cadastrar negócio
           </Link>
         </div>
       ) : (
         <div className="mt-8 grid w-full min-w-0 gap-8">
           <section className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              Novo serviço
+              Novo item
             </p>
             <div className="mt-4 min-w-0">
               <ServiceForm isPro={profile.plan === "PRO"} />
@@ -111,7 +111,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
 
           <section className="min-w-0">
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              Serviços cadastrados
+              Itens cadastrados
             </p>
             <div className="mt-4 min-w-0">
               <ServiceList
