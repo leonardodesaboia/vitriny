@@ -60,24 +60,24 @@ Compatibilidade legada — Pagamento Pix direto:
 - Salve.
 - Esperado: dashboard mostra perfil e link `/u/[slug]`; dashboard do profissional e fluxo público do cliente usam o mesmo tema global de cor e fonte.
 
-### 3. Serviços
+### 3. Itens da vitrine
 
-- Acesse `/dashboard/servicos`.
-- Cadastre serviço ativo.
+- Acesse `/dashboard/servicos` (rota técnica/legada).
+- Cadastre item ativo.
 - Escolha se o item é `Produto` ou `Serviço` e valide que o badge aparece no painel e na vitrine pública.
 - Confirme que `Produto` e `Serviço` aceitam tanto preço fixo quanto preço sob consulta.
-- Para serviços `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
-- Esperado: serviço aparece na listagem.
+- Para itens `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
+- Esperado: item aparece na listagem.
 
 ### 4. Vitrine pública
 
 - Acesse `/u/[slug]`.
-- Esperado: perfil e serviços ativos aparecem.
-- Serviços inativos não devem aparecer.
+- Esperado: perfil e itens ativos aparecem.
+- Itens inativos não devem aparecer.
 
 ### 5. Pedido público
 
-- Clique em `Pedir orçamento` para serviço `CUSTOM`, `Solicitar serviço` para `FIXED` em `REQUEST_ONLY` ou `Pagar com Pix` para `FIXED` em `REQUIRE_PIX_PAYMENT`.
+- Clique em `Solicitar orçamento` para item `CUSTOM`, `Solicitar` para `FIXED` em `REQUEST_ONLY` ou `Pagar com Pix` para `FIXED` em `REQUIRE_PIX_PAYMENT`.
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Informe ao menos um contato válido: e-mail ou telefone.
 - Para serviço `CUSTOM` ou pedido sem serviço selecionado, descreva obrigatoriamente o que precisa.
@@ -172,7 +172,7 @@ Verificar:
 - `EMAIL_FROM` configurado com remetente validado no Resend
 - se o e-mail informado tem senha cadastrada (contas só-Google não recebem e-mail de reset)
 - se o cliente informou e-mail no pedido (necessário para receber proposta)
-- se o perfil do prestador tem e-mail; caso contrário, o app tenta usar o e-mail da conta
+- se o perfil do negócio tem e-mail; caso contrário, o app tenta usar o e-mail da conta
 
 ### Vitrine pública retorna 404
 
@@ -181,11 +181,11 @@ Verificar:
 - slug correto;
 - `ProviderProfile.isPublished=true`.
 
-### Serviço não aparece publicamente
+### Item não aparece publicamente
 
 Verificar:
 
-- serviço pertence ao perfil correto;
+- item pertence ao perfil correto;
 - `Service.isActive=true`.
 
 ### Pedido não aparece no painel

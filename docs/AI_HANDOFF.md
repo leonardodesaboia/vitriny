@@ -4,20 +4,85 @@
 
 Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas por link e oferecerem pagamento via Pix manual.
 
-## Linguagem da interface
+## Glossário técnico ↔ UI
 
-- `Service` aparece para o usuário como **item da vitrine**;
-- `Service.itemType` classifica visualmente o item como **Produto** (`PRODUCT`) ou **Serviço** (`SERVICE`), com default `SERVICE`;
-- `ProviderProfile` publicado aparece como **vitrine pública**;
-- `QuoteRequest` aparece como **pedido** ou **solicitação**;
-- `Proposal` continua sendo **proposta** no fluxo de itens sob consulta;
-- rotas, models, enums e identificadores internos não foram renomeados;
-- Pix do cliente final continua manual, sem processamento ou confirmação automática pela plataforma.
-- `itemType` não participa de regras de Pix, proposta, pedidos, checkout ou limites; essas regras continuam em `pricingType` e `fixedServiceCheckoutMode`.
+Esta tabela é obrigatória de consultar antes de qualquer alteração de linguagem ou sugestão de refatoração.
+
+| Termo técnico (código/banco) | Termo de UI (interface/usuário) | Observação |
+|---|---|---|
+| `Service` | item da vitrine | Não renomear o model |
+| `Service.itemType` | Produto / Serviço | Classificação visual apenas |
+| `QuoteRequest` | pedido / solicitação | Não renomear o model |
+| `ProviderProfile` | perfil do negócio / vitrine pública | Não renomear o model |
+| `ProviderProfile.slug` | endereço da vitrine | `/u/[slug]` |
+| `pricingType = CUSTOM` | Sob consulta | |
+| `pricingType = FIXED` | Preço fixo | |
+| `fixedServiceCheckoutMode = REQUEST_ONLY` | Preço fixo, solicitar primeiro | |
+| `fixedServiceCheckoutMode = REQUIRE_PIX_PAYMENT` | Preço fixo, pagar via Pix | |
+| `ServiceSaleMode` (helper de UI) | modo de venda | Não existe no banco |
+| `Proposal` | proposta | |
+| `ProposalItem` | item da proposta | |
+| `/dashboard/servicos` | gerenciamento de itens da vitrine | Rota técnica/legada |
+| `/u/[slug]/orcamento` | formulário de pedido público | Rota técnica/legada |
+
+Rotas, models, enums e nomes de arquivo mantêm a nomenclatura técnica original. A interface usa linguagem ampla de "vitrine", "item" e "pedido". `itemType` não participa de regras de Pix, proposta, pedidos, checkout ou limites; essas regras continuam em `pricingType` e `fixedServiceCheckoutMode`.
+
+---
+
+## O que NÃO fazer neste produto sem decisão explícita
+
+Esta seção existe como guardrail explícito. IAs não devem propor nem implementar os itens abaixo sem confirmação humana de que houve uma decisão de produto.
+
+**Schema / banco:**
+- Não renomear `Service` para `Product`, `CatalogItem`, `Item` ou qualquer outro nome.
+- Não criar `Product` como model separado de `Service`.
+- Não separar "produtos" e "serviços" em dois models distintos no banco.
+- Não adicionar campos de estoque, SKU, variações ou frete sem decisão explícita.
+
+**Fluxo de compra:**
+- Não implementar carrinho de compras.
+- Não implementar checkout automático do cliente final.
+- Não implementar confirmação automática de pagamento Pix.
+- Não usar Stripe para pagamento do cliente final (Stripe é exclusivo para assinatura do usuário da Vitriny).
+- Não implementar variações de produto (cor, tamanho, etc.).
+- Não implementar cupons ou desconto automático.
+
+**Escala:**
+- Não implementar marketplace de múltiplos vendedores.
+- Não implementar multiempresa complexo com permissões.
+- Não implementar catálogo público geral fora do `/u/[slug]`.
+
+**Integrações:**
+- Não implementar WhatsApp API (gateway automático).
+- Não implementar gateway Pix com confirmação automática.
+- Não implementar frete com cálculo automático.
+
+**O Vitriny é uma vitrine online — não um e-commerce completo. Estas features podem ser consideradas no futuro, somente após validação de negócio.**
 
 O MVP principal está implementado.
 
-## Mudanças recentes desta conversa
+## Mudanças recentes
+
+### Fases de transição — linguagem e UI
+
+**Fase 1 — Linguagem ampla de itens da vitrine**
+- Ajuste de linguagem na UI: "serviços" → "itens da vitrine", "produtos e serviços", "vitrine pública", "pedidos" e "pagamento Pix". Nenhuma mudança de schema, models ou nomes técnicos.
+
+**Fase 2 — `itemType`: `PRODUCT` e `SERVICE`**
+- Adição do campo `Service.itemType` com enum `CatalogItemType` (`PRODUCT` | `SERVICE`). Padrão: `SERVICE` para compatibilidade com itens antigos.
+- `itemType` é classificação visual e organizacional; não altera preço, Pix, propostas, pedidos, limites nem checkout.
+- Migration versionada.
+
+**Fase 3 — `saleMode`: modos de venda na UI**
+- Criação de `lib/service-sale-mode.ts` com `ServiceSaleMode` e os helpers `getServiceSaleMode` / `getTechnicalSaleMode`.
+- Três modos de venda na UI: `CUSTOM` (Sob consulta), `FIXED_REQUEST` (Preço fixo, solicitar primeiro), `FIXED_PIX` (Preço fixo, pagar via Pix).
+- `ServiceForm` usa um único estado `saleMode`; badges e CTAs atualizados. Nenhuma mudança de schema, banco ou actions.
+
+**Fase 4 — Documentação canônica**
+- Atualização da documentação para posicionar a Vitriny como vitrine online para produtos e serviços.
+- Adição de glossário técnico↔UI, guardrails anti-e-commerce e mapa completo das fases.
+
+### Mudanças técnicas anteriores
 
 - a tela de billing deixou de buscar faturas da Stripe no carregamento inicial; agora a página renderiza e o card de faturas faz fetch assíncrono em `/api/billing/invoices` via `components/billing/AsyncInvoiceList.tsx`;
 - a aplicação ganhou temas globais por preset em `lib/theme-presets.ts` + `app/globals.css`, com a regra centralizada em `getPublicThemePreset(plan, savedPreset)`: `PRO` usa o preset salvo e `FREE` sempre cai em `DEFAULT`;
@@ -38,16 +103,18 @@ Funciona hoje:
 
 - login com Google OAuth e e-mail/senha (cadastro, login, recuperação de senha);
 - dashboard protegido;
-- perfil do prestador;
-- serviços com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
-- serviços com `requiresSchedulingDetails` (Boolean, default false): quando true, data futura ou atual, horário/período e local são obrigatórios no navegador e no servidor;
-- serviços com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
-- exclusão de serviço com confirmação (`deleteService`);
-- lista de serviços colapsável — accordion idêntico ao padrão do painel de pedidos;
-- **pagamento Pix obrigatório para serviços FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `REQUIRE_PIX_PAYMENT`); quando obrigatório, existe um único CTA "Pagar com Pix", o servidor impede bypass e redireciona para `/u/[slug]/reserva/[requestId]`; `fixedServiceAmount` é snapshot imutável e a confirmação é manual pelo prestador via `markPixReservationPaid`;
+- perfil do negócio / vitrine pública;
+- **itens da vitrine** com classificação `itemType` (`PRODUCT` ou `SERVICE`): classificação visual, sem efeito em regras de negócio;
+- **modos de venda (`saleMode`)**: Sob consulta, Preço fixo solicitar primeiro, Preço fixo pagar via Pix — abstrações de UI centralizadas em `lib/service-sale-mode.ts`;
+- itens com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
+- itens com `requiresSchedulingDetails` (Boolean, default false): quando true, data futura ou atual, horário/período e local são obrigatórios no navegador e no servidor;
+- itens com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
+- exclusão de item com confirmação (`deleteService`);
+- lista de itens colapsável — accordion idêntico ao padrão do painel de pedidos;
+- **pagamento Pix obrigatório para itens FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `REQUIRE_PIX_PAYMENT`); quando obrigatório, existe um único CTA "Pagar com Pix", o servidor impede bypass e redireciona para `/u/[slug]/reserva/[requestId]`; `fixedServiceAmount` é snapshot imutável e a confirmação é manual pelo negócio via `markPixReservationPaid`;
 - **compatibilidade de pagamento legado**: `/u/[slug]/pagamento/[requestId]` permanece disponível para pedidos antigos, mas novos pedidos não são enviados para essa rota;
-- página pública `/u/[slug]`;
-- pedido público exige ao menos e-mail ou telefone; `CUSTOM` e pedidos genéricos exigem descrição; `desiredDate`, `desiredTime` e `location` são condicionais ao serviço e exibidos no painel quando presentes;
+- vitrine pública `/u/[slug]`;
+- pedido público exige ao menos e-mail ou telefone; `CUSTOM` e pedidos genéricos exigem descrição; `desiredDate`, `desiredTime` e `location` são condicionais ao item e exibidos no painel quando presentes;
 - painel de pedidos;
 - edição de nota do cliente diretamente no card do pedido (`updateQuoteRequestDescription`);
 - criação de proposta;
@@ -82,10 +149,10 @@ O plano fica em `ProviderProfile.plan` com enum `PlanTier`.
 
 Limites centralizados em `lib/plan-limits.ts`:
 
-- `FREE`: 3 serviços ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
+- `FREE`: 3 itens ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
-Stripe é usado para assinatura do prestador. Para cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de serviço fixo: o Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática.
+Stripe é usado para assinatura do negócio (usuário da Vitriny). Para o cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de item com preço fixo: o Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática. Stripe não é usado para pagamento do cliente final.
 
 ## Comandos principais
 
@@ -140,6 +207,7 @@ Priorize:
 - Prisma direto no servidor.
 - Componentes pequenos por domínio.
 - Tailwind para UI.
+- `lib/service-sale-mode.ts`: helper puro com `ServiceSaleMode`, `getServiceSaleMode` e `getTechnicalSaleMode`. Usar sempre que precisar converter entre o estado de UI (`saleMode`) e os campos técnicos `pricingType` / `fixedServiceCheckoutMode`.
 
 ## Restrições importantes
 
@@ -149,10 +217,18 @@ Priorize:
 - Usar `publicToken` para proposta pública.
 - Usar `slug` para perfil público.
 - Cliente público não precisa de login.
-- Serviço com `pricingType = FIXED` exige `basePrice` válido e maior que zero.
+- Item com `pricingType = FIXED` exige `basePrice` válido e maior que zero.
 - Não remover enum `ServicePricingType` nem campo `pricingType` de `Service`.
-- Compatibilidade: serviços sem `pricingType` são tratados como `CUSTOM`.
+- Compatibilidade: itens sem `pricingType` explícito são tratados como `CUSTOM`.
 - `QuoteRequest.description` é nullable (`String?`) — pedidos FIXED podem não ter descrição do cliente.
+- **`itemType` — restrições:**
+  - `itemType` é classificação visual e organizacional; não usá-lo para decidir modo de venda, Pix ou proposta.
+  - As regras de negócio continuam dependendo exclusivamente de `pricingType` e `fixedServiceCheckoutMode`.
+  - Não criar models separados para `PRODUCT` e `SERVICE` no banco; não renomear o model `Service`.
+- **`saleMode` — restrições:**
+  - `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST` | `FIXED_PIX`) existe apenas na UI/helper; nunca persistir no banco.
+  - Usar `getServiceSaleMode` para derivar de campos do banco; usar `getTechnicalSaleMode` para converter de volta antes de salvar.
+  - Centralizar em `lib/service-sale-mode.ts`; não duplicar a lógica de conversão em outros arquivos.
 - Login é só Google OAuth + e-mail/senha. GitHub foi removido; não reintroduzir sem pedido explícito.
 - Sessão é `jwt`, não `database` — necessário para o Credentials provider.
 - Senha sempre hash bcrypt, nunca texto puro.
@@ -162,8 +238,8 @@ Priorize:
   - Não implementar gateway Pix nem confirmação automática.
   - Não usar Stripe para pagamento do cliente final.
   - Não criar webhook de pagamento.
-  - Não exigir proposta para serviço FIXED.
-  - Não quebrar fluxo de proposta para serviços CUSTOM.
+  - Não exigir proposta para item FIXED.
+  - Não quebrar fluxo de proposta para itens CUSTOM.
   - Não alterar Stripe de assinatura.
   - `markPixReservationPaid` é exclusivo do prestador autenticado — nunca expor ao cliente público.
   - Validar ownership de `QuoteRequest` pelo `ProviderProfile` do usuário logado.
@@ -172,7 +248,7 @@ Priorize:
   - Pedidos antigos ficam com campos Pix `null` — retrocompatibilidade obrigatória.
 - Pagamento Pix direto legado — restrições de produto:
   - a rota `/u/[slug]/pagamento/[requestId]` atende apenas links antigos;
-  - exige serviço `FIXED`, `fixedServiceAmount` e dados Pix válidos;
+  - exige item `FIXED`, `fixedServiceAmount` e dados Pix válidos;
   - não exige `pixReservationRequestedAt` e não usa `markPixReservationPaid`;
   - nunca recalcular o valor a partir de `Service.basePrice`.
 - Rate limiting — restrições:
@@ -192,26 +268,29 @@ Priorize:
 6. `prisma/schema.prisma`
 7. `auth.ts`
 8. `lib/actions/`
+9. `lib/service-sale-mode.ts`
 
 ## Cuidados para não quebrar
 
 - Ownership: sempre filtrar dados autenticados pelo `ProviderProfile` do usuário logado.
 - Proposta pública: sempre buscar por `publicToken`.
 - Perfil público: só mostrar `isPublished=true`.
-- Serviços públicos: só mostrar `isActive=true`.
-- Pedido público: validar que `serviceId`, quando informado, pertence ao prestador e está ativo. Chamar `validateQuoteRequestForService` depois do Zod para regras dependentes do serviço (descrição obrigatória para CUSTOM, data futura, campos de agendamento).
+- Itens públicos: só mostrar `isActive=true`.
+- Pedido público: validar que `serviceId`, quando informado, pertence ao negócio e está ativo. Chamar `validateQuoteRequestForService` depois do Zod para regras dependentes do item (descrição obrigatória para CUSTOM, data futura, campos de agendamento).
 - Status de pedido: registrar mudanças em `QuoteRequestStatusHistory`.
 - Status de proposta: registrar mudanças em `ProposalStatusHistory`.
-- Notas internas: nunca exibir em rotas públicas e sempre filtrar pelo prestador dono do pedido.
-- Templates de proposta: sempre filtrar pelo prestador dono do modelo.
+- Notas internas: nunca exibir em rotas públicas e sempre filtrar pelo negócio dono do pedido.
+- Templates de proposta: sempre filtrar pelo negócio dono do modelo.
 - Proposal response: bloquear se já aprovada/recusada ou expirada.
-- Tipo de serviço: `pricingType = FIXED` exige `basePrice`; validar no Zod, não no banco.
-- Formulário público: linguagem de 'solicitação' vs 'orçamento' é definida no servidor via SSR com base no `?serviceId=`; quando o serviço já vem do card público, o formulário usa essa seleção e oculta o select.
-- Painel de pedidos: CTA 'Criar proposta' é secundário para pedidos FIXED.
+- Tipo de item: `pricingType = FIXED` exige `basePrice`; validar no Zod, não no banco.
+- Formulário público: linguagem de "solicitação" vs "orçamento" é definida no servidor via SSR com base no `?serviceId=`; quando o item já vem do card público, o formulário usa essa seleção e oculta o select.
+- Painel de pedidos: CTA "Criar proposta" é secundário para pedidos FIXED.
+- `itemType`: usar apenas para exibição (badges, labels, textos de UI). Não condicionar lógica de negócio a `itemType`.
+- `saleMode`: sempre derivar via `getServiceSaleMode`; sempre converter de volta via `getTechnicalSaleMode`; nunca persistir no banco.
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
 - Pagamento Pix obrigatório — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
-- Pagamento Pix direto legado — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, serviço `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
+- Pagamento Pix direto legado — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, item `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
 - `fixedServiceAmount`: nunca recalcular; usar sempre o snapshot do banco. A página de reserva não busca `service.basePrice`.
 - `markPixReservationPaid`: validar ownership pelo perfil autenticado; checar `pixReservationRequestedAt !== null`; checar que `pixReservationPaidAt` ainda está `null` (idempotência).
 - Webhook Stripe: `customer.subscription.created` e `customer.subscription.updated` usam o mesmo handler via fall-through — não separar sem motivo.
@@ -224,6 +303,7 @@ Priorize:
 - `QuoteRequestStatusHistory`, `ProposalStatusHistory`, `QuoteRequestInternalNote`, `ProposalTemplate` e `ProposalTemplateItem` já têm UI nas áreas correspondentes.
 - O formulário de proposta usa editor dinâmico para adicionar/remover itens sem limite fixo de linhas.
 - `docs/FRONTEND_PENDING.md` registra o estado das melhorias concluídas e o backfill legado ainda opcional.
+- `lib/service-sale-mode.ts` centraliza a conversão entre `pricingType`/`fixedServiceCheckoutMode` e o `saleMode` de UI. Testado em `tests/unit/service-sale-mode.test.ts`.
 
 ## Validação obrigatória após mudanças
 

@@ -32,17 +32,19 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Assinatura mensal PRO via Stripe Checkout embutido, gestão de pagamento, portal, faturas e webhook
 - Testes automatizados unitários, de actions, integração com banco real e E2E com Playwright
 - Tipos de preço de item: `FIXED` (preço exibido publicamente) e `CUSTOM` (sob consulta)
-- Exclusão de serviço com confirmação
+- Exclusão de item com confirmação
 - Edição de nota do cliente diretamente no card do pedido
-- Lista de serviços colapsável com padrão accordion (expandir ao clicar)
+- Lista de itens colapsável com padrão accordion (expandir ao clicar)
 - Pagamento Pix obrigatório para itens com preço fixo, com confirmação manual
 - Entrada Pix em proposta aprovada
-- Imagem por serviço para usuários PRO
+- Imagem por item para usuários PRO
 - Geração autenticada de PDF de proposta
 - Temas globais de cores e fontes para usuários PRO
 - Filtro de pedidos por status
-- Responsividade da página de serviços em telas mobile
-- Dashboard operacional com onboarding por tipo de serviço, métricas mensais, atalhos para pendências e atividade recente
+- Responsividade da tela de itens da vitrine em mobile
+- Dashboard operacional com onboarding por tipo de item, métricas mensais, atalhos para pendências e atividade recente
+- Modos de venda na UI: Sob consulta, Preço fixo solicitar primeiro, Preço fixo pagar via Pix (`lib/service-sale-mode.ts`)
+- Documentação canônica atualizada: posicionamento como vitrine online, glossário técnico↔UI, guardrails anti-e-commerce
 
 ## Próximos passos recomendados
 
@@ -66,23 +68,30 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Ampliar cobertura E2E dos fluxos de billing, Pix e personalização.
 - Expiração/limpeza de pagamentos Pix obrigatórios abandonados.
 
-## Futuro, somente após validação
+## Futuro distante — somente após validação de negócio
 
+Estas features não fazem parte do MVP e não devem ser iniciadas sem uma decisão explícita de produto. O Vitriny não é e-commerce completo nesta etapa.
+
+**Extensões de vitrine (candidatos a curto prazo, se validados):**
+- Domínio próprio para a vitrine.
+- Página de detalhe público de item.
+- Cupons ou desconto simples.
+
+**E-commerce progressivo (médio prazo, requer validação):**
+- Controle de estoque básico por item.
+- Variações de produto (cor, tamanho, modelo).
+- Carrinho de compras.
+- Cálculo de frete/entrega.
 - Gateway Pix com confirmação automática.
 - Pagamento online do cliente final por cartão.
-- WhatsApp API.
-- Editor avançado de PDF.
+
+**Infraestrutura e integrações (longo prazo):**
+- WhatsApp API (notificações automáticas).
 - Assinatura digital.
-- IA para sugerir preço.
-- Marketplace.
-- Multiempresa complexo.
+- Editor avançado de PDF.
+- IA para sugerir preço ou descrever item.
 - Aplicativo mobile.
 
-## Não implementar ainda sem validação
-
-- Cobrança do cliente final dentro da plataforma.
-- Automação de WhatsApp.
-- Gerador avançado de PDF.
-- IA de precificação.
-- Marketplace.
+**Escala (hipóteses distantes, alta condicionalidade):**
+- Marketplace de múltiplos vendedores.
 - Multiempresa com permissões complexas.

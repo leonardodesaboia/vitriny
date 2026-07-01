@@ -72,7 +72,7 @@ O default de `plan` é `FREE`. A assinatura Stripe atualiza o plano e os campos 
 
 ### Service
 
-Serviço oferecido pelo prestador.
+Item da vitrine. Pode ser classificado visualmente como Produto ou Serviço via `itemType`. Na interface, `Service` é apresentado como "item da vitrine"; o nome do model não muda.
 
 Campos importantes:
 
@@ -287,6 +287,7 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.
 - Pedidos antigos têm `fixedServiceAmount`, `pixReservationRequestedAt` e `pixReservationPaidAt` todos `null` — retrocompatibilidade garantida.
 - `fixedServiceCheckoutMode` é forçado como `REQUEST_ONLY` para serviços `CUSTOM` na action, independente do que o formulário enviar.
+- `itemType` é visual e organizacional. Não altera regras de preço, Pix, proposta, pedido nem limites de plano.
 
 ## Dinheiro e Decimal
 

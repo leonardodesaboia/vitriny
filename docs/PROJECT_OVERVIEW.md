@@ -2,7 +2,9 @@
 
 ## Produto
 
-Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, criarem propostas para itens sob consulta e oferecerem pagamento via Pix manual.
+Vitriny é uma vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas e oferecerem pagamento via Pix manual.
+
+O produto não é um e-commerce completo. Não há carrinho, checkout automático, estoque, frete, variações de produto, confirmação automática de Pix nem marketplace no MVP.
 
 ## Problema
 
@@ -33,32 +35,47 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 ## Entidades principais
 
 - `User`: usuário autenticado.
-- `ProviderProfile`: perfil do prestador.
-- `Service`: item oferecido na vitrine, classificado como `PRODUCT` ou `SERVICE` por `itemType`.
-- `QuoteRequest`: pedido público de orçamento.
+- `ProviderProfile`: perfil do negócio / vitrine pública.
+- `Service`: item da vitrine. Classificado visualmente como `PRODUCT` ou `SERVICE` via `itemType`; `itemType` não altera regras de negócio.
+- `QuoteRequest`: pedido / solicitação pública.
 - `QuoteRequestStatusHistory`: histórico de status do pedido.
 - `QuoteRequestInternalNote`: nota interna do pedido.
-- `Proposal`: proposta vinculada a um pedido.
+- `Proposal`: proposta vinculada a um pedido (fluxo de itens sob consulta).
 - `ProposalItem`: item de proposta.
 - `ProposalStatusHistory`: histórico de status da proposta.
 - `ProposalTemplate`: modelo reutilizável de proposta.
 - `ProposalTemplateItem`: item reutilizável do template.
-- `PlanTier`: plano comercial do prestador para aplicar limites de uso.
+- `PlanTier`: plano comercial do negócio para aplicar limites de uso.
 - `ProviderThemePreset`: preset visual salvo para personalização simples da aplicação por tokens globais de cor e fonte.
 - `PasswordResetToken`: token de uso único para redefinição de senha.
 
 ## Glossário
 
-- Negócio: usuário autenticado que apresenta produtos ou serviços.
-- Cliente: pessoa pública que envia pedido ou responde proposta.
-- Item da vitrine: termo da UI para o model interno `Service`.
-- Tipo do item: classificação visual `Produto` (`PRODUCT`) ou `Serviço` (`SERVICE`), sem efeito nas regras de preço, Pix ou proposta.
-- Vitrine pública: termo da UI para o `ProviderProfile` publicado em `/u/[slug]`.
-- Pedido ou solicitação: termos da UI para o model interno `QuoteRequest`.
-- Slug: identificador público da vitrine em `/u/[slug]`.
-- Public token: token público e imprevisível da proposta.
-- Pedido: solicitação inicial de orçamento.
-- Proposta: resposta comercial do negócio ao pedido sob consulta.
+### Termos de produto
+
+- **Negócio**: usuário autenticado que apresenta produtos ou serviços na Vitriny.
+- **Cliente**: pessoa pública que envia pedido ou responde proposta.
+- **Vitrine pública**: página em `/u/[slug]` com os dados do negócio e os itens disponíveis.
+- **Item da vitrine**: cada produto ou serviço cadastrado pelo negócio.
+- **Pedido / solicitação**: formulário enviado pelo cliente a partir da vitrine pública.
+- **Proposta**: resposta comercial do negócio ao pedido, com valores, prazo e link para aprovação.
+- **Pagamento via Pix**: manual, feito diretamente ao negócio. O Vitriny gera QR Code e código copia e cola, mas não processa nem confirma automaticamente.
+
+### Mapeamento UI ↔ técnico
+
+| UI / produto | Técnico (código e banco) | Observação |
+|---|---|---|
+| item da vitrine | `Service` | Não renomear o model |
+| Produto / Serviço | `Service.itemType` (`PRODUCT` \| `SERVICE`) | Classificação visual apenas |
+| modo de venda | `ServiceSaleMode` em `lib/service-sale-mode.ts` | Helper de UI; não existe no banco |
+| Sob consulta | `pricingType = CUSTOM` | |
+| Preço fixo | `pricingType = FIXED` | |
+| Preço fixo, solicitar primeiro | `fixedServiceCheckoutMode = REQUEST_ONLY` | |
+| Preço fixo, pagar via Pix | `fixedServiceCheckoutMode = REQUIRE_PIX_PAYMENT` | |
+| pedido / solicitação | `QuoteRequest` | Não renomear o model |
+| proposta | `Proposal` | |
+| vitrine pública / perfil do negócio | `ProviderProfile` publicado | |
+| endereço da vitrine | `ProviderProfile.slug` | `/u/[slug]` |
 
 Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e os enums mantêm seus nomes internos originais.
 
@@ -80,7 +97,7 @@ Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e 
 
 - `/dashboard`: painel inicial.
 - `/dashboard/perfil`: edição dos dados e da vitrine do negócio.
-- `/dashboard/servicos`: gerenciamento de serviços.
+- `/dashboard/servicos`: gerenciamento de itens da vitrine (rota técnica/legada).
 - `/dashboard/pedidos`: painel de pedidos recebidos.
 - `/dashboard/propostas/nova?requestId=...`: criação de proposta.
 - `/dashboard/propostas/templates`: gerenciamento de templates de proposta.
@@ -103,5 +120,9 @@ Route handlers autenticados ou server-to-server:
 - Login do negócio é por Google OAuth ou e-mail/senha; GitHub OAuth foi removido.
 - O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
-- Gateway de pagamento do cliente final, confirmação automática de Pix, WhatsApp API, editor avançado de PDF e IA estão fora do MVP.
-- Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de serviço `FIXED`. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
+- **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
+- **Não existem dois produtos separados no banco**: Produto e Serviço são classificações do mesmo model `Service`. Não haverá separação em dois models distintos sem decisão explícita.
+- **Proposta existe apenas para itens sob consulta (`CUSTOM`)**: itens com preço fixo não passam pelo fluxo de proposta.
+- Gateway de pagamento do cliente final, confirmação automática de Pix, carrinho, estoque, frete, variações, cupons, WhatsApp API, editor avançado de PDF, IA e marketplace estão fora do MVP e só serão considerados após validação de negócio.
+- Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de item `FIXED`. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
+- Stripe é usado exclusivamente para assinatura do usuário da Vitriny; nunca para pagamento do cliente final.

@@ -43,6 +43,7 @@ docs/
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
+- `lib/service-sale-mode.ts`: helper de UI que mapeia `pricingType` + `fixedServiceCheckoutMode` para o tipo `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST` | `FIXED_PIX`). Não existe no banco.
 - `lib/dashboard.ts`: regras puras do onboarding, das visões rápidas de pedidos e da composição imutável da atividade recente.
 - `lib/dashboard-activity.ts`: consultas limitadas e filtradas por prestador que alimentam a timeline da dashboard.
 - `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
@@ -70,7 +71,7 @@ Rotas autenticadas:
 
 - `app/(dashboard)/dashboard/page.tsx`
 - `app/(dashboard)/dashboard/perfil/page.tsx`
-- `app/(dashboard)/dashboard/servicos/page.tsx`
+- `app/(dashboard)/dashboard/servicos/page.tsx` — gerenciamento de itens da vitrine (rota técnica/legada)
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `app/(dashboard)/dashboard/propostas/nova/page.tsx`
 - `app/(dashboard)/dashboard/propostas/templates/page.tsx`
@@ -180,7 +181,7 @@ O plano é armazenado em `ProviderProfile.plan`, usando `PlanTier`:
 
 Limites `FREE`:
 
-- 3 serviços ativos;
+- 3 itens ativos;
 - 10 pedidos de orçamento por mês;
 - 5 propostas por mês;
 - 1 template de proposta.
@@ -193,7 +194,7 @@ Limites `FREE`:
 - Cliente público não precisa de login.
 - Propostas públicas usam `publicToken`, não ID interno.
 - Perfil público só aparece se `isPublished=true`.
-- Serviços públicos só aparecem se `isActive=true`.
+- Itens públicos só aparecem se `isActive=true`.
 - Páginas públicas de Pix validam que o pedido pertence ao perfil indicado pelo slug e usam o valor congelado em `fixedServiceAmount`.
 - Upload/remoção de imagem e geração de PDF validam autenticação, plano quando aplicável e ownership.
 - Webhook Stripe valida `stripe-signature` antes de alterar plano ou assinatura.
