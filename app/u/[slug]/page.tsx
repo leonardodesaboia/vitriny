@@ -169,12 +169,6 @@ export default async function PublicProviderProfilePage({
               {profile.description}
             </p>
           ) : null}
-          <Link
-            href={`/u/${slug}/orcamento`}
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-6 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
-          >
-            Enviar solicitação →
-          </Link>
         </div>
       </div>
 
@@ -262,34 +256,6 @@ export default async function PublicProviderProfilePage({
               }))}
               slug={slug}
             />
-          </div>
-
-          {/* How it works */}
-          <div className="mt-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-              Como funciona
-            </p>
-            <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-              {howItWorksTitle}
-            </h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {howItWorksSteps.map((s) => (
-                <div
-                  key={s.step}
-                  className="rounded-xl border border-paper-soft bg-white p-5 shadow-card"
-                >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf">
-                    {s.step}
-                  </span>
-                  <h3 className="mt-3 line-clamp-2 break-words font-jakarta text-base font-bold text-ink">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-3 flex-1 break-words text-sm leading-6 text-ink-muted">
-                    {s.description}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Powered by */}
