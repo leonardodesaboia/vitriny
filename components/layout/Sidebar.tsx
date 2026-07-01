@@ -109,7 +109,7 @@ const navItems = [
   },
   {
     href: "/dashboard/perfil",
-    label: "Vitrine",
+    label: "Perfil",
     icon: (
       <svg
         className="h-4 w-4"
