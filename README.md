@@ -44,6 +44,7 @@ MVP funcional implementado:
 
 - landing page;
 - login/logout;
+- confirmação de e-mail obrigatória para novos cadastros por senha;
 - dashboard protegido com onboarding por tipo de serviço, métricas mensais, pendências operacionais e atividade recente;
 - dados do negócio;
 - cadastro de itens da vitrine;

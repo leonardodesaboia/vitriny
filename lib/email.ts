@@ -162,6 +162,27 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   });
 }
 
+export async function sendEmailVerificationEmail(
+  to: string,
+  verificationUrl: string,
+) {
+  await sendAppEmail({
+    to,
+    subject: "Confirme seu e-mail — Vitriny",
+    preview: "Confirme seu e-mail para ativar sua conta no Vitriny.",
+    html: [
+      paragraph("Recebemos um cadastro usando este endereço de e-mail."),
+      paragraph(
+        "Abra o link e confirme seu e-mail para ativar a conta. Nenhum acesso será liberado antes dessa confirmação.",
+      ),
+      emailButton("Confirmar meu e-mail", verificationUrl),
+      paragraph(
+        "O link expira em 24 horas. Se você não fez este cadastro, ignore este e-mail.",
+      ),
+    ].join(""),
+  });
+}
+
 export async function sendQuoteRequestReceivedEmail({
   to,
   businessName,

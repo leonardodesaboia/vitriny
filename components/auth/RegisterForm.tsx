@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { registerUser } from "@/lib/actions/auth";
 
 type RegisterFormProps = {
@@ -24,6 +26,15 @@ export function RegisterForm({ errorCode }: RegisterFormProps) {
             {errorMessages[errorCode] ?? "Não foi possível criar a conta."}
           </p>
         </div>
+      ) : null}
+
+      {errorCode === "email-exists" ? (
+        <Link
+          className="text-sm font-semibold text-leaf hover:text-leaf-hover"
+          href="/verifique-seu-email"
+        >
+          Ainda não confirmou? Reenviar confirmação
+        </Link>
       ) : null}
 
       <div className="grid gap-2">

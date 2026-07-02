@@ -12,7 +12,10 @@ export const registerSchema = z
       .trim()
       .email("Informe um e-mail válido.")
       .max(160, "Use no máximo 160 caracteres."),
-    password: z.string().min(8, "Use pelo menos 8 caracteres."),
+    password: z
+      .string()
+      .min(8, "Use pelo menos 8 caracteres.")
+      .max(72, "Use no máximo 72 caracteres."),
     confirmPassword: z.string()
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -32,13 +35,20 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Token inválido."),
-    password: z.string().min(8, "Use pelo menos 8 caracteres."),
+    password: z
+      .string()
+      .min(8, "Use pelo menos 8 caracteres.")
+      .max(72, "Use no máximo 72 caracteres."),
     confirmPassword: z.string()
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem.",
     path: ["confirmPassword"]
   });
+
+export const verificationTokenSchema = z
+  .string()
+  .regex(/^[a-f0-9]{64}$/, "Token inválido.");
 
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;

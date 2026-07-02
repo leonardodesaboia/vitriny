@@ -22,6 +22,7 @@ Relaciona-se com:
 - `Account`
 - `Session`
 - `PasswordResetToken`
+- `EmailVerificationToken`
 
 ### Account
 
@@ -46,6 +47,18 @@ Campos importantes:
 - `expiresAt`: expira em 1 hora a partir da criação.
 
 Apagado (junto com qualquer outro token do mesmo usuário) ao ser usado com sucesso em `resetPassword`. Relação com `User` tem `onDelete: Cascade`.
+
+### EmailVerificationToken
+
+Token de uso único para ativar contas criadas com e-mail/senha.
+
+Campos importantes:
+
+- `userId`: único; cada conta pendente mantém no máximo um token ativo.
+- `tokenHash`: SHA-256 único do token enviado por e-mail; o valor original não é persistido.
+- `expiresAt`: expira 24 horas após a criação.
+
+Ao confirmar, uma transação preenche `User.emailVerified` e remove o token. A relação usa `onDelete: Cascade`. A migration inicial marca contas Credentials preexistentes como verificadas para evitar lockout.
 
 ### ProviderProfile
 
@@ -182,6 +195,7 @@ Ambos usam Decimal.
 - `QuoteRequest` 1:N `QuoteRequestInternalNote`
 - `User` 1:N `QuoteRequestInternalNote`
 - `User` 1:N `PasswordResetToken`
+- `User` 1:0..1 `EmailVerificationToken`
 - `Proposal` 1:N `ProposalItem`
 - `Proposal` 1:N `ProposalStatusHistory`
 - `ProposalTemplate` 1:N `ProposalTemplateItem`

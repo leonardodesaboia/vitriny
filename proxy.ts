@@ -14,10 +14,18 @@ interface RateLimitRule {
 }
 
 const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
-  // Login por credenciais
+  // Login por credenciais (POST direto no callback do Auth.js)
   "/api/auth/callback/credentials": { limit: 10, windowMs: 60_000 },
+  // Login pela UI: a Server Action posta em /login e o signIn() roda
+  // in-process, sem passar pelo callback acima — precisa de regra própria.
+  "/login": { limit: 10, windowMs: 60_000 },
   // Requisição de reset de senha (Server Action em /esqueci-senha)
   "/esqueci-senha": { limit: 5, windowMs: 300_000 },
+  // Criação de conta (Server Action em /cadastro)
+  "/cadastro": { limit: 5, windowMs: 300_000 },
+  // Reenvio e confirmação de e-mail
+  "/verifique-seu-email": { limit: 5, windowMs: 300_000 },
+  "/verificar-email": { limit: 10, windowMs: 300_000 },
   // Formulário público de pedido (Server Action em /u/*/orcamento)
   "/u/orcamento": { limit: 20, windowMs: 60_000 },
 };
@@ -90,7 +98,11 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/api/auth/callback/credentials",
+    "/login",
     "/esqueci-senha",
+    "/cadastro",
+    "/verifique-seu-email",
+    "/verificar-email/:path*",
     "/u/:slug/orcamento",
   ],
 };

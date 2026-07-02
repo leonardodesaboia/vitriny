@@ -42,6 +42,17 @@ describe("registerSchema", () => {
     ).toBe(false);
   });
 
+  it("rejeita senha com mais de 72 caracteres (limite do bcrypt)", () => {
+    const longPassword = "a".repeat(73);
+    expect(
+      registerSchema.safeParse({
+        ...valid,
+        password: longPassword,
+        confirmPassword: longPassword
+      }).success
+    ).toBe(false);
+  });
+
   it("remove espaços extras do nome e e-mail", () => {
     const result = registerSchema.safeParse({ ...valid, name: "  João  ", email: "  joao@example.com  " });
     expect(result.success).toBe(true);

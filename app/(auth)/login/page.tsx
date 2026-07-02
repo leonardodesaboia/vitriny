@@ -6,7 +6,7 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string; verified?: string }>;
 };
 
 const googleButtonClassName =
@@ -31,6 +31,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3">
           <p className="text-sm font-semibold text-leaf">
             Senha redefinida. Entre com sua nova senha.
+          </p>
+        </div>
+      ) : null}
+
+      {query.verified ? (
+        <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3">
+          <p className="text-sm font-semibold text-leaf">
+            E-mail confirmado. Agora você pode entrar.
           </p>
         </div>
       ) : null}

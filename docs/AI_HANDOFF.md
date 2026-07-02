@@ -101,7 +101,7 @@ O MVP principal está implementado.
 
 Funciona hoje:
 
-- login com Google OAuth e e-mail/senha (cadastro, login, recuperação de senha);
+- login com Google OAuth e e-mail/senha (cadastro com confirmação obrigatória, login e recuperação de senha);
 - dashboard protegido;
 - perfil do negócio / vitrine pública;
 - **itens da vitrine** com classificação `itemType` (`PRODUCT` ou `SERVICE`): classificação visual, sem efeito em regras de negócio;
@@ -140,7 +140,7 @@ Funciona hoje:
 - Auth.js / NextAuth v5 beta (Google OAuth + Credentials e-mail/senha, sessão `jwt`)
 - Zod
 - bcryptjs (hash de senha)
-- Resend (e-mail de redefinição de senha)
+- Resend (confirmação de cadastro, redefinição de senha e notificações)
 - Stripe (assinatura mensal PRO via Checkout mode subscription, webhook assinado)
 
 ## Planos e limites
@@ -232,6 +232,10 @@ Priorize:
 - Login é só Google OAuth + e-mail/senha. GitHub foi removido; não reintroduzir sem pedido explícito.
 - Sessão é `jwt`, não `database` — necessário para o Credentials provider.
 - Senha sempre hash bcrypt, nunca texto puro.
+- Contas Credentials novas exigem `emailVerified`; tokens de confirmação ficam em `EmailVerificationToken` somente como SHA-256, expiram em 24 horas e são consumidos por `POST`.
+- A migration `20260702140000_add_email_verification` marca contas Credentials preexistentes como verificadas para evitar lockout. Não presumir que contas antigas passarão pela confirmação, nem remover esse backfill sem decisão explícita de rollout.
+- Não aplicar bloqueio global por `emailVerified`: o Google OAuth mantém seu fluxo próprio; a restrição pertence a `authorizeCredentials`.
+- Reenvio de confirmação e recuperação de senha devem responder de forma genérica para não enumerar contas.
 - Não vincular contas automaticamente entre Google e e-mail/senha com o mesmo e-mail.
 - "Esqueci minha senha" nunca deve revelar se um e-mail existe no sistema.
 - Pagamento Pix obrigatório — restrições de produto:

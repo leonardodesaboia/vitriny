@@ -26,7 +26,7 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 
 1. Acessa `/u/[slug]`.
 2. Consulta os produtos e serviços do negócio.
-3. Envia pedido em `/u/[slug]/orcamento`, com ao menos e-mail ou telefone; itens `CUSTOM` exigem descrição e itens configurados para agendamento exigem data, horário e local.
+3. Envia pedido em `/u/[slug]/orcamento`, sempre vinculado a um item da vitrine e com ao menos e-mail ou telefone; itens `CUSTOM` exigem descrição; data/horário (`requiresSchedulingDetails`) e local (`requiresLocation`) são exigências independentes, configuráveis por item.
 4. Para item `FIXED` com `REQUIRE_PIX_PAYMENT`, realiza o pagamento manual em `/u/[slug]/reserva/[requestId]` após enviar os dados.
 5. Para item `FIXED` com `REQUEST_ONLY`, envia apenas a solicitação e aguarda o retorno do negócio.
 6. Recebe/acessa link da proposta.
@@ -84,6 +84,8 @@ Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e 
 - `/`: landing page.
 - `/login`: login (Google OAuth ou e-mail/senha).
 - `/cadastro`: cadastro com e-mail/senha (ou Google).
+- `/verifique-seu-email`: aviso e reenvio da confirmação de contas Credentials pendentes.
+- `/verificar-email/[token]`: confirmação explícita do endereço antes do primeiro login por senha.
 - `/esqueci-senha`: solicitar redefinição de senha.
 - `/redefinir-senha/[token]`: definir nova senha a partir do token recebido por e-mail.
 - `/u/[slug]`: vitrine pública do negócio.
@@ -121,6 +123,7 @@ Route handlers autenticados ou server-to-server:
 - O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
 - **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
+- **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.
 - **Não existem dois produtos separados no banco**: Produto e Serviço são classificações do mesmo model `Service`. Não haverá separação em dois models distintos sem decisão explícita.
 - **Proposta existe apenas para itens sob consulta (`CUSTOM`)**: itens com preço fixo não passam pelo fluxo de proposta.
 - Gateway de pagamento do cliente final, confirmação automática de Pix, carrinho, estoque, frete, variações, cupons, WhatsApp API, editor avançado de PDF, IA e marketplace estão fora do MVP e só serão considerados após validação de negócio.

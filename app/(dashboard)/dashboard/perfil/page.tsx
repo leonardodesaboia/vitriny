@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
+import { DeleteAccountSection } from "@/components/account/DeleteAccountSection";
 import { ProfileForm } from "@/components/provider-profile/ProfileForm";
 import { prisma } from "@/lib/prisma";
 
@@ -54,6 +55,8 @@ export default async function ProviderProfilePage({
       <div className="mt-6 w-full rounded-xl border border-paper-soft bg-white p-6 shadow-card">
         <ProfileForm profile={profile} userEmail={session.user.email} />
       </div>
+
+      <DeleteAccountSection />
     </div>
   );
 }

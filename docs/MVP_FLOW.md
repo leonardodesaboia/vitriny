@@ -42,20 +42,25 @@ Compatibilidade legada — Pagamento Pix direto:
 
 - Acesse `/login`.
 - Entre com Google, ou clique em "Cadastre-se" para criar conta com e-mail/senha em `/cadastro`.
+- Para validar a confirmação, use um e-mail ainda não cadastrado. Contas Credentials anteriores à migration foram preservadas como verificadas e não repetem esse fluxo.
+- No cadastro por senha, confirme que não há login automático e que a tela `/verifique-seu-email` é exibida.
+- Abra o link recebido, acesse `/verificar-email/[token]` e clique em `Confirmar meu e-mail`.
+- Esperado: redirecionamento para `/login?verified=1`; antes da confirmação, o login deve informar que o e-mail ainda não foi verificado.
+- Teste também `Reenviar confirmação`; a mensagem deve ser genérica mesmo para e-mail inexistente.
 - Esperado: redirecionamento para `/dashboard`.
 
 ### 1a. Recuperação de senha (apenas contas com senha)
 
 - Acesse `/esqueci-senha`, informe o e-mail.
 - Esperado: mensagem de sucesso genérica, sempre a mesma (mesmo se o e-mail não existir).
-- Se o e-mail tiver senha cadastrada, chega um link de redefinição (via Resend).
+- Se o e-mail tiver senha cadastrada e verificada, chega um link de redefinição (via Resend).
 - Acesse `/redefinir-senha/[token]`, defina nova senha.
 - Esperado: redirecionamento para `/login?reset=1`, login funciona com a nova senha.
 
 ### 2. Perfil
 
 - Acesse `/dashboard/perfil`.
-- Preencha `businessName`, endereço do perfil, contatos, aparência da página, dados Pix se quiser receber entrada, e marque `isPublished`.
+- Preencha `businessName`, escolha se oferece produtos, serviços ou ambos, informe endereço do perfil, contatos, aparência da página, dados Pix se quiser receber entrada, e marque `isPublished`.
 - Em plano FREE, a aplicação usa o tema padrão. Em plano PRO, escolha um preset visual e salve.
 - Salve.
 - Esperado: dashboard mostra perfil e link `/u/[slug]`; dashboard do profissional e fluxo público do cliente usam o mesmo tema global de cor e fonte.
@@ -64,7 +69,10 @@ Compatibilidade legada — Pagamento Pix direto:
 
 - Acesse `/dashboard/servicos` (rota técnica/legada).
 - Cadastre item ativo.
-- Escolha se o item é `Produto` ou `Serviço` e valide que o badge aparece no painel e na vitrine pública.
+- Para perfil de produtos, confirme que o novo item é criado como `Produto` sem solicitar o tipo.
+- Para perfil de serviços, confirme que o novo item é criado como `Serviço` sem solicitar o tipo.
+- Para perfil que oferece ambos, escolha `Produto` ou `Serviço` no cadastro.
+- Valide que o badge correspondente aparece no painel e na vitrine pública.
 - Confirme que `Produto` e `Serviço` aceitam tanto preço fixo quanto preço sob consulta.
 - Para itens `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
 - Esperado: item aparece na listagem.
@@ -80,8 +88,9 @@ Compatibilidade legada — Pagamento Pix direto:
 - Clique em `Solicitar orçamento` para item `CUSTOM`, `Solicitar` para `FIXED` em `REQUEST_ONLY` ou `Pagar com Pix` para `FIXED` em `REQUIRE_PIX_PAYMENT`.
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Informe ao menos um contato válido: e-mail ou telefone.
-- Para serviço `CUSTOM` ou pedido sem serviço selecionado, descreva obrigatoriamente o que precisa.
-- Quando o serviço exige agendamento, informe uma data real que não esteja no passado, além de horário/período e local.
+- Todo pedido exige um item da vitrine selecionado; não existe pedido genérico sem item.
+- Para item `CUSTOM`, descreva obrigatoriamente o que precisa.
+- Quando o item pede data e horário (`requiresSchedulingDetails`), informe uma data real que não esteja no passado, além de horário/período. Quando o item pede local (`requiresLocation`), informe o local/endereço. As duas exigências são independentes e configuráveis por item.
 - Envie o formulário.
 - Para serviço `CUSTOM` ou `FIXED` em `REQUEST_ONLY`, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
 - Para serviço `FIXED` em `REQUIRE_PIX_PAYMENT`, esperado: `/u/[slug]/reserva/[requestId]` com QR Code e valor de `fixedServiceAmount`.
@@ -114,7 +123,8 @@ Como verificar no banco:
 ### 7. Proposta
 
 - Clique em `Criar proposta`.
-- Preencha título, validade, ao menos um item e, se quiser cobrar entrada, o valor do entrada.
+- Escolha `Valor único` ou `Itens detalhados` e informe o valor correspondente.
+- Se necessário, preencha título, mensagem ao cliente, entrada via Pix e validade.
 - Salve.
 - Esperado:
   - `Proposal` criada.
@@ -162,7 +172,7 @@ Verificar:
 - `AUTH_GOOGLE_ID`
 - `AUTH_GOOGLE_SECRET`
 - callback do Google OAuth
-- se for login por senha: e-mail/senha corretos, e se a conta não foi criada via Google (`password` nulo)
+- se for login por senha: e-mail/senha corretos, confirmação concluída e se a conta não foi criada via Google (`password` nulo)
 
 ### E-mail não chega
 
@@ -170,6 +180,8 @@ Verificar:
 
 - `RESEND_API_KEY` configurada
 - `EMAIL_FROM` configurado com remetente validado no Resend
+- `NEXT_PUBLIC_APP_URL` ou `AUTH_URL` apontando para a URL pública correta
+- se a conta por senha ainda está pendente, use `/verifique-seu-email` para reenviar a confirmação
 - se o e-mail informado tem senha cadastrada (contas só-Google não recebem e-mail de reset)
 - se o cliente informou e-mail no pedido (necessário para receber proposta)
 - se o perfil do negócio tem e-mail; caso contrário, o app tenta usar o e-mail da conta

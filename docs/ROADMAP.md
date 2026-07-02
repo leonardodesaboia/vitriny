@@ -28,6 +28,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Planos e limites de uso
 - Login com Google OAuth e cadastro/login por e-mail e senha (substituindo GitHub OAuth)
 - Recuperação de senha por e-mail (Resend)
+- Verificação obrigatória para novos cadastros por senha, com token de uso único e reenvio; contas Credentials anteriores foram preservadas por backfill
 - Polimento visual, validações e preparação para deploy
 - Assinatura mensal PRO via Stripe Checkout embutido, gestão de pagamento, portal, faturas e webhook
 - Testes automatizados unitários, de actions, integração com banco real e E2E com Playwright
@@ -55,11 +56,12 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 
 ## Melhorias de curto prazo
 
+O detalhamento técnico de cada item abaixo (como implementar, arquivos, esforço e riscos) está em `BACKLOG_TECNICO.md`.
+
 - Criar página de detalhe do pedido.
 - Melhorar mensagens de erro por campo.
 - Adicionar página de configurações do negócio.
 - Criar página de detalhe da proposta.
-- Verificação de e-mail no cadastro por senha (não implementado nesta etapa).
 - Vínculo de contas entre Google e e-mail/senha quando o e-mail coincide (hoje bloqueado deliberadamente, sem auto-merge).
 - Trocar remetente do Resend de `onboarding@resend.dev` (sandbox) para domínio verificado.
 
