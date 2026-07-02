@@ -202,10 +202,10 @@ export function LandingHero() {
                   </span>
                 </div>
                 {[
-                  { label: "Painel", active: false },
+                  { label: "Dashboard", active: false },
                   { label: "Pedidos", active: true },
-                  { label: "Propostas", active: false },
-                  { label: "Vitrine", active: false },
+                  { label: "Itens da vitrine", active: false },
+                  { label: "Perfil", active: false },
                 ].map((item) => (
                   <div
                     key={item.label}

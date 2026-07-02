@@ -20,8 +20,8 @@ export function LandingCta() {
         className="relative mx-auto max-w-xl text-center"
       >
         <h2 className="font-fraunces text-4xl font-bold leading-tight text-white md:text-5xl">
-          Pronto para fechar
-          <br />mais produtos e serviços?
+          Pronto para
+          <br />vender mais?
         </h2>
         <p className="mt-4 text-base text-white/70">
           Crie sua conta e publique sua vitrine em menos de 5 minutos.

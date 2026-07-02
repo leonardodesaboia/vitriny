@@ -4,9 +4,9 @@ const nav = [
   {
     heading: "Produto",
     links: [
-      { label: "Como funciona", href: "#como-funciona" },
-      { label: "Funcionalidades", href: "#funcionalidades" },
-      { label: "Preços", href: "#precos" },
+      { label: "Como funciona", href: "/#como-funciona" },
+      { label: "Funcionalidades", href: "/#funcionalidades" },
+      { label: "Preços", href: "/#precos" },
     ],
   },
   {
@@ -19,8 +19,8 @@ const nav = [
   {
     heading: "Legal",
     links: [
-      { label: "Termos de uso", href: "#" },
-      { label: "Privacidade", href: "#" },
+      { label: "Termos de uso", href: "/termos" },
+      { label: "Privacidade", href: "/privacidade" },
     ],
   },
 ];

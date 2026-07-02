@@ -21,10 +21,31 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
-  title: "Vitriny",
+  metadataBase: new URL(appUrl),
+  title: {
+    default: "Vitriny — Vitrine online para pequenos negócios",
+    template: "%s · Vitriny",
+  },
   description:
-    "Vitrine online para pequenos negócios apresentarem produtos e serviços, receberem pedidos, enviarem propostas e oferecerem pagamento via Pix manual.",
+    "Apresente produtos e serviços, receba pedidos organizados e envie propostas que o cliente aprova online. Grátis para começar.",
+  openGraph: {
+    title: "Vitriny — Vitrine online para pequenos negócios",
+    description:
+      "Apresente produtos e serviços, receba pedidos organizados e envie propostas que o cliente aprova online.",
+    url: appUrl,
+    siteName: "Vitriny",
+    locale: "pt_BR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Vitriny — Vitrine online para pequenos negócios",
+    description:
+      "Apresente produtos e serviços, receba pedidos organizados e envie propostas que o cliente aprova online.",
+  },
 };
 
 export default function RootLayout({

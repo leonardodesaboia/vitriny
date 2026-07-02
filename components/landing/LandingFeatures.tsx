@@ -81,7 +81,7 @@ const item = {
 
 export function LandingFeatures() {
   return (
-    <section id="funcionalidades" className="bg-paper-soft px-6 py-20">
+    <section id="funcionalidades" className="scroll-mt-20 bg-paper-soft px-6 py-20">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 16 }}

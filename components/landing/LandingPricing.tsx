@@ -18,8 +18,8 @@ const pro = [
   "Pedidos ilimitados",
   "Propostas ilimitadas",
   "Templates ilimitados",
-  "Notas internas por pedido",
-  "Histórico completo de status"
+  "Fotos nos itens da vitrine",
+  "Temas visuais para sua página"
 ];
 
 function CheckIcon({ muted = false }: { muted?: boolean }) {
@@ -37,7 +37,7 @@ function CheckIcon({ muted = false }: { muted?: boolean }) {
 
 export function LandingPricing() {
   return (
-    <section id="precos" className="bg-white px-6 py-24">
+    <section id="precos" className="scroll-mt-20 bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -110,7 +110,7 @@ export function LandingPricing() {
           >
             {/* Badge */}
             <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-leaf px-4 py-1 text-xs font-semibold text-white">
-              Mais popular
+              Recomendado
             </span>
 
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
@@ -155,7 +155,7 @@ export function LandingPricing() {
           transition={{ delay: 0.3 }}
           className="mt-8 text-center text-xs text-ink-muted"
         >
-          Sem contrato. Cancele quando quiser. Cobrança via cartão ou Pix.
+          Sem contrato. Cancele quando quiser. Cobrança via cartão.
         </motion.p>
       </div>
     </section>
