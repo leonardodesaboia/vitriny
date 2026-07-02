@@ -33,9 +33,42 @@ export function isISODateBeforeToday(value: string, referenceDate = new Date()) 
   return isValidISODate(value) && value < localDateToISO(referenceDate);
 }
 
+export function startOfLocalDay(date: Date) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  return start;
+}
+
+// validUntil é salvo como meia-noite local do dia escolhido; a proposta
+// permanece válida durante o dia inteiro, expirando só no dia seguinte.
+export function isProposalExpired(validUntil: Date | null, now = new Date()) {
+  if (!validUntil) return false;
+
+  const endOfValidDay = startOfLocalDay(validUntil);
+  endOfValidDay.setDate(endOfValidDay.getDate() + 1);
+
+  return now.getTime() >= endOfValidDay.getTime();
+}
+
+// Data "de hoje" (YYYY-MM-DD) em um fuso específico, independente do fuso do
+// servidor. Usado para validar datas escolhidas por usuários no Brasil.
+export function todayISOInTimeZone(timeZone: string, now = new Date()) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).format(now);
+}
+
 export const PIX_PAYMENT_EXPIRY_HOURS = 48;
 
 export function isPixPaymentExpired(requestedAt: Date, now = new Date()) {
   const expiryMs = PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000;
   return now.getTime() - requestedAt.getTime() > expiryMs;
+}
+
+// Reservas solicitadas antes deste instante já expiraram.
+export function pixPaymentExpiryCutoff(now = new Date()) {
+  return new Date(now.getTime() - PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000);
 }

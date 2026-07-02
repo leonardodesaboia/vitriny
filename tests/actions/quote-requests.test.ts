@@ -9,6 +9,12 @@ vi.mock("@/lib/email", () => ({
   sendQuoteRequestReceivedEmail: vi.fn(),
   sendQuoteRequestConfirmationToCustomerEmail: vi.fn()
 }));
+// after() exige request scope do Next; nos testes executa o callback direto.
+vi.mock("next/server", () => ({
+  after: (callback: () => unknown) => {
+    void callback();
+  }
+}));
 
 let db: PrismaMock;
 const serviceId = "cm000000000000000000000000";
@@ -106,7 +112,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Informe data, horário e local para este item."
+      error: "Informe data e horário para este item."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -357,6 +363,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Maria",
           customerEmail: "maria@example.com",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -376,6 +383,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Carlos",
           customerEmail: "carlos@example.com",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -401,6 +409,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Carlos",
           customerPhone: "11999999999",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -408,13 +417,55 @@ describe("createQuoteRequest", () => {
 
     expect(sendQuoteRequestConfirmationToCustomerEmail).not.toHaveBeenCalled();
   });
+
+  it("grava o snapshot do nome do item para preservar o histórico", async () => {
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    await expect(
+      createQuoteRequest(
+        "vitriny",
+        undefined,
+        makeFormData({
+          customerName: "Maria",
+          customerEmail: "maria@example.com",
+          serviceId,
+          description: "Preciso pintar a sala."
+        })
+      )
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
+
+    expect(db.quoteRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ serviceNameSnapshot: "Pintura" })
+      })
+    );
+  });
+
+  it("rejeita pedido sem item selecionado", async () => {
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    const result = await createQuoteRequest(
+      "vitriny",
+      undefined,
+      makeFormData({
+        customerName: "Maria",
+        customerEmail: "maria@example.com",
+        description: "Preciso de um orçamento."
+      })
+    );
+
+    expect(result).toEqual({
+      error: "Selecione um item da vitrine para enviar a solicitação."
+    });
+    expect(db.quoteRequest.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("markPixReservationPaid", () => {
   it("confirma o Pix manualmente para o pedido do prestador", async () => {
     const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
     vi.mocked(requireProviderProfile).mockResolvedValue({
-      profile: { id: "profile-1", plan: "FREE" },
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
       userId: "user-1"
     });
     db.quoteRequest.findFirst.mockResolvedValue({
@@ -443,7 +494,7 @@ describe("updateQuoteRequestDescription", () => {
   it("atualiza a observação de um pedido do próprio prestador", async () => {
     const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
     vi.mocked(requireProviderProfile).mockResolvedValue({
-      profile: { id: "profile-1", plan: "FREE" },
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
       userId: "user-1"
     });
     db.quoteRequest.findFirst.mockResolvedValue({ id: "request-1" });

@@ -58,6 +58,7 @@ export type SerializedQuoteRequest = Omit<
 type Props = {
   quoteRequest: SerializedQuoteRequest;
   serviceNamesById: Record<string, string>;
+  pixInfo?: { pixKey: string; pixHolderName: string } | null;
 };
 
 const statusLabels: Record<string, string> = {
@@ -132,7 +133,7 @@ function splitServiceFromDescription(
   };
 }
 
-export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
+export function QuoteRequestCard({ quoteRequest, serviceNamesById, pixInfo = null }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -142,7 +143,11 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
     quoteRequest.description ?? "",
     serviceNamesById
   );
-  const serviceLabel = quoteRequest.service?.name ?? legacyService.serviceLabel;
+  // Item excluído/renomeado: o snapshot preserva o nome da época do pedido.
+  const serviceLabel =
+    quoteRequest.service?.name ??
+    quoteRequest.serviceNameSnapshot ??
+    legacyService.serviceLabel;
   const cleanDescription = quoteRequest.service
     ? quoteRequest.description
     : legacyService.cleanDescription;
@@ -202,7 +207,7 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
             ) : null}
             {quoteRequest.pixReservationRequestedAt ? (
               <span
-                className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold sm:inline-flex ${
+                className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${
                   quoteRequest.pixReservationPaidAt
                     ? "border-mint bg-mint text-leaf"
                     : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
@@ -502,27 +507,38 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                       </p>
                     )}
 
-                    {depositPending && quoteRequest.customerPhone ? (
+                    {depositPending && quoteRequest.customerPhone && pixInfo ? (
                       <div className="mt-2">
                         <WhatsAppButton
                           label="Enviar instruções de Pix"
                           message={pixDepositMessage(
                             quoteRequest.customerName,
                             formattedDeposit,
-                            "(configure a chave Pix nos dados do negócio)",
-                            "(configure o titular nos dados do negócio)"
+                            pixInfo.pixKey,
+                            pixInfo.pixHolderName
                           )}
                           waUrl={buildWaUrl(
                             quoteRequest.customerPhone,
                             pixDepositMessage(
                               quoteRequest.customerName,
                               formattedDeposit,
-                              "(configure a chave Pix nos dados do negócio)",
-                              "(configure o titular nos dados do negócio)"
+                              pixInfo.pixKey,
+                              pixInfo.pixHolderName
                             )
                           )}
                         />
                       </div>
+                    ) : depositPending && !pixInfo ? (
+                      <p className="mt-2 text-xs text-ink-muted">
+                        Configure sua chave Pix em{" "}
+                        <Link
+                          className="font-semibold text-leaf hover:underline"
+                          href="/dashboard/perfil"
+                        >
+                          dados do negócio
+                        </Link>{" "}
+                        para enviar as instruções de pagamento ao cliente.
+                      </p>
                     ) : null}
                   </div>
                 );

@@ -23,7 +23,9 @@ const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   service: "O item selecionado não está disponível.",
   unavailable: "Esta vitrine não está disponível para pedidos.",
-  "scheduling-required": "Preencha data, horário e local para este item.",
+  "scheduling-required": "Preencha os campos obrigatórios deste item.",
+  "payment-unavailable":
+    "O pagamento via Pix está temporariamente indisponível para este item. Entre em contato com o negócio ou tente novamente mais tarde.",
   "limit-monthly-quote-requests":
     PUBLIC_LIMIT_ERROR_MESSAGES["limit-monthly-quote-requests"],
 };
@@ -66,6 +68,7 @@ export default async function PublicQuoteRequestPage({
           fixedServiceCheckoutMode: true,
           basePrice: true,
           requiresSchedulingDetails: true,
+          requiresLocation: true,
           imageUrl: true,
         },
       },
@@ -90,10 +93,20 @@ export default async function PublicQuoteRequestPage({
     profile.pixCity
   );
 
-  const requiresPixPayment =
+  const selectedServiceNeedsPix =
     selectedService?.pricingType === "FIXED" &&
-    selectedService?.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT" &&
-    pixConfigured;
+    selectedService?.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT";
+  const requiresPixPayment = selectedServiceNeedsPix && pixConfigured;
+  const pixUnavailableForSelected = selectedServiceNeedsPix && !pixConfigured;
+
+  // Itens com Pix obrigatório mas sem Pix configurado não podem ser enviados
+  // (a action rejeita com payment-unavailable), então saem do dropdown.
+  const selectableServices = profile.services.filter(
+    (s) =>
+      pixConfigured ||
+      s.pricingType !== "FIXED" ||
+      s.fixedServiceCheckoutMode !== "REQUIRE_PIX_PAYMENT",
+  );
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
 
   const pageLabel = requiresPixPayment
@@ -143,7 +156,7 @@ export default async function PublicQuoteRequestPage({
             {/* Service card with image */}
             {selectedService ? (
               <div className="mt-6 overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card">
-                {selectedService.imageUrl ? (
+                {profile.plan === "PRO" && selectedService.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     alt={selectedService.name}
@@ -213,6 +226,40 @@ export default async function PublicQuoteRequestPage({
                   </Link>
                 </div>
               </div>
+            ) : !selectedService && selectableServices.length === 0 ? (
+              <div className="rounded-xl border border-paper-soft bg-white p-6 shadow-card">
+                <p className="font-fraunces text-xl font-bold text-ink">
+                  Nenhum item disponível
+                </p>
+                <p className="mt-2 text-sm leading-6 text-ink-muted">
+                  Este negócio ainda não tem itens disponíveis para
+                  solicitação. Volte em breve ou entre em contato pelos canais
+                  da vitrine.
+                </p>
+                <Link
+                  className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                  href={`/u/${slug}`}
+                >
+                  Voltar à vitrine
+                </Link>
+              </div>
+            ) : pixUnavailableForSelected ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
+                <p className="font-fraunces text-xl font-bold text-ink">
+                  Pagamento temporariamente indisponível
+                </p>
+                <p className="mt-2 text-sm leading-6 text-ink-muted">
+                  Este item exige pagamento via Pix, mas o negócio ainda não
+                  configurou o recebimento. Entre em contato ou tente novamente
+                  mais tarde.
+                </p>
+                <Link
+                  className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                  href={`/u/${slug}`}
+                >
+                  Voltar à vitrine
+                </Link>
+              </div>
             ) : (
               <>
                 {query.error ? (
@@ -237,10 +284,11 @@ export default async function PublicQuoteRequestPage({
                           basePrice: selectedService.basePrice?.toString() ?? null,
                           requiresSchedulingDetails:
                             selectedService.requiresSchedulingDetails,
+                          requiresLocation: selectedService.requiresLocation,
                         }
                       : null
                   }
-                  services={profile.services.map((s) => ({
+                  services={selectableServices.map((s) => ({
                     id: s.id,
                     name: s.name,
                     description: s.description,
@@ -249,6 +297,7 @@ export default async function PublicQuoteRequestPage({
                     fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
                     basePrice: s.basePrice?.toString() ?? null,
                     requiresSchedulingDetails: s.requiresSchedulingDetails,
+                    requiresLocation: s.requiresLocation,
                   }))}
                   slug={slug}
                 />

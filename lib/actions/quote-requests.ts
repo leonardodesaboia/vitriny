@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import {
   getCurrentMonthRange,
@@ -90,7 +91,8 @@ export async function createQuoteRequest(
         pricingType: true,
         fixedServiceCheckoutMode: true,
         basePrice: true,
-        requiresSchedulingDetails: true
+        requiresSchedulingDetails: true,
+        requiresLocation: true
       }
     })
     : null;
@@ -141,6 +143,9 @@ export async function createQuoteRequest(
       data: {
         providerId: profile.id,
         serviceId: parsed.data.serviceId,
+        // Snapshot: o histórico do pedido não depende do item continuar
+        // existindo (ou mantendo o mesmo nome) na vitrine.
+        serviceNameSnapshot: service?.name ?? null,
         customerName: parsed.data.customerName,
         customerEmail: parsed.data.customerEmail,
         customerPhone: parsed.data.customerPhone,
@@ -177,42 +182,47 @@ export async function createQuoteRequest(
   }
 
   const providerEmail = profile.email ?? profile.user.email;
+  const customerEmail = parsed.data.customerEmail;
 
-  if (providerEmail) {
-    try {
-      await sendQuoteRequestReceivedEmail({
-        to: providerEmail,
-        businessName: profile.businessName,
-        customerName: created.customerName,
-        serviceName: service?.name,
-        dashboardUrl: appUrl("/dashboard/pedidos")
-      });
-    } catch (error) {
-      console.error("Falha ao enviar e-mail de novo pedido.", {
-        error,
-        quoteRequestId: created.id
-      });
+  // Notificações rodam depois da resposta: o cliente não espera a latência
+  // dos e-mails para ver a página de pagamento ou de sucesso.
+  after(async () => {
+    if (providerEmail) {
+      try {
+        await sendQuoteRequestReceivedEmail({
+          to: providerEmail,
+          businessName: profile.businessName,
+          customerName: created.customerName,
+          serviceName: service?.name,
+          dashboardUrl: appUrl("/dashboard/pedidos")
+        });
+      } catch (error) {
+        console.error("Falha ao enviar e-mail de novo pedido.", {
+          error,
+          quoteRequestId: created.id
+        });
+      }
     }
-  }
 
-  if (parsed.data.customerEmail) {
-    try {
-      await sendQuoteRequestConfirmationToCustomerEmail({
-        to: parsed.data.customerEmail,
-        customerName: created.customerName,
-        businessName: profile.businessName,
-        serviceName: service?.name,
-        isPixPayment,
-        profileUrl: appUrl(`/u/${slug}`),
-        pixReservaUrl: isPixPayment ? appUrl(`/u/${slug}/reserva/${created.id}`) : null
-      });
-    } catch (error) {
-      console.error("Falha ao enviar e-mail de confirmação ao cliente.", {
-        error,
-        quoteRequestId: created.id
-      });
+    if (customerEmail) {
+      try {
+        await sendQuoteRequestConfirmationToCustomerEmail({
+          to: customerEmail,
+          customerName: created.customerName,
+          businessName: profile.businessName,
+          serviceName: service?.name,
+          isPixPayment,
+          profileUrl: appUrl(`/u/${slug}`),
+          pixReservaUrl: isPixPayment ? appUrl(`/u/${slug}/reserva/${created.id}`) : null
+        });
+      } catch (error) {
+        console.error("Falha ao enviar e-mail de confirmação ao cliente.", {
+          error,
+          quoteRequestId: created.id
+        });
+      }
     }
-  }
+  });
 
   if (isPixPayment) {
     redirect(`/u/${slug}/reserva/${created.id}`);

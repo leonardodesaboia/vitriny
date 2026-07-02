@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { quoteRequestSchema } from "@/lib/validations/quote-request";
+import {
+  quoteRequestSchema,
+  validateQuoteRequestForService
+} from "@/lib/validations/quote-request";
 
 describe("quoteRequestSchema", () => {
   const valid = {
@@ -115,5 +118,98 @@ describe("quoteRequestSchema", () => {
     const result = quoteRequestSchema.safeParse({ ...valid, description: "Curta" });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.description).toBe("Curta");
+  });
+});
+
+describe("validateQuoteRequestForService", () => {
+  const baseInput = {
+    customerName: "Maria Oliveira",
+    customerEmail: "maria@example.com",
+    customerPhone: null,
+    serviceId: null,
+    description: "Preciso de um orçamento detalhado do serviço.",
+    desiredDate: null,
+    desiredTime: null,
+    location: null
+  };
+
+  it("rejeita pedido sem item selecionado", () => {
+    expect(validateQuoteRequestForService(baseInput, null)).toBe(
+      "Selecione um item da vitrine para enviar a solicitação."
+    );
+  });
+
+  it("exige descrição para item sob consulta", () => {
+    const result = validateQuoteRequestForService(
+      { ...baseInput, description: null },
+      { pricingType: "CUSTOM", requiresSchedulingDetails: false, requiresLocation: false }
+    );
+
+    expect(result).toBe("Descreva o que você precisa para enviar a solicitação.");
+  });
+
+  it("aceita item de preço fixo sem descrição", () => {
+    const result = validateQuoteRequestForService(
+      { ...baseInput, description: null },
+      { pricingType: "FIXED", requiresSchedulingDetails: false, requiresLocation: false }
+    );
+
+    expect(result).toBeNull();
+  });
+
+  it("exige data e horário quando o item pede agendamento, sem exigir local", () => {
+    const service = {
+      pricingType: "FIXED" as const,
+      requiresSchedulingDetails: true,
+      requiresLocation: false
+    };
+
+    expect(
+      validateQuoteRequestForService(
+        { ...baseInput, desiredDate: null, desiredTime: null },
+        service
+      )
+    ).toBe("Informe data e horário para este item.");
+
+    expect(
+      validateQuoteRequestForService(
+        { ...baseInput, desiredDate: "2027-01-10", desiredTime: "manhã", location: null },
+        service
+      )
+    ).toBeNull();
+  });
+
+  it("exige apenas o local quando o item pede só localização", () => {
+    const service = {
+      pricingType: "FIXED" as const,
+      requiresSchedulingDetails: false,
+      requiresLocation: true
+    };
+
+    expect(
+      validateQuoteRequestForService({ ...baseInput, location: null }, service)
+    ).toBe("Informe o local para este item.");
+
+    expect(
+      validateQuoteRequestForService(
+        { ...baseInput, desiredDate: null, desiredTime: null, location: "Centro, Fortaleza" },
+        service
+      )
+    ).toBeNull();
+  });
+
+  it("exige os três campos quando o item pede agendamento e local", () => {
+    const service = {
+      pricingType: "FIXED" as const,
+      requiresSchedulingDetails: true,
+      requiresLocation: true
+    };
+
+    expect(
+      validateQuoteRequestForService(
+        { ...baseInput, desiredDate: "2027-01-10", desiredTime: "manhã", location: null },
+        service
+      )
+    ).toBe("Informe o local para este item.");
   });
 });

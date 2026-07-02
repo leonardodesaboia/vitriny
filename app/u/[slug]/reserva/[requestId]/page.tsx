@@ -11,7 +11,10 @@ import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
-import { isPixPaymentExpired } from "@/lib/utils/date";
+import {
+  isPixPaymentExpired,
+  PIX_PAYMENT_EXPIRY_HOURS
+} from "@/lib/utils/date";
 
 type PixReservationPageProps = {
   params: Promise<{
@@ -45,35 +48,42 @@ export default async function PixReservationPage({ params }: PixReservationPageP
     }
   });
 
-  if (!profile || !profile.isPublished) notFound();
+  // Não exige isPublished: o link de reserva já foi enviado ao cliente por
+  // e-mail; despublicar a vitrine não pode matar um pagamento em andamento.
+  if (!profile) notFound();
 
   const quoteRequest = await prisma.quoteRequest.findFirst({
     where: { id: requestId, providerId: profile.id },
     select: {
       id: true,
       customerName: true,
+      serviceNameSnapshot: true,
       fixedServiceAmount: true,
       pixReservationRequestedAt: true,
       pixReservationPaidAt: true,
       service: {
         select: {
           id: true,
-          name: true,
-          pricingType: true
+          name: true
         }
       }
     }
   });
 
+  // O valor e o estado da reserva vivem no snapshot do pedido; a página não
+  // pode quebrar se o negócio excluir ou reconfigurar o item depois.
   if (
     !quoteRequest ||
-    !quoteRequest.service ||
-    quoteRequest.service.pricingType !== "FIXED" ||
     !quoteRequest.pixReservationRequestedAt ||
     !quoteRequest.fixedServiceAmount
   ) {
     notFound();
   }
+
+  const itemName =
+    quoteRequest.service?.name ??
+    quoteRequest.serviceNameSnapshot ??
+    "Seu pedido";
 
   const pixConfigured = !!(
     profile.pixKey &&
@@ -81,23 +91,37 @@ export default async function PixReservationPage({ params }: PixReservationPageP
     profile.pixCity
   );
 
-  if (!pixConfigured) notFound();
-
   const amount = quoteRequest.fixedServiceAmount.toString();
-
-  const { copyPasteCode, qrCodeDataUrl } = await createPixPayment({
-    pixKey: profile.pixKey!,
-    pixHolderName: profile.pixHolderName!,
-    pixCity: profile.pixCity!,
-    amount,
-    transactionId: quoteRequest.id.replace(/-/g, "").slice(0, 25),
-    description: quoteRequest.service.name
-  });
-
   const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
   const expired =
     !alreadyPaid &&
     isPixPaymentExpired(quoteRequest.pixReservationRequestedAt);
+  const pendingPayment = !alreadyPaid && !expired;
+
+  const paymentDeadline = new Date(
+    quoteRequest.pixReservationRequestedAt.getTime() +
+      PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000
+  );
+  const paymentDeadlineDisplay = new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(paymentDeadline);
+
+  const pixPayment =
+    pendingPayment && pixConfigured
+      ? await createPixPayment({
+          pixKey: profile.pixKey!,
+          pixHolderName: profile.pixHolderName!,
+          pixCity: profile.pixCity!,
+          amount,
+          transactionId: quoteRequest.id.replace(/-/g, "").slice(0, 25),
+          description:
+            quoteRequest.service?.name ??
+            quoteRequest.serviceNameSnapshot ??
+            "Reserva"
+        })
+      : null;
+
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
   const whatsappNumber = profile.phone
     ? phoneToWhatsAppNumber(profile.phone)
@@ -118,7 +142,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
             Pagamento via Pix
           </p>
           <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-            {quoteRequest.service.name}
+            {itemName}
           </h1>
           <p className="mt-2 text-sm text-ink-muted">
             {profile.businessName}
@@ -161,6 +185,34 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               Voltar à vitrine
             </Link>
           </div>
+        ) : !pixPayment ? (
+          <div className="mt-8 rounded-xl border border-amber/30 bg-amber/10 p-6">
+            <p className="font-fraunces text-xl font-bold text-ink">
+              Pagamento temporariamente indisponível
+            </p>
+            <p className="mt-2 text-sm leading-6 text-ink-muted">
+              O negócio ainda não configurou o recebimento via Pix. Entre em
+              contato para combinar o pagamento ou tente novamente mais tarde.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {whatsappNumber ? (
+                <a
+                  className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Fiz uma solicitação de ${itemName} no valor de ${formatMoney(amount)}, mas o pagamento Pix está indisponível. Como posso pagar?`)}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Falar no WhatsApp
+                </a>
+              ) : null}
+              <Link
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                href={`/u/${slug}`}
+              >
+                Voltar à vitrine
+              </Link>
+            </div>
+          </div>
         ) : (
           <div className="mt-8 grid gap-6">
             <div className="rounded-xl border border-paper-soft bg-white p-5 shadow-card">
@@ -169,6 +221,14 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               </p>
               <p className="mt-1 font-fraunces text-3xl font-bold text-ink">
                 {formatMoney(amount)}
+              </p>
+              <p className="mt-2 text-xs text-ink-muted">
+                Pague até{" "}
+                <span className="font-semibold text-ink">
+                  {paymentDeadlineDisplay}
+                </span>
+                . Depois desse prazo o código Pix expira e será necessário
+                fazer uma nova solicitação.
               </p>
             </div>
 
@@ -181,7 +241,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
                 <img
                   alt="QR Code Pix"
                   className="h-56 w-56 rounded-lg"
-                  src={qrCodeDataUrl}
+                  src={pixPayment.qrCodeDataUrl}
                 />
               </div>
               <p className="mt-4 text-center text-xs text-ink-muted">
@@ -194,9 +254,23 @@ export default async function PixReservationPage({ params }: PixReservationPageP
                 Pix Copia e Cola
               </p>
               <p className="mt-2 break-all rounded-lg bg-paper px-3 py-3 text-xs text-ink">
-                {copyPasteCode}
+                {pixPayment.copyPasteCode}
               </p>
-              <CopyPixButton code={copyPasteCode} />
+              <CopyPixButton code={pixPayment.copyPasteCode} />
+              <div className="mt-4 flex gap-8 border-t border-paper-soft pt-4 text-sm text-ink-muted">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest">
+                    Titular
+                  </p>
+                  <p className="mt-1 text-ink">{profile.pixHolderName}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest">
+                    Cidade
+                  </p>
+                  <p className="mt-1 text-ink">{profile.pixCity}</p>
+                </div>
+              </div>
             </div>
 
             <div className="rounded-xl border border-amber/30 bg-amber/10 p-4">
@@ -215,7 +289,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               {whatsappNumber ? (
                 <a
                   className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao item ${quoteRequest.service.name}. Vou enviar o comprovante por aqui.`)}`}
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao item ${itemName}. Vou enviar o comprovante por aqui.`)}`}
                   rel="noopener noreferrer"
                   target="_blank"
                 >

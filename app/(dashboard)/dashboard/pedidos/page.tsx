@@ -46,7 +46,9 @@ function parseStatusFilter(status: string | undefined): QuoteRequestStatus | "AL
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   profile: "Cadastre os dados do negócio antes de receber pedidos.",
-  "not-found": "Pedido não encontrado."
+  "not-found": "Pedido não encontrado.",
+  "fixed-price": "Pedidos de item com preço fixo não geram proposta.",
+  "proposal-exists": "Este pedido já possui uma proposta."
 };
 
 const noticeMessages: Record<string, string> = {
@@ -121,7 +123,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           }
         }
       },
-      services: { select: { id: true, name: true, itemType: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true } }
+      services: { select: { id: true, name: true, itemType: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true, requiresLocation: true } }
     }
   });
 
@@ -255,6 +257,14 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           </div>
 
           <QuoteRequestList
+            pixInfo={
+              profile.pixKey && profile.pixHolderName
+                ? {
+                    pixKey: profile.pixKey,
+                    pixHolderName: profile.pixHolderName
+                  }
+                : null
+            }
             emptyDescription={
               activeView
                 ? `Nenhum pedido encontrado em “${DASHBOARD_REQUEST_VIEW_LABELS[activeView]}”.`
@@ -273,7 +283,8 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             services={profile.services.map((s) => ({
               ...s,
               basePrice: s.basePrice?.toString() ?? null,
-              requiresSchedulingDetails: s.requiresSchedulingDetails
+              requiresSchedulingDetails: s.requiresSchedulingDetails,
+              requiresLocation: s.requiresLocation
             }))}
           />
         </div>

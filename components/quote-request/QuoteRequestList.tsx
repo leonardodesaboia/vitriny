@@ -4,6 +4,7 @@ import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
 type QuoteRequestListProps = {
   quoteRequests: QuoteRequestWithRelations[];
   services: ServiceSummary[];
+  pixInfo?: { pixKey: string; pixHolderName: string } | null;
   emptyDescription?: string;
   emptyTitle?: string;
 };
@@ -12,7 +13,8 @@ export function QuoteRequestList({
   emptyDescription = "Quando um cliente preencher o formulário da sua vitrine, os pedidos aparecerão aqui.",
   emptyTitle = "Nenhum pedido ainda",
   quoteRequests,
-  services
+  services,
+  pixInfo = null
 }: QuoteRequestListProps) {
   const serviceNamesById = Object.fromEntries(
     services.map((s) => [s.id, s.name])
@@ -58,6 +60,7 @@ export function QuoteRequestList({
         return (
           <QuoteRequestCard
             key={quoteRequest.id}
+            pixInfo={pixInfo}
             quoteRequest={serialized}
             serviceNamesById={serviceNamesById}
           />
