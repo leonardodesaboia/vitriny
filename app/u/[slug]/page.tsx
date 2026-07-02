@@ -1,12 +1,10 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
-import { getHowItWorksContent } from "@/lib/utils/how-it-works";
 import {
   formatPhoneBR,
   phoneToTelHref,
@@ -147,8 +145,6 @@ export default async function PublicProviderProfilePage({
 
   const hasServices = profile.services.length > 0;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
-  const { title: howItWorksTitle, steps: howItWorksSteps } =
-    getHowItWorksContent(profile.services);
 
   return (
     <main
@@ -240,10 +236,10 @@ export default async function PublicProviderProfilePage({
             ) : (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Solicitação personalizada
+                  Produtos e serviços
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-                  Solicite o que precisa
+                  Em breve
                 </h2>
               </>
             )}

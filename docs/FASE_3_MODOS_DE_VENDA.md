@@ -29,9 +29,9 @@ A implementação deve reaproveitar `pricingType` e `fixedServiceCheckoutMode`. 
 
 Descrições:
 
-- `CUSTOM`: “O cliente envia uma solicitação e você responde com uma proposta.”
-- `FIXED_REQUEST`: “O cliente envia uma solicitação com os dados. Você confirma depois.”
-- `FIXED_PIX`: “O cliente preenche os dados e recebe o Pix para pagar diretamente para você. A confirmação continua manual.”
+- `CUSTOM`: “O preço não é definido agora. O cliente descreve o que precisa, e você analisa o pedido antes de enviar uma proposta com valor e condições.”
+- `FIXED_REQUEST`: “Você informa o preço no cadastro. O cliente envia os dados sem pagar, e você entra em contato para confirmar o pedido.”
+- `FIXED_PIX`: “Você informa o preço no cadastro. Após enviar os dados, o cliente recebe o QR Code e o código Pix para pagar diretamente a você; a confirmação do pagamento é manual.”
 
 Aviso adicional de `FIXED_PIX`:
 

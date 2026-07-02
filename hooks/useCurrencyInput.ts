@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { ChangeEvent } from "react";
+
+const MAX_CENTS_DIGITS = 12;
 
 const formatter = new Intl.NumberFormat("pt-BR", {
   minimumFractionDigits: 2,
@@ -27,33 +30,25 @@ function defaultValueToCents(value: string): string {
 export function useCurrencyInput(defaultValue = "") {
   const [cents, setCents] = useState(() => defaultValueToCents(defaultValue));
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key >= "0" && e.key <= "9") {
-      e.preventDefault();
-      setCents((prev) => (prev + e.key).replace(/^0+/, "") || "0");
-    } else if (e.key === "Backspace") {
-      e.preventDefault();
-      setCents((prev) => prev.slice(0, -1));
-    } else if (e.key === "Delete") {
-      e.preventDefault();
-      setCents("");
-    }
-  }
-
-  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
-    e.preventDefault();
-    const digits = e.clipboardData.getData("text").replace(/\D/g, "").replace(/^0+/, "");
-    if (digits) setCents(digits);
+  // Input controlado via onChange: os dígitos do valor exibido SÃO os
+  // centavos, então basta extraí-los a cada mudança. Diferente do esquema
+  // anterior (readOnly + onKeyDown), funciona com teclados virtuais no
+  // celular, autofill e colagem.
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const digits = event.target.value
+      .replace(/\D/g, "")
+      .replace(/^0+/, "")
+      .slice(0, MAX_CENTS_DIGITS);
+    setCents(digits);
   }
 
   return {
     submitValue: centsToDecimal(cents),
     inputProps: {
       value: centsToDisplay(cents),
-      readOnly: true,
-      onKeyDown: handleKeyDown,
-      onPaste: handlePaste,
+      onChange: handleChange,
       inputMode: "numeric" as const,
+      autoComplete: "off",
       placeholder: "0,00"
     }
   };

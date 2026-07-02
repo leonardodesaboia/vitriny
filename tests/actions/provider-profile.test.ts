@@ -12,6 +12,8 @@ beforeEach(async () => {
   const prismaModule = await import("@/lib/prisma");
   db = makePrismaMock();
   Object.assign(prismaModule.prisma, db);
+  // requireAuth verifica soft delete; conta ativa por padrão nos testes.
+  db.user.findUnique.mockResolvedValue({ deletedAt: null });
   vi.mocked(auth).mockResolvedValue(makeSession("user-1") as never);
   db.providerProfile.findUnique.mockResolvedValue(null);
   db.providerProfile.upsert.mockResolvedValue({});

@@ -38,7 +38,8 @@ export const serviceSchema = z
       .default("REQUEST_ONLY"),
     basePrice: optionalPrice,
     isActive: z.boolean(),
-    requiresSchedulingDetails: z.boolean().default(false)
+    requiresSchedulingDetails: z.boolean().default(false),
+    requiresLocation: z.boolean().default(false)
   })
   .superRefine((data, ctx) => {
     const price = data.basePrice ? parseFloat(data.basePrice) : 0;

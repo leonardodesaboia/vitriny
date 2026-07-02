@@ -4,9 +4,14 @@ import type { ServiceForClient } from "@/types/service";
 type ServiceListProps = {
   services: ServiceForClient[];
   isPro?: boolean;
+  allowItemTypeSelection?: boolean;
 };
 
-export function ServiceList({ services, isPro = false }: ServiceListProps) {
+export function ServiceList({
+  services,
+  isPro = false,
+  allowItemTypeSelection = false
+}: ServiceListProps) {
   if (services.length === 0) {
     return (
       <div className="rounded-xl border border-paper-soft bg-paper p-5">
@@ -20,7 +25,12 @@ export function ServiceList({ services, isPro = false }: ServiceListProps) {
   return (
     <div className="grid min-w-0 gap-2">
       {services.map((service) => (
-        <ServiceItem isPro={isPro} key={service.id} service={service} />
+        <ServiceItem
+          allowItemTypeSelection={allowItemTypeSelection}
+          isPro={isPro}
+          key={service.id}
+          service={service}
+        />
       ))}
     </div>
   );

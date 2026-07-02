@@ -14,6 +14,7 @@ import type { ServiceForClient } from "@/types/service";
 type ServiceItemProps = {
   service: ServiceForClient;
   isPro?: boolean;
+  allowItemTypeSelection?: boolean;
 };
 
 const saleModeBadge: Record<ServiceSaleMode, string> = {
@@ -34,7 +35,11 @@ function formatPrice(price: string | null): string | null {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(num);
 }
 
-export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
+export function ServiceItem({
+  service,
+  isPro = false,
+  allowItemTypeSelection = false
+}: ServiceItemProps) {
   const [expanded, setExpanded] = useState(false);
   const formattedPrice = formatPrice(service.basePrice);
   const saleMode = getServiceSaleMode({
@@ -44,47 +49,80 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
 
   return (
     <article
-      className={`min-w-0 overflow-hidden rounded-xl border bg-white shadow-card transition-opacity ${
-        service.isActive ? "border-paper-soft" : "border-paper-soft opacity-60"
+      className={`min-w-0 overflow-hidden rounded-xl border bg-white shadow-card transition-colors ${
+        expanded ? "border-leaf/40" : "border-paper-soft hover:border-leaf/30"
       }`}
     >
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50"
+        className="grid w-full min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_16px] items-center gap-3 p-4 text-left transition hover:bg-paper/50 sm:gap-4"
       >
-        <div className="flex min-w-0 items-center gap-3">
+        {/* Miniatura sempre presente para manter o alinhamento da lista */}
+        <div
+          className={`flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-paper-soft bg-paper ${
+            service.isActive ? "" : "opacity-50"
+          }`}
+        >
           {service.imageUrl ? (
-            <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-paper-soft">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt={service.name}
-                className="h-full w-full object-cover"
-                loading="lazy"
-                src={service.imageUrl}
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              alt={service.name}
+              className="h-full w-full object-cover"
+              loading="lazy"
+              src={service.imageUrl}
+            />
+          ) : (
+            <svg
+              className="h-5 w-5 text-ink-muted/50"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.8}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
-            </div>
-          ) : null}
+            </svg>
+          )}
+        </div>
 
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-ink" title={service.name}>
-              {service.name}
-            </p>
-            <div className="mt-1 flex min-w-0 flex-wrap items-center gap-1.5">
-              <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                {itemTypeLabel[service.itemType]}
-              </span>
-              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}>
-                {SALE_MODE_BADGE_LABEL[saleMode]}
-              </span>
-              {formattedPrice ? (
-                <span className="min-w-0 break-words text-xs text-ink-muted">{formattedPrice}</span>
-              ) : null}
-              {!service.isActive ? (
-                <span className="shrink-0 text-xs text-ink-muted">· Oculto</span>
-              ) : null}
-            </div>
+        <div className="min-w-0">
+          <p
+            className={`truncate text-sm font-semibold ${
+              service.isActive ? "text-ink" : "text-ink-muted"
+            }`}
+            title={service.name}
+          >
+            {service.name}
+          </p>
+          <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
+            <span className="shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
+              {itemTypeLabel[service.itemType]}
+            </span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}>
+              {SALE_MODE_BADGE_LABEL[saleMode]}
+            </span>
           </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          {formattedPrice ? (
+            <span
+              className={`whitespace-nowrap font-fraunces text-base font-bold ${
+                service.isActive ? "text-ink" : "text-ink-muted"
+              }`}
+            >
+              {formattedPrice}
+            </span>
+          ) : null}
+          {!service.isActive ? (
+            <span className="rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold text-stone-500">
+              Oculto
+            </span>
+          ) : null}
         </div>
 
         <svg
@@ -100,6 +138,7 @@ export function ServiceItem({ service, isPro = false }: ServiceItemProps) {
       {expanded ? (
         <div className="min-w-0 border-t border-paper-soft p-4 sm:p-5">
           <ServiceForm
+            allowItemTypeSelection={allowItemTypeSelection}
             embedded
             isPro={isPro}
             onCancel={() => setExpanded(false)}

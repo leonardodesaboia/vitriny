@@ -3,6 +3,9 @@ import { makeFormData, makeSession, makeProfile, makePrismaMock, type PrismaMock
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
+vi.mock("@/lib/storage", () => ({
+  deleteFromStorage: vi.fn()
+}));
 
 let db: PrismaMock;
 
@@ -12,6 +15,8 @@ beforeEach(async () => {
   const prismaModule = await import("@/lib/prisma");
   db = makePrismaMock();
   Object.assign(prismaModule.prisma, db);
+  // requireAuth verifica soft delete; conta ativa por padrão nos testes.
+  db.user.findUnique.mockResolvedValue({ deletedAt: null });
   vi.mocked(auth).mockResolvedValue(makeSession() as never);
   db.providerProfile.findUnique.mockResolvedValue(makeProfile());
 });
@@ -32,6 +37,9 @@ describe("createService", () => {
   });
 
   it("persiste PRODUCT sem alterar as regras de precificação", async () => {
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessType: "BOTH" })
+    );
     db.service.count.mockResolvedValue(0);
     db.service.create.mockResolvedValue({ id: "new-product-id" });
 
@@ -55,6 +63,48 @@ describe("createService", () => {
           pricingType: "FIXED",
           fixedServiceCheckoutMode: "REQUEST_ONLY"
         })
+      })
+    );
+  });
+
+  it("define PRODUCT pelo perfil mesmo que o formulário envie SERVICE", async () => {
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessType: "PRODUCTS" })
+    );
+    db.service.count.mockResolvedValue(0);
+    db.service.create.mockResolvedValue({ id: "new-product-id" });
+
+    const { createService } = await import("@/lib/actions/services");
+    await createService(undefined, validServiceForm());
+
+    expect(db.service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ itemType: "PRODUCT" })
+      })
+    );
+  });
+
+  it("define SERVICE pelo perfil mesmo que o formulário envie PRODUCT", async () => {
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessType: "SERVICES" })
+    );
+    db.service.count.mockResolvedValue(0);
+    db.service.create.mockResolvedValue({ id: "new-service-id" });
+
+    const form = makeFormData({
+      name: "Consultoria",
+      description: "",
+      basePrice: "",
+      isActive: "on",
+      itemType: "PRODUCT",
+      pricingType: "CUSTOM"
+    });
+    const { createService } = await import("@/lib/actions/services");
+    await createService(undefined, form);
+
+    expect(db.service.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ itemType: "SERVICE" })
       })
     );
   });
@@ -204,7 +254,10 @@ describe("updateService", () => {
     expect(db.service.update).toHaveBeenCalledOnce();
   });
 
-  it("atualiza a classificação para PRODUCT", async () => {
+  it("permite trocar o itemType na edição quando o perfil oferece ambos", async () => {
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessType: "BOTH" })
+    );
     const form = makeFormData({
       serviceId: "service-1",
       name: "Produto personalizado",
@@ -221,6 +274,30 @@ describe("updateService", () => {
     expect(db.service.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({ itemType: "PRODUCT" })
+      })
+    );
+  });
+
+  it("ignora itemType do formulário na edição quando o perfil é só de serviços", async () => {
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({ businessType: "SERVICES" })
+    );
+    const form = makeFormData({
+      serviceId: "service-1",
+      name: "Item qualquer",
+      description: "",
+      basePrice: "",
+      isActive: "on",
+      itemType: "PRODUCT",
+      pricingType: "CUSTOM"
+    });
+    const { updateService } = await import("@/lib/actions/services");
+    const result = await updateService(undefined, form);
+
+    expect(result).toEqual({ serviceId: "service-1" });
+    expect(db.service.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ itemType: "SERVICE" })
       })
     );
   });
@@ -325,5 +402,71 @@ describe("toggleServiceStatus", () => {
     await expect(toggleServiceStatus(validForm("true"))).rejects.toThrow(
       "/dashboard/servicos?error=not-found"
     );
+  });
+});
+
+describe("deleteService", () => {
+  it("remove um item do próprio prestador e redireciona", async () => {
+    db.service.findFirst.mockResolvedValue({ id: "service-1" });
+    db.service.delete.mockResolvedValue({});
+
+    const { deleteService } = await import("@/lib/actions/services");
+    await expect(
+      deleteService(makeFormData({ serviceId: "service-1" }))
+    ).rejects.toThrow("/dashboard/servicos");
+
+    expect(db.service.delete).toHaveBeenCalledWith({
+      where: { id: "service-1" }
+    });
+  });
+
+  it("remove a imagem do storage quando o item excluído tem imagem", async () => {
+    db.service.findFirst.mockResolvedValue({
+      id: "service-1",
+      imageStorageKey: "services/service-1/foto.jpg"
+    });
+    db.service.delete.mockResolvedValue({});
+
+    const { deleteFromStorage } = await import("@/lib/storage");
+    const { deleteService } = await import("@/lib/actions/services");
+    await expect(
+      deleteService(makeFormData({ serviceId: "service-1" }))
+    ).rejects.toThrow("/dashboard/servicos");
+
+    expect(deleteFromStorage).toHaveBeenCalledWith("services/service-1/foto.jpg");
+  });
+
+  it("não toca no storage quando o item não tem imagem", async () => {
+    db.service.findFirst.mockResolvedValue({
+      id: "service-1",
+      imageStorageKey: null
+    });
+    db.service.delete.mockResolvedValue({});
+
+    const { deleteFromStorage } = await import("@/lib/storage");
+    const { deleteService } = await import("@/lib/actions/services");
+    await expect(
+      deleteService(makeFormData({ serviceId: "service-1" }))
+    ).rejects.toThrow("/dashboard/servicos");
+
+    expect(deleteFromStorage).not.toHaveBeenCalled();
+  });
+
+  it("conclui a exclusão mesmo se a remoção da imagem no storage falhar", async () => {
+    db.service.findFirst.mockResolvedValue({
+      id: "service-1",
+      imageStorageKey: "services/service-1/foto.jpg"
+    });
+    db.service.delete.mockResolvedValue({});
+
+    const { deleteFromStorage } = await import("@/lib/storage");
+    vi.mocked(deleteFromStorage).mockRejectedValue(new Error("s3 down"));
+
+    const { deleteService } = await import("@/lib/actions/services");
+    await expect(
+      deleteService(makeFormData({ serviceId: "service-1" }))
+    ).rejects.toThrow("/dashboard/servicos");
+
+    expect(db.service.delete).toHaveBeenCalled();
   });
 });

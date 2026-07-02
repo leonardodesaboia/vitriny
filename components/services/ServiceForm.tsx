@@ -22,6 +22,7 @@ type ServiceFormProps = {
   onSaved?: (name: string) => void;
   embedded?: boolean;
   defaultItemType?: "SERVICE" | "PRODUCT";
+  allowItemTypeSelection?: boolean;
 };
 
 type ImageStatus = "idle" | "removing";
@@ -46,6 +47,7 @@ export function ServiceForm({
   onSaved,
   embedded = false,
   defaultItemType = "SERVICE",
+  allowItemTypeSelection = true,
 }: ServiceFormProps) {
   const router = useRouter();
   const action = service ? updateService : createService;
@@ -68,6 +70,9 @@ export function ServiceForm({
   const [isActive, setIsActive] = useState(service?.isActive ?? true);
   const [requiresScheduling, setRequiresScheduling] = useState(
     service?.requiresSchedulingDetails ?? false,
+  );
+  const [requiresLocation, setRequiresLocation] = useState(
+    service?.requiresLocation ?? false,
   );
 
   // Preview state — tracks form fields for the live card preview
@@ -204,6 +209,7 @@ export function ServiceForm({
       <input name="fixedServiceCheckoutMode" type="hidden" value={technicalSaleMode.fixedServiceCheckoutMode} />
       <input name="isActive" type="hidden" value={isActive ? "on" : ""} />
       <input name="requiresSchedulingDetails" type="hidden" value={requiresScheduling ? "on" : ""} />
+      <input name="requiresLocation" type="hidden" value={requiresLocation ? "on" : ""} />
 
       {savedSuccess ? (
         <p className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
@@ -231,7 +237,7 @@ export function ServiceForm({
       <SectionDivider />
 
       {/* ── Informações ─────────────────────────── */}
-      <div className={`grid gap-4 ${embedded ? "py-5" : ""}`}>
+      <div className="grid gap-4 py-5">
         <SectionHeader>Informações</SectionHeader>
 
         <div className="grid gap-2">
@@ -246,11 +252,9 @@ export function ServiceForm({
             name="name"
             onChange={(e) => setPreviewName(e.target.value)}
             placeholder={
-              defaultItemType === "PRODUCT"
+              itemType === "PRODUCT"
                 ? "Ex: Kit presenteável, Cesta de café da manhã"
-                : defaultItemType === "SERVICE"
-                  ? "Ex: Pintura residencial, Consultoria de imagem"
-                  : "Ex: Kit presenteável, Pintura residencial"
+                : "Ex: Pintura residencial, Consultoria de imagem"
             }
             required
             type="text"
@@ -274,31 +278,33 @@ export function ServiceForm({
           <p className="text-xs text-ink-muted">Máximo 600 caracteres.</p>
         </div>
 
-        <div className="grid gap-2">
-          <p className="text-sm font-semibold text-ink">Este item é um:</p>
-          <div className="flex min-w-0 rounded-xl border border-paper-soft bg-paper p-1">
-            {(["PRODUCT", "SERVICE"] as const).map((type) => (
-              <button
-                key={type}
-                aria-pressed={itemType === type}
-                className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
-                  itemType === type
-                    ? "bg-white text-ink shadow-sm"
-                    : "text-ink-muted hover:text-ink"
-                }`}
-                onClick={() => setItemType(type)}
-                type="button"
-              >
-                {type === "PRODUCT" ? "Produto" : "Serviço"}
-              </button>
-            ))}
+        {allowItemTypeSelection ? (
+          <div className="grid gap-2">
+            <p className="text-sm font-semibold text-ink">Este item é um:</p>
+            <div className="flex min-w-0 rounded-xl border border-paper-soft bg-paper p-1">
+              {(["PRODUCT", "SERVICE"] as const).map((type) => (
+                <button
+                  key={type}
+                  aria-pressed={itemType === type}
+                  className={`min-w-0 flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition sm:px-4 sm:py-2.5 sm:text-sm ${
+                    itemType === type
+                      ? "bg-white text-ink shadow-sm"
+                      : "text-ink-muted hover:text-ink"
+                  }`}
+                  onClick={() => setItemType(type)}
+                  type="button"
+                >
+                  {type === "PRODUCT" ? "Produto" : "Serviço"}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs leading-5 text-ink-muted">
+              {itemType === "PRODUCT"
+                ? "Itens físicos, digitais, kits, encomendas ou produtos da vitrine."
+                : "Atendimentos, consultorias, trabalhos personalizados ou serviços prestados."}
+            </p>
           </div>
-          <p className="text-xs leading-5 text-ink-muted">
-            {itemType === "PRODUCT"
-              ? "Itens físicos, digitais, kits, encomendas ou produtos da vitrine."
-              : "Atendimentos, consultorias, trabalhos personalizados ou serviços prestados."}
-          </p>
-        </div>
+        ) : null}
       </div>
 
       <SectionDivider />
@@ -407,11 +413,44 @@ export function ServiceForm({
             <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${requiresScheduling ? "translate-x-5" : "translate-x-0.5"}`} />
           </div>
           <div className="grid min-w-0 gap-0.5">
-            <span className="text-sm font-semibold text-ink">Pedir data, horário e local</span>
+            <span className="text-sm font-semibold text-ink">
+              {itemType === "PRODUCT"
+                ? "Pedir data de entrega ou retirada"
+                : "Pedir data e horário"}
+            </span>
             <span className="text-xs leading-5 text-ink-muted">
               {requiresScheduling
-                ? "O formulário de pedido pedirá data desejada, horário e local."
-                : "Formulário de pedido sem campos de agendamento."}
+                ? itemType === "PRODUCT"
+                  ? "O formulário de pedido pedirá a data e o período de entrega ou retirada."
+                  : "O formulário de pedido pedirá data desejada e horário."
+                : "Formulário de pedido sem data e horário."}
+            </span>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setRequiresLocation((v) => !v)}
+          className={`flex w-full min-w-0 cursor-pointer items-center gap-4 rounded-xl border p-3 text-left transition sm:p-4 ${
+            requiresLocation ? "border-leaf/40 bg-mint/30" : "border-paper-soft bg-paper"
+          }`}
+        >
+          <div className="relative h-6 w-11 shrink-0">
+            <div className={`h-6 w-11 rounded-full transition-colors duration-200 ${requiresLocation ? "bg-leaf" : "bg-stone-300"}`} />
+            <div className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 ${requiresLocation ? "translate-x-5" : "translate-x-0.5"}`} />
+          </div>
+          <div className="grid min-w-0 gap-0.5">
+            <span className="text-sm font-semibold text-ink">
+              {itemType === "PRODUCT"
+                ? "Pedir endereço de entrega ou retirada"
+                : "Pedir local do atendimento"}
+            </span>
+            <span className="text-xs leading-5 text-ink-muted">
+              {requiresLocation
+                ? itemType === "PRODUCT"
+                  ? "O formulário de pedido pedirá o endereço de entrega ou retirada."
+                  : "O formulário de pedido pedirá o local, bairro ou cidade."
+                : "Formulário de pedido sem campo de local."}
             </span>
           </div>
         </button>

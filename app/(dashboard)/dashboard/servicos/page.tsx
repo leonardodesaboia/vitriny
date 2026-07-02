@@ -2,8 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
-import { ServiceForm } from "@/components/services/ServiceForm";
+import { NewServiceSection } from "@/components/services/NewServiceSection";
 import { ServiceList } from "@/components/services/ServiceList";
+import { getCatalogItemTypePolicy } from "@/lib/catalog-item-type";
 import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
@@ -47,6 +48,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           pricingType: true,
           fixedServiceCheckoutMode: true,
           requiresSchedulingDetails: true,
+          requiresLocation: true,
           imageUrl: true,
         },
       },
@@ -54,8 +56,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
   });
 
   const businessType = profile?.businessType ?? "SERVICES";
-  const defaultItemType =
-    businessType === "PRODUCTS" ? "PRODUCT" : "SERVICE";
+  const itemTypePolicy = getCatalogItemTypePolicy(businessType);
 
   const pageSubtitle =
     businessType === "PRODUCTS"
@@ -117,41 +118,36 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
           </Link>
         </div>
       ) : (
-        <div className="mt-8 grid w-full min-w-0 gap-8">
-          <section className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              {newItemLabel}
-            </p>
-            <div className="mt-4 min-w-0">
-              <ServiceForm
-                isPro={profile.plan === "PRO"}
-                defaultItemType={defaultItemType}
-              />
-            </div>
-          </section>
+        <div className="mt-8 grid w-full min-w-0 gap-4">
+          <NewServiceSection
+            // Remonta (e fecha) o painel quando um item é criado ou removido.
+            key={profile.services.length}
+            allowItemTypeSelection={itemTypePolicy.canChooseItemType}
+            defaultItemType={itemTypePolicy.defaultItemType}
+            defaultOpen={profile.services.length === 0}
+            isPro={profile.plan === "PRO"}
+            label={newItemLabel}
+          />
 
-          <section className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-              Itens cadastrados
-            </p>
-            <div className="mt-4 min-w-0">
-              <ServiceList
-                isPro={profile.plan === "PRO"}
-                services={profile.services.map((s) => ({
-                  id: s.id,
-                  name: s.name,
-                  description: s.description,
-                  itemType: s.itemType,
-                  basePrice: s.basePrice?.toString() ?? null,
-                  isActive: s.isActive,
-                  pricingType: s.pricingType,
-                  fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
-                  requiresSchedulingDetails: s.requiresSchedulingDetails,
-                  imageUrl: s.imageUrl ?? null,
-                }))}
-              />
-            </div>
-          </section>
+          <div className="min-w-0">
+            <ServiceList
+              allowItemTypeSelection={itemTypePolicy.canChooseItemType}
+              isPro={profile.plan === "PRO"}
+              services={profile.services.map((s) => ({
+                id: s.id,
+                name: s.name,
+                description: s.description,
+                itemType: s.itemType,
+                basePrice: s.basePrice?.toString() ?? null,
+                isActive: s.isActive,
+                pricingType: s.pricingType,
+                fixedServiceCheckoutMode: s.fixedServiceCheckoutMode,
+                requiresSchedulingDetails: s.requiresSchedulingDetails,
+                requiresLocation: s.requiresLocation,
+                imageUrl: s.imageUrl ?? null,
+              }))}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -43,18 +43,12 @@ export function PublicServicesGrid({
     return (
       <div className="mt-6 rounded-xl border border-paper-soft bg-white p-8 shadow-card">
         <p className="font-fraunces text-lg font-bold text-ink">
-          Solicitações personalizadas
+          Catálogo em preparação
         </p>
         <p className="mt-2 text-sm leading-6 text-ink-muted">
-          Este negócio aceita solicitações personalizadas. Descreva o que você
-          precisa e receba o retorno com uma proposta.
+          Este negócio ainda não publicou itens. Volte em breve ou entre em
+          contato pelos canais acima.
         </p>
-        <Link
-          href={`/u/${slug}/orcamento`}
-          className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-        >
-          Enviar solicitação →
-        </Link>
       </div>
     );
   }

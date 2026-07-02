@@ -9,6 +9,7 @@ export type ServiceSummary = {
   fixedServiceCheckoutMode: FixedServiceCheckoutMode;
   basePrice: string | null;
   requiresSchedulingDetails: boolean;
+  requiresLocation: boolean;
 };
 
 export type PublicService = {
@@ -33,5 +34,6 @@ export type ServiceForClient = {
   basePrice: string | null;
   isActive: boolean;
   requiresSchedulingDetails: boolean;
+  requiresLocation: boolean;
   imageUrl: string | null;
 };

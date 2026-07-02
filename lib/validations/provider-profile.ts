@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
+import {
+  isValidPixKey,
+  normalizePixKey,
+  pixKeyErrorMessage
+} from "@/lib/utils/pix-key";
 
 const providerThemePresetSchema = z.enum([
   "DEFAULT",
@@ -102,6 +107,20 @@ export const providerProfileSchema = z
         path: ["pixKey"]
       });
     }
-  });
+
+    if (data.pixKey && !isValidPixKey(data.pixKey, data.pixKeyType)) {
+      ctx.addIssue({
+        code: "custom",
+        message: pixKeyErrorMessage(data.pixKeyType),
+        path: ["pixKey"]
+      });
+    }
+  })
+  .transform((data) => ({
+    ...data,
+    // A chave vai crua para o payload do QR Code; precisa estar no formato
+    // registrado no DICT (documentos sem pontuação, telefone como +55...).
+    pixKey: data.pixKey ? normalizePixKey(data.pixKey, data.pixKeyType) : data.pixKey
+  }));
 
 export type ProviderProfileInput = z.infer<typeof providerProfileSchema>;

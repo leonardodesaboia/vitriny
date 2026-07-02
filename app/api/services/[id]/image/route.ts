@@ -92,20 +92,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     );
   }
 
-  if (service.imageStorageKey) {
-    try {
-      await deleteFromStorage(service.imageStorageKey);
-    } catch (err) {
-      console.error("Falha ao deletar imagem anterior.", {
-        key: service.imageStorageKey,
-        err
-      });
-    }
-  }
-
   const ext = detectedMime === "image/jpeg" ? "jpg" : detectedMime === "image/png" ? "png" : "webp";
   const storageKey = `services/${serviceId}/${randomUUID()}.${ext}`;
 
+  // Sobe a nova imagem antes de apagar a antiga: se o upload falhar,
+  // o item continua com a imagem atual em vez de apontar para um objeto morto.
   let imageUrl: string;
   try {
     imageUrl = await uploadToStorage(storageKey, buffer, detectedMime);
@@ -121,6 +112,17 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     where: { id: service.id },
     data: { imageUrl, imageStorageKey: storageKey }
   });
+
+  if (service.imageStorageKey) {
+    try {
+      await deleteFromStorage(service.imageStorageKey);
+    } catch (err) {
+      console.error("Falha ao deletar imagem anterior.", {
+        key: service.imageStorageKey,
+        err
+      });
+    }
+  }
 
   return NextResponse.json({ imageUrl });
 }

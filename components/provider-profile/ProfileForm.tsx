@@ -211,6 +211,14 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               <span className="font-semibold">meu-negocio</span>
             </p>
           )}
+          {profile?.slug && slug !== profile.slug ? (
+            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800">
+              <span className="font-semibold">Atenção:</span> ao mudar o
+              endereço, todos os links já compartilhados — vitrine, pedidos e
+              pagamentos Pix pendentes — deixarão de funcionar. Clientes com o
+              link antigo verão uma página não encontrada.
+            </p>
+          ) : null}
         </div>
 
         <div className="grid gap-2">

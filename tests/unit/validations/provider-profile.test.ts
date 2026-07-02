@@ -103,6 +103,70 @@ describe("providerProfileSchema", () => {
     ).toBe(false);
   });
 
+  describe("chave Pix", () => {
+    const withPix = {
+      ...valid,
+      pixHolderName: "João Silva",
+      pixCity: "São Paulo"
+    };
+
+    it("aceita CPF válido e normaliza para o formato do DICT", () => {
+      const result = providerProfileSchema.safeParse({
+        ...withPix,
+        pixKey: "529.982.247-25",
+        pixKeyType: "CPF"
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.pixKey).toBe("52998224725");
+    });
+
+    it("normaliza telefone para +55...", () => {
+      const result = providerProfileSchema.safeParse({
+        ...withPix,
+        pixKey: "(11) 99999-9999",
+        pixKeyType: "Telefone"
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.pixKey).toBe("+5511999999999");
+    });
+
+    it("rejeita chave inválida para o tipo selecionado", () => {
+      const result = providerProfileSchema.safeParse({
+        ...withPix,
+        pixKey: "529.982.247-26",
+        pixKeyType: "CPF"
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("aceita chave sem tipo quando o formato é reconhecido", () => {
+      const result = providerProfileSchema.safeParse({
+        ...withPix,
+        pixKey: "contato@negocio.com",
+        pixKeyType: ""
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it("rejeita chave sem tipo com formato desconhecido", () => {
+      const result = providerProfileSchema.safeParse({
+        ...withPix,
+        pixKey: "chave-qualquer",
+        pixKeyType: ""
+      });
+
+      expect(result.success).toBe(false);
+    });
+
+    it("perfil sem chave Pix continua válido", () => {
+      expect(providerProfileSchema.safeParse(valid).success).toBe(true);
+    });
+  });
+
   it("campos opcionais vazios tornam-se null", () => {
     const result = providerProfileSchema.safeParse(valid);
     expect(result.success).toBe(true);
