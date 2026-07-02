@@ -17,6 +17,11 @@ export default defineConfig({
     },
     {
       name: "chromium",
+      testIgnore: [
+        "**/email-verification.spec.ts",
+        "**/landing.spec.ts",
+        "**/public-profile.spec.ts"
+      ],
       use: {
         ...devices["Desktop Chrome"],
         storageState: "tests/e2e/.auth/user.json"
@@ -26,7 +31,11 @@ export default defineConfig({
     {
       name: "chromium-public",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: ["**/landing.spec.ts", "**/public-profile.spec.ts"]
+      testMatch: [
+        "**/email-verification.spec.ts",
+        "**/landing.spec.ts",
+        "**/public-profile.spec.ts"
+      ]
     }
   ],
   globalSetup: "./tests/e2e/global-setup.ts",

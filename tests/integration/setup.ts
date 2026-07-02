@@ -17,6 +17,7 @@ export async function cleanDatabase() {
   await testDb.service.deleteMany({});
   await testDb.proposalTemplate.deleteMany({});
   await testDb.providerProfile.deleteMany({});
+  await testDb.emailVerificationToken.deleteMany({});
   await testDb.passwordResetToken.deleteMany({});
   await testDb.session.deleteMany({});
   await testDb.account.deleteMany({});

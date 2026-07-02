@@ -14,15 +14,40 @@ export function makeFormData(data: Record<string, string | string[]>): FormData 
 
 export function makePrismaMock() {
   const mock = {
+    user: {
+      create: vi.fn(),
+      update: vi.fn(),
+      findUnique: vi.fn()
+    },
+    emailVerificationToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn(),
+      upsert: vi.fn()
+    },
+    passwordResetToken: {
+      create: vi.fn(),
+      findUnique: vi.fn(),
+      deleteMany: vi.fn()
+    },
+    account: {
+      deleteMany: vi.fn()
+    },
+    session: {
+      deleteMany: vi.fn()
+    },
     service: {
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
       count: vi.fn(),
       delete: vi.fn()
     },
     providerProfile: {
       findUnique: vi.fn(),
+      update: vi.fn(),
       upsert: vi.fn()
     },
     proposalTemplate: {
@@ -76,5 +101,10 @@ export function makeSession(userId = "user-1") {
 }
 
 export function makeProfile(overrides = {}) {
-  return { id: "profile-1", plan: "FREE" as const, ...overrides };
+  return {
+    id: "profile-1",
+    plan: "FREE" as const,
+    businessType: "SERVICES" as const,
+    ...overrides
+  };
 }

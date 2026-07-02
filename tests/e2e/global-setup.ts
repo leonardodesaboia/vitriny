@@ -17,7 +17,12 @@ export default async function globalSetup() {
 
     const hashedPassword = await bcrypt.hash(E2E_USER_PASSWORD, 10);
     const user = await db.user.create({
-      data: { email: E2E_USER_EMAIL, password: hashedPassword, name: "E2E Test User" }
+      data: {
+        email: E2E_USER_EMAIL,
+        emailVerified: new Date(),
+        password: hashedPassword,
+        name: "E2E Test User"
+      }
     });
 
     const profile = await db.providerProfile.create({
