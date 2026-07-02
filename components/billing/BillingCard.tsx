@@ -277,6 +277,12 @@ export function BillingCard({
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Templates ilimitados
               </li>
+              <li className="flex items-center gap-2">
+                <span className="text-leaf">✓</span> Fotos nos itens da vitrine
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-leaf">✓</span> Temas visuais para sua página
+              </li>
             </ul>
           </div>
         ) : null}

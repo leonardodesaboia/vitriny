@@ -219,6 +219,18 @@ describe("matchesDashboardRequestView", () => {
     ).toBe(false);
   });
 
+  it("exclui pagamento Pix expirado das pendências", () => {
+    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
+
+    expect(
+      matchesDashboardRequestView(
+        { ...request, pixReservationRequestedAt: expiredRequestedAt },
+        "PIX_RESERVATION",
+        month
+      )
+    ).toBe(false);
+  });
+
   it("identifica entrada aprovada ainda não confirmada", () => {
     expect(
       matchesDashboardRequestView(

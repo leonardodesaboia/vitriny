@@ -14,6 +14,15 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Bloqueia contas excluídas mesmo com JWT residual em outro dispositivo.
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { deletedAt: true }
+  });
+  if (!user || user.deletedAt) {
+    redirect("/login");
+  }
+
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     select: {

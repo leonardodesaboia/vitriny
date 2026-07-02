@@ -1,5 +1,7 @@
 import type { ProposalStatus, QuoteRequestStatus } from "@prisma/client";
 
+import { isPixPaymentExpired } from "@/lib/utils/date";
+
 export type DashboardActivityType =
   | "PIX_RESERVATION_PAID"
   | "PROPOSAL_APPROVED"
@@ -209,9 +211,11 @@ export function matchesDashboardRequestView(
     case "OPEN":
       return request.status !== "CLOSED";
     case "PIX_RESERVATION":
+      // Reservas expiradas não são acionáveis; ficam fora das pendências.
       return (
         request.pixReservationRequestedAt !== null &&
-        request.pixReservationPaidAt === null
+        request.pixReservationPaidAt === null &&
+        !isPixPaymentExpired(request.pixReservationRequestedAt)
       );
     case "DEPOSIT":
       return (

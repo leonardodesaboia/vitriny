@@ -19,6 +19,7 @@ import { Card } from "@/components/ui/Card";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import { buildOnboardingOutcomeStep } from "@/lib/dashboard";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
+import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -28,6 +29,8 @@ export default async function DashboardPage() {
   }
 
   const monthRange = getCurrentMonthRange();
+  // Reservas Pix além deste corte já expiraram e saem das pendências.
+  const pixExpiryCutoff = pixPaymentExpiryCutoff();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     select: {
@@ -98,7 +101,7 @@ export default async function DashboardPage() {
         prisma.quoteRequest.count({
           where: {
             pixReservationPaidAt: null,
-            pixReservationRequestedAt: { not: null },
+            pixReservationRequestedAt: { gte: pixExpiryCutoff },
             providerId: profile.id
           }
         }),
