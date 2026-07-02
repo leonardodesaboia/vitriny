@@ -261,6 +261,51 @@ Renderizar num `<script type="application/ld+json">`. **Importante (XSS)**: como
 
 ---
 
+## 8. Planos e monetização
+
+Recomendações sobre a estrutura FREE/PRO. Os itens 8.1 e 8.2 são **decisões de negócio** (os números finais são do dono do produto); o código de cada uma é pequeno. O 8.3 é implementável direto.
+
+### 8.1 Repensar o limite de pedidos do FREE ⭐ (decisão de negócio)
+
+**Problema:** é o único limite sentido pelo **cliente final** do negócio, não pelo dono. Quando estoura, quem vê "Este negócio atingiu o limite mensal de pedidos" é o cliente tentando comprar — queima o negócio na frente do cliente dele e a marca junto, no momento exato em que o produto prova valor. Pedido chegando é o motor de retenção do dono; cortá-lo no FREE trava a adoção.
+
+**Recomendação:** remover o limite de pedidos ou subi-lo para um teto anti-abuso que negócio legítimo nunca atinge (ex.: 50/mês). Manter a pressão de upgrade nos limites que o **dono** sente: itens, propostas, fotos, temas.
+
+**Implementação:** trocar `PLAN_LIMITS.FREE.monthlyQuoteRequests` em `lib/plan-limits.ts` (para `null` ou o novo teto) e atualizar a lista do plano Grátis na landing. Sem migração; o caminho de erro continua existindo para o teto anti-abuso.
+
+### 8.2 Fotos nos itens do FREE (decisão de negócio)
+
+**Problema:** com `businessType: PRODUCTS`, uma vitrine de produtos **sem nenhuma foto** não é versão limitada — é vitrine que não vende. Ciclo perverso: FREE sem fotos → vitrine feia → não converte → o dono conclui que "o Vitriny não funciona" → churn antes de considerar o PRO.
+
+**Recomendação:** permitir foto nos itens do FREE (o limite de 3 itens ativos já limita a 3 fotos naturalmente). PRO passa a ser "itens e fotos ilimitados + temas visuais" — o upgrade nasce de querer *mais*, não de estar aleijado. Temas continuam sendo gatilho PRO perfeito (estética, não funcionalidade básica).
+
+**Implementação** (fazer junto do refactor 2.1, virando capability): remover o gate de plano em quatro pontos — `app/api/services/[id]/image/route.ts` (403 para não-PRO no POST e DELETE), `app/u/[slug]/page.tsx` e `app/u/[slug]/orcamento/page.tsx` (render condicionado a PRO) e o gating de UI no `ServiceForm` (`isPro`). Atualizar as listas de recursos na landing (`LandingPricing`) e no `BillingCard`.
+
+### 8.3 CTA de upgrade nas mensagens de limite
+
+**Problema:** a mensagem de limite ("Limite de itens ativos atingido...") é o momento de maior intenção de compra do produto — a pessoa quer fazer algo e o plano impede — e hoje não tem nem link para o billing.
+
+**Implementação:**
+
+1. Componente `LimitErrorNotice` (ou apenas concatenar nas páginas): mensagem + `<Link href="/dashboard/billing">Conhecer o plano PRO →</Link>`.
+2. Aplicar onde `LIMIT_ERROR_MESSAGES`/códigos `limit-*` são renderizados: página de itens, criação de proposta, templates.
+3. **Nunca** no lado público: `PUBLIC_LIMIT_ERROR_MESSAGES` (visto pelo cliente final) continua sem CTA de upgrade — cliente final não é quem assina.
+
+**Esforço:** ~1h. Provavelmente o maior efeito imediato em conversão pelo menor custo.
+
+### 8.4 Depois dos primeiros assinantes
+
+- **Plano anual com desconto** (ex.: R$ 199/ano ≈ 2 meses grátis): segundo `price` no Stripe, seleção no checkout e webhook resolvendo por `priceId` — **depende do refactor 2.1**. Reduz churn e antecipa caixa.
+- **Trial do PRO com cartão** no onboarding: `subscription_data.trial_period_days` no Checkout; medir conversão antes de decidir duração.
+
+### 8.5 O que não mudar (por ora)
+
+- **R$ 19,90/mês**: bem calibrado para MEI; não mexer antes de dados reais de conversão.
+- **Dois planos**: é o número certo para o MVP; nenhum terceiro tier antes do refactor 2.1.
+- **5 propostas/mês e 1 template no FREE**: gatilhos legítimos — o dono sente, o cliente final não.
+
+---
+
 ## Riscos de deploy (checklist permanente)
 
 - `prisma migrate deploy` no pipeline (três migrações recentes: verificação de e-mail, snapshot, soft delete/split de agendamento).
