@@ -78,7 +78,11 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       desiredDate: proposal.quoteRequest.desiredDate,
       desiredTime: proposal.quoteRequest.desiredTime,
       location: proposal.quoteRequest.location,
-      service: proposal.quoteRequest.service,
+      service:
+        proposal.quoteRequest.service ??
+        (proposal.quoteRequest.serviceNameSnapshot
+          ? { name: proposal.quoteRequest.serviceNameSnapshot }
+          : null),
     },
     items: proposal.items.map((item) => ({
       description: item.description,

@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import type { ProposalResponse } from "@/types";
 import { sendProposalResponseEmail } from "@/lib/email";
+import { isProposalExpired, startOfLocalDay } from "@/lib/utils/date";
 
 function appUrl(path: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
@@ -53,7 +54,7 @@ export async function respondToProposal(
     redirect(`/proposta/${publicToken}?error=answered`);
   }
 
-  if (proposal.validUntil && proposal.validUntil < new Date()) {
+  if (isProposalExpired(proposal.validUntil)) {
     redirect(`/proposta/${publicToken}?error=expired`);
   }
 
@@ -63,12 +64,14 @@ export async function respondToProposal(
     const updateResult = await tx.proposal.updateMany({
       where: {
         id: proposal.id,
-        status: {
-          notIn: ["APPROVED", "REJECTED"]
-        },
+        // Apenas propostas enviadas aceitam resposta; rascunhos e propostas
+        // já respondidas ficam de fora mesmo em corrida de requisições.
+        status: "SENT",
         validUntil: proposal.validUntil
           ? {
-              gte: answeredAt
+              // validUntil fica na meia-noite do dia escolhido; a proposta
+              // vale o dia inteiro, então compara com o início do dia atual.
+              gte: startOfLocalDay(answeredAt)
             }
           : undefined
       },

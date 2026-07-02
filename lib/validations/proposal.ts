@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { todayISOInTimeZone } from "@/lib/utils/date";
+
 const optionalText = z.preprocess(
   (v) => (v == null ? "" : v),
   z.string().trim().transform((value) => (value === "" ? null : value))
@@ -60,7 +62,9 @@ const baseFields = {
       .date()
       .nullable()
       .refine(
-        (v) => v === null || v >= new Date().toISOString().slice(0, 10),
+        // Compara com "hoje" no fuso do Brasil: o servidor pode rodar em UTC
+        // e já ter virado o dia enquanto o usuário ainda está em "hoje".
+        (v) => v === null || v >= todayISOInTimeZone("America/Sao_Paulo"),
         { message: "A validade não pode ser uma data passada." }
       )
   ),

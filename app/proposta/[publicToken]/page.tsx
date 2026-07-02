@@ -1,12 +1,13 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 
-import { respondToProposal } from "@/lib/actions/proposal-response";
+import { ProposalResponseActions } from "@/components/proposals/ProposalResponseActions";
 import { CopyButton } from "@/components/ui/CopyButton";
 import { prisma } from "@/lib/prisma";
 import { createPixPayment } from "@/lib/pix";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import { formatPhoneBR } from "@/lib/utils/phone";
+import { isProposalExpired } from "@/lib/utils/date";
 
 type PublicProposalPageProps = {
   params: Promise<{
@@ -111,12 +112,13 @@ export default async function PublicProposalPage({
 
   if (!proposal) notFound();
 
-  const isExpired = proposal.validUntil
-    ? proposal.validUntil < new Date()
-    : false;
+  const isExpired = isProposalExpired(proposal.validUntil);
+  const requestItemName =
+    proposal.quoteRequest.service?.name ??
+    proposal.quoteRequest.serviceNameSnapshot;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
-  const canRespond = !isAnswered && !isExpired;
+  const canRespond = proposal.status === "SENT" && !isExpired;
 
   const providerLocation = [proposal.provider.city, proposal.provider.state]
     .filter(Boolean)
@@ -130,9 +132,11 @@ export default async function PublicProposalPage({
   const hasDeposit =
     proposal.depositAmount !== null &&
     Number(proposal.depositAmount.toString()) > 0;
+  const depositPaid = !!proposal.depositPaidAt;
   const canShowPix =
     proposal.status === "APPROVED" &&
     hasDeposit &&
+    !depositPaid &&
     !!proposal.provider.pixKey &&
     !!proposal.provider.pixHolderName &&
     !!proposal.provider.pixCity;
@@ -143,7 +147,7 @@ export default async function PublicProposalPage({
         pixCity: proposal.provider.pixCity!,
         amount: proposal.depositAmount!.toString(),
         transactionId: proposal.id,
-        description: "ENTRADA ORCAFACIL",
+        description: `Entrada ${proposal.provider.businessName}`,
       })
     : null;
   const theme = getPublicThemePreset(
@@ -168,12 +172,9 @@ export default async function PublicProposalPage({
               <h1 className="mt-1 font-fraunces text-3xl font-bold text-white md:text-4xl">
                 {proposal.title ?? proposal.provider.businessName}
               </h1>
-              {proposal.quoteRequest.service?.name ? (
+              {requestItemName ? (
                 <p className="mt-2 text-sm font-medium text-white/70">
-                  Item:{" "}
-                  <span className="text-white">
-                    {proposal.quoteRequest.service.name}
-                  </span>
+                  Item: <span className="text-white">{requestItemName}</span>
                 </p>
               ) : null}
             </div>
@@ -230,8 +231,8 @@ export default async function PublicProposalPage({
                 <dl className="mt-3 grid gap-1.5 text-sm">
                   {proposal.provider.email ? (
                     <div className="flex items-center gap-2">
-                      <dt className="text-ink-muted">E-mail</dt>
-                      <dd className="font-medium text-ink">
+                      <dt className="shrink-0 text-ink-muted">E-mail</dt>
+                      <dd className="break-all font-medium text-ink">
                         {proposal.provider.email}
                       </dd>
                     </div>
@@ -265,8 +266,8 @@ export default async function PublicProposalPage({
                 <dl className="mt-3 grid gap-1.5 text-sm">
                   {proposal.quoteRequest.customerEmail ? (
                     <div className="flex items-center gap-2">
-                      <dt className="text-ink-muted">E-mail</dt>
-                      <dd className="font-medium text-ink">
+                      <dt className="shrink-0 text-ink-muted">E-mail</dt>
+                      <dd className="break-all font-medium text-ink">
                         {proposal.quoteRequest.customerEmail}
                       </dd>
                     </div>
@@ -336,7 +337,9 @@ export default async function PublicProposalPage({
                   Itens da proposta
                 </p>
                 <div className="mt-3 overflow-hidden rounded-xl border border-paper-soft">
-                  <div className="grid grid-cols-[1fr_60px_120px_120px] gap-4 bg-paper-soft px-5 py-3 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                  {/* Cabeçalho de tabela apenas em telas maiores; no celular
+                      cada item vira um bloco empilhado. */}
+                  <div className="hidden gap-4 bg-paper-soft px-5 py-3 text-xs font-semibold uppercase tracking-widest text-ink-muted sm:grid sm:grid-cols-[1fr_60px_120px_120px]">
                     <span>Descrição</span>
                     <span className="text-right">Qtd</span>
                     <span className="text-right">Unit.</span>
@@ -345,20 +348,28 @@ export default async function PublicProposalPage({
                   {proposal.items.map((item, index) => (
                     <div
                       key={item.id}
-                      className={`grid grid-cols-[1fr_60px_120px_120px] gap-4 px-5 py-4 text-sm ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
+                      className={`px-5 py-4 text-sm sm:grid sm:grid-cols-[1fr_60px_120px_120px] sm:items-baseline sm:gap-4 ${index % 2 === 0 ? "bg-white" : "bg-paper"}`}
                     >
-                      <span className="font-medium text-ink">
+                      <span className="block break-words font-medium text-ink">
                         {item.description}
                       </span>
-                      <span className="text-right text-ink-muted">
+                      <span className="hidden text-right text-ink-muted sm:block">
                         {item.quantity}
                       </span>
-                      <span className="text-right text-ink-muted">
+                      <span className="hidden text-right text-ink-muted sm:block">
                         {formatMoney(item.unitPrice)}
                       </span>
-                      <span className="text-right font-semibold text-ink">
+                      <span className="hidden text-right font-semibold text-ink sm:block">
                         {formatMoney(item.totalPrice)}
                       </span>
+                      <div className="mt-1.5 flex items-center justify-between gap-3 sm:hidden">
+                        <span className="text-ink-muted">
+                          {item.quantity} × {formatMoney(item.unitPrice)}
+                        </span>
+                        <span className="font-semibold text-ink">
+                          {formatMoney(item.totalPrice)}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -404,7 +415,7 @@ export default async function PublicProposalPage({
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">
                       {proposal.status === "APPROVED"
                         ? "Entrada (sinal)"
-                        : "Entrada previsto"}
+                        : "Entrada prevista"}
                     </p>
                     <p className="mt-1 font-fraunces text-3xl font-bold text-amber-800">
                       {formatMoney(proposal.depositAmount!)}
@@ -426,7 +437,9 @@ export default async function PublicProposalPage({
                   <p className="text-sm leading-6 text-ink-muted">
                     {proposal.status === "SENT"
                       ? "Esta proposta informa um valor de entrada previsto. As instruções de pagamento aparecem somente após a aprovação."
-                      : "Realize o pagamento de entrada via Pix para confirmar a contratação."}
+                      : depositPaid
+                        ? "O negócio confirmou o recebimento da entrada. Nenhum novo pagamento é necessário."
+                        : "Realize o pagamento de entrada via Pix para confirmar a contratação."}
                   </p>
 
                   {pixPayment ? (
@@ -486,7 +499,7 @@ export default async function PublicProposalPage({
                     </div>
                   ) : null}
 
-                  {proposal.status === "APPROVED" ? (
+                  {proposal.status === "APPROVED" && !depositPaid ? (
                     <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800">
                       <p className="font-semibold">
                         Pagamento feito diretamente ao negócio.
@@ -548,40 +561,16 @@ export default async function PublicProposalPage({
             ) : !canRespond ? (
               <div className="mt-6 rounded-xl border border-paper-soft bg-paper p-5 text-center">
                 <p className="text-sm text-ink-muted">
-                  Esta proposta está expirada e não pode mais ser respondida.
+                  {isExpired
+                    ? "Esta proposta está expirada e não pode mais ser respondida."
+                    : "Esta proposta ainda não está disponível para resposta."}
                 </p>
               </div>
             ) : (
-              <div className="mt-8 flex flex-col gap-3 border-t border-paper-soft pt-6 sm:flex-row">
-                <form
-                  action={async () => {
-                    "use server";
-                    await respondToProposal(publicToken, "APPROVED");
-                  }}
-                  className="flex-1"
-                >
-                  <button
-                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                    type="submit"
-                  >
-                    Aprovar proposta
-                  </button>
-                </form>
-                <form
-                  action={async () => {
-                    "use server";
-                    await respondToProposal(publicToken, "REJECTED");
-                  }}
-                  className="flex-1"
-                >
-                  <button
-                    className="inline-flex min-h-11 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-sm font-semibold text-ink transition hover:border-red-300 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                    type="submit"
-                  >
-                    Recusar proposta
-                  </button>
-                </form>
-              </div>
+              <ProposalResponseActions
+                publicToken={publicToken}
+                totalAmountDisplay={formatMoney(proposal.totalAmount)}
+              />
             )}
           </div>
         </div>

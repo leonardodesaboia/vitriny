@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { proposalSchema, proposalItemSchema } from "@/lib/validations/proposal";
 
 const validItem = { description: "Mão de obra", quantity: "2", unitPrice: "150.00" };
@@ -88,5 +88,27 @@ describe("proposalSchema", () => {
     const result = proposalSchema.safeParse({ ...valid, validUntil: "2027-12-31" });
     expect(result.success).toBe(true);
     if (result.success) expect(result.data.validUntil).toBe("2027-12-31");
+  });
+
+  it("rejeita validUntil no passado", () => {
+    expect(
+      proposalSchema.safeParse({ ...valid, validUntil: "2020-01-01" }).success
+    ).toBe(false);
+  });
+
+  it("aceita validUntil no dia de hoje no fuso do Brasil", () => {
+    // 01:00 UTC de 03/07 ainda é 22:00 de 02/07 no Brasil. O usuário escolhe
+    // "hoje" (02/07) no navegador; a validação não pode rejeitar só porque o
+    // relógio UTC do servidor já virou o dia.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-03T01:00:00Z"));
+
+    try {
+      expect(
+        proposalSchema.safeParse({ ...valid, validUntil: "2026-07-02" }).success
+      ).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
