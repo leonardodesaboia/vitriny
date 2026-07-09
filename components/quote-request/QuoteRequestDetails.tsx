@@ -74,7 +74,7 @@ export function QuoteRequestDetails({
     : "";
 
   return (
-    <div className="border-t border-paper-soft bg-white p-4 sm:p-6">
+    <div className="bg-white p-4 sm:p-6">
       {detailHref ? (
         <div className="mb-4 flex justify-end">
           <Link

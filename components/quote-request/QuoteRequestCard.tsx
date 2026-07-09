@@ -127,12 +127,14 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById, pixInfo = nul
 
       {/* Expanded content */}
       {expanded ? (
-        <QuoteRequestDetails
-          detailHref={`/dashboard/pedidos/${quoteRequest.id}`}
-          pixInfo={pixInfo}
-          quoteRequest={quoteRequest}
-          serviceNamesById={serviceNamesById}
-        />
+        <div className="border-t border-paper-soft">
+          <QuoteRequestDetails
+            detailHref={`/dashboard/pedidos/${quoteRequest.id}`}
+            pixInfo={pixInfo}
+            quoteRequest={quoteRequest}
+            serviceNamesById={serviceNamesById}
+          />
+        </div>
       ) : null}
     </article>
   );
