@@ -63,6 +63,7 @@ export default async function DashboardPage() {
     approvedProposalsThisMonth,
     monthlyProposals,
     pendingPixReservations,
+    clientInformedPixReservations,
     pendingProposalDeposits,
     fixedRequestCount
   ] = profile
@@ -101,7 +102,19 @@ export default async function DashboardPage() {
         prisma.quoteRequest.count({
           where: {
             pixReservationPaidAt: null,
-            pixReservationRequestedAt: { gte: pixExpiryCutoff },
+            providerId: profile.id,
+            // Consistente com a view PIX_RESERVATION: expiradas só contam
+            // quando o cliente informou o pagamento.
+            OR: [
+              { pixReservationRequestedAt: { gte: pixExpiryCutoff } },
+              { pixReservationClientPaidAt: { not: null } }
+            ]
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: {
+            pixReservationPaidAt: null,
+            pixReservationClientPaidAt: { not: null },
             providerId: profile.id
           }
         }),
@@ -120,7 +133,7 @@ export default async function DashboardPage() {
           }
         })
       ])
-    : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
   const recentActivity = profile
     ? await getRecentDashboardActivity(profile.id)
@@ -231,7 +244,10 @@ export default async function DashboardPage() {
     },
     {
       count: pendingPixReservations,
-      description: "Confirme os recebimentos informados pelos clientes.",
+      description:
+        clientInformedPixReservations > 0
+          ? `${clientInformedPixReservations} pagamento${clientInformedPixReservations > 1 ? "s" : ""} informado${clientInformedPixReservations > 1 ? "s" : ""} pelo cliente aguardando sua confirmação.`
+          : "Confirme os recebimentos informados pelos clientes.",
       href: "/dashboard/pedidos?view=PIX_RESERVATION",
       label: "Pagamentos Pix para confirmar"
     },
