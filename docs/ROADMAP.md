@@ -46,6 +46,15 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Dashboard operacional com onboarding por tipo de item, métricas mensais, atalhos para pendências e atividade recente
 - Modos de venda na UI: Sob consulta, Preço fixo solicitar primeiro, Preço fixo pagar via Pix (`lib/service-sale-mode.ts`)
 - Documentação canônica atualizada: posicionamento como vitrine online, glossário técnico↔UI, guardrails anti-e-commerce
+- Botão "Já paguei" na reserva Pix (sinal do cliente + badge, e-mail e pendência na dashboard)
+- Página de detalhe do pedido (`/dashboard/pedidos/[id]`) com actions que respeitam a página de origem
+- Compartilhar item no WhatsApp e copiar link de venda por item
+- Card "Movimentado no mês" na dashboard (propostas aprovadas + Pix confirmados)
+- Refactor de planos: capacidades em `PLAN_FEATURES`, webhook Stripe por `priceId`, preço da landing em constante
+- Snapshot do nome do item como fonte primária do histórico
+- Token de reset de senha armazenado como hash (SHA-256)
+- Painel de pedidos paginado (20/página, filtros no banco, card navega ao detalhe)
+- Reabrir reserva Pix expirada com novo prazo e aviso ao cliente
 
 ## Próximos passos recomendados
 
@@ -58,7 +67,6 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 
 O detalhamento técnico de cada item abaixo (como implementar, arquivos, esforço e riscos) está em `BACKLOG_TECNICO.md`.
 
-- Criar página de detalhe do pedido.
 - Melhorar mensagens de erro por campo.
 - Adicionar página de configurações do negócio.
 - Criar página de detalhe da proposta.

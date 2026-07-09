@@ -2,9 +2,14 @@
 
 Guia de implementação para as próximas evoluções da aplicação. Complementa o `ROADMAP.md` (alto nível) com o **como fazer** de cada item: motivação, abordagem técnica, arquivos envolvidos, riscos e esforço estimado.
 
-Última atualização: 2 de julho de 2026.
+Última atualização: 9 de julho de 2026.
 
 Ordem de prioridade sugerida: seção 1 → 2 → 3; as demais conforme demanda.
+
+> **Entregue em 09/07/2026:** seções **1** (funcionalidades novas) e **2**
+> (mudanças de lógica) completas na branch `refactor/services-to-items` —
+> specs em `docs/superpowers/specs/2026-07-09-*`. Próximo: seção 3, ou o 8.3
+> (CTA de upgrade) como vitória rápida.
 
 ---
 
