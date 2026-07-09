@@ -27,9 +27,28 @@ export type SerializedQuoteRequest = Omit<
   fixedServiceAmount: string | null;
 };
 
-export function serializeQuoteRequest(
-  quoteRequest: QuoteRequestWithRelations
-): SerializedQuoteRequest {
+// Aceita tanto a linha resumida da lista quanto a completa do detalhe.
+export type SerializableQuoteRequest = {
+  fixedServiceAmount: { toString(): string } | null;
+  service:
+    | (Omit<SerializedService, "basePrice"> & {
+        basePrice: { toString(): string } | null;
+      })
+    | null;
+  proposal:
+    | (Omit<SerializedProposal, "depositAmount"> & {
+        depositAmount: { toString(): string } | null;
+      })
+    | null;
+};
+
+export function serializeQuoteRequest<T extends SerializableQuoteRequest>(
+  quoteRequest: T
+): Omit<T, keyof SerializableQuoteRequest> & {
+  fixedServiceAmount: string | null;
+  service: SerializedService | null;
+  proposal: SerializedProposal | null;
+} {
   return {
     ...quoteRequest,
     fixedServiceAmount: quoteRequest.fixedServiceAmount?.toString() ?? null,

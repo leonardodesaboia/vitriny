@@ -1,11 +1,18 @@
-import { QuoteRequestCard } from "@/components/quote-request/QuoteRequestCard";
-import { serializeQuoteRequest } from "@/components/quote-request/serialize";
-import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
+import {
+  QuoteRequestCard,
+  type QuoteRequestSummary
+} from "@/components/quote-request/QuoteRequestCard";
+import {
+  serializeQuoteRequest,
+  type SerializableQuoteRequest
+} from "@/components/quote-request/serialize";
+
+type QuoteRequestListRow = SerializableQuoteRequest &
+  Omit<QuoteRequestSummary, "service">;
 
 type QuoteRequestListProps = {
-  quoteRequests: QuoteRequestWithRelations[];
-  services: ServiceSummary[];
-  pixInfo?: { pixKey: string; pixHolderName: string } | null;
+  quoteRequests: QuoteRequestListRow[];
+  services: { id: string; name: string }[];
   emptyDescription?: string;
   emptyTitle?: string;
 };
@@ -14,8 +21,7 @@ export function QuoteRequestList({
   emptyDescription = "Quando um cliente preencher o formulário da sua vitrine, os pedidos aparecerão aqui.",
   emptyTitle = "Nenhum pedido ainda",
   quoteRequests,
-  services,
-  pixInfo = null
+  services
 }: QuoteRequestListProps) {
   const serviceNamesById = Object.fromEntries(
     services.map((s) => [s.id, s.name])
@@ -44,7 +50,6 @@ export function QuoteRequestList({
       {quoteRequests.map((quoteRequest) => (
         <QuoteRequestCard
           key={quoteRequest.id}
-          pixInfo={pixInfo}
           quoteRequest={serializeQuoteRequest(quoteRequest)}
           serviceNamesById={serviceNamesById}
         />

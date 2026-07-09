@@ -1,22 +1,24 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import type { QuoteRequestStatus } from "@prisma/client";
+import type { Prisma, QuoteRequestStatus } from "@prisma/client";
 
 import { auth } from "@/auth";
 import { QuoteRequestList } from "@/components/quote-request/QuoteRequestList";
 import {
   DASHBOARD_REQUEST_VIEW_LABELS,
-  matchesDashboardRequestView,
-  parseDashboardRequestView,
-  sortRequestsForDashboardView
+  dashboardRequestViewWhere,
+  parseDashboardRequestView
 } from "@/lib/dashboard";
 import { getCurrentMonthRange } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
+
+const PAGE_SIZE = 20;
 
 type RequestsPageProps = {
   searchParams: Promise<{
     error?: string;
     notice?: string;
+    page?: string;
     status?: string;
     view?: string;
     warning?: string;
@@ -73,9 +75,68 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    include: {
-      quoteRequests: {
-        orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      services: { select: { id: true, name: true } }
+    }
+  });
+
+  const activeStatus = parseStatusFilter(params.status);
+  const activeView = parseDashboardRequestView(params.view);
+  const monthRange = getCurrentMonthRange();
+
+  const baseWhere: Prisma.QuoteRequestWhereInput = {
+    providerId: profile?.id ?? ""
+  };
+  const where: Prisma.QuoteRequestWhereInput = activeView
+    ? { ...baseWhere, ...dashboardRequestViewWhere(activeView, monthRange) }
+    : activeStatus === "ALL"
+      ? baseWhere
+      : { ...baseWhere, status: activeStatus };
+
+  const [statusCounts, totalRequests, filteredCount] = profile
+    ? await prisma.$transaction([
+        prisma.quoteRequest.groupBy({
+          by: ["status"],
+          _count: true,
+          where: baseWhere,
+          orderBy: { status: "asc" }
+        }),
+        prisma.quoteRequest.count({ where: baseWhere }),
+        prisma.quoteRequest.count({ where })
+      ])
+    : [[], 0, 0];
+
+  const countByStatus = Object.fromEntries(
+    statusCounts.map((row) => [row.status, row._count])
+  ) as Partial<Record<QuoteRequestStatus, number>>;
+  const newRequests = countByStatus.NEW ?? 0;
+  const requestCounts = Object.fromEntries(
+    statusFilters.map((filter) => [
+      filter.value,
+      filter.value === "ALL" ? totalRequests : countByStatus[filter.value] ?? 0
+    ])
+  ) as Record<QuoteRequestStatus | "ALL", number>;
+
+  // Página fora do intervalo (0, negativa, NaN, além do fim) cai num limite válido.
+  const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+  const rawPage = Number(params.page);
+  const requestedPage = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+  const page = Math.min(requestedPage, totalPages);
+
+  const quoteRequests = profile
+    ? await prisma.quoteRequest.findMany({
+        where,
+        // Na view Pix, pagamentos informados pelo cliente vêm primeiro.
+        orderBy:
+          activeView === "PIX_RESERVATION"
+            ? [
+                { pixReservationClientPaidAt: { sort: "desc", nulls: "last" } },
+                { createdAt: "desc" }
+              ]
+            : { createdAt: "desc" },
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
         include: {
           service: {
             select: {
@@ -96,61 +157,19 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
               respondedAt: true,
               status: true
             }
-          },
-          statusHistory: {
-            orderBy: { createdAt: "asc" },
-            select: {
-              id: true,
-              fromStatus: true,
-              toStatus: true,
-              actor: true,
-              note: true,
-              createdAt: true
-            }
-          },
-          internalNotes: {
-            orderBy: { createdAt: "desc" },
-            select: {
-              id: true,
-              content: true,
-              createdAt: true,
-              author: {
-                select: {
-                  name: true,
-                  email: true
-                }
-              }
-            }
           }
         }
-      },
-      services: { select: { id: true, name: true, itemType: true, pricingType: true, fixedServiceCheckoutMode: true, basePrice: true, requiresSchedulingDetails: true, requiresLocation: true } }
-    }
-  });
+      })
+    : [];
 
-  const totalRequests = profile?.quoteRequests.length ?? 0;
-  const newRequests = profile?.quoteRequests.filter((r) => r.status === "NEW").length ?? 0;
-  const activeStatus = parseStatusFilter(params.status);
-  const activeView = parseDashboardRequestView(params.view);
-  const monthRange = getCurrentMonthRange();
-  const requestCounts = Object.fromEntries(
-    statusFilters.map((filter) => [
-      filter.value,
-      filter.value === "ALL"
-        ? totalRequests
-        : (profile?.quoteRequests.filter((request) => request.status === filter.value).length ?? 0)
-    ])
-  ) as Record<QuoteRequestStatus | "ALL", number>;
-  const filteredRequests = sortRequestsForDashboardView(
-    activeView
-      ? (profile?.quoteRequests.filter((request) =>
-          matchesDashboardRequestView(request, activeView, monthRange)
-        ) ?? [])
-      : activeStatus === "ALL"
-      ? (profile?.quoteRequests ?? [])
-      : (profile?.quoteRequests.filter((request) => request.status === activeStatus) ?? []),
-    activeView
-  );
+  const buildPageHref = (targetPage: number) => {
+    const query = new URLSearchParams();
+    if (activeView) query.set("view", activeView);
+    else if (activeStatus !== "ALL") query.set("status", activeStatus);
+    if (targetPage > 1) query.set("page", String(targetPage));
+    const qs = query.toString();
+    return qs ? `/dashboard/pedidos?${qs}` : "/dashboard/pedidos";
+  };
 
   return (
     <div className="min-w-0 p-4 sm:p-6 md:p-8">
@@ -260,14 +279,6 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
           </div>
 
           <QuoteRequestList
-            pixInfo={
-              profile.pixKey && profile.pixHolderName
-                ? {
-                    pixKey: profile.pixKey,
-                    pixHolderName: profile.pixHolderName
-                  }
-                : null
-            }
             emptyDescription={
               activeView
                 ? `Nenhum pedido encontrado em “${DASHBOARD_REQUEST_VIEW_LABELS[activeView]}”.`
@@ -282,14 +293,40 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
                 ? undefined
                 : "Nenhum pedido neste filtro"
             }
-            quoteRequests={filteredRequests}
-            services={profile.services.map((s) => ({
-              ...s,
-              basePrice: s.basePrice?.toString() ?? null,
-              requiresSchedulingDetails: s.requiresSchedulingDetails,
-              requiresLocation: s.requiresLocation
-            }))}
+            quoteRequests={quoteRequests}
+            services={profile.services}
           />
+
+          {totalPages > 1 ? (
+            <nav
+              aria-label="Paginação"
+              className="mt-6 flex items-center justify-between"
+            >
+              {page > 1 ? (
+                <Link
+                  className="text-xs font-semibold text-leaf underline-offset-4 hover:underline"
+                  href={buildPageHref(page - 1)}
+                >
+                  ← Anterior
+                </Link>
+              ) : (
+                <span />
+              )}
+              <span className="text-xs text-ink-muted">
+                Página {page} de {totalPages}
+              </span>
+              {page < totalPages ? (
+                <Link
+                  className="text-xs font-semibold text-leaf underline-offset-4 hover:underline"
+                  href={buildPageHref(page + 1)}
+                >
+                  Próxima →
+                </Link>
+              ) : (
+                <span />
+              )}
+            </nav>
+          ) : null}
         </div>
       )}
     </div>

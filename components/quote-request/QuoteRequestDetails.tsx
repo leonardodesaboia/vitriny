@@ -39,7 +39,6 @@ type Props = {
   quoteRequest: SerializedQuoteRequest;
   serviceNamesById: Record<string, string>;
   pixInfo?: { pixKey: string; pixHolderName: string } | null;
-  detailHref?: string;
   // Página de origem para os redirects das actions (validado no servidor).
   returnTo?: string;
 };
@@ -48,7 +47,6 @@ export function QuoteRequestDetails({
   quoteRequest,
   serviceNamesById,
   pixInfo = null,
-  detailHref,
   returnTo
 }: Props) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -81,17 +79,6 @@ export function QuoteRequestDetails({
 
   return (
     <div className="bg-white p-4 sm:p-6">
-      {detailHref ? (
-        <div className="mb-4 flex justify-end">
-          <Link
-            className="text-xs font-semibold text-leaf underline-offset-4 hover:underline"
-            href={detailHref}
-          >
-            Abrir página do pedido ↗
-          </Link>
-        </div>
-      ) : null}
-
       <div className="mb-4 rounded-xl border border-paper-soft bg-paper px-4 py-3">
         <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
           Cliente

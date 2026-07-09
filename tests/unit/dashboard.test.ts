@@ -6,8 +6,7 @@ import {
   buildOnboardingOutcomeStep,
   dashboardRequestViewWhere,
   matchesDashboardRequestView,
-  parseDashboardRequestView,
-  sortRequestsForDashboardView
+  parseDashboardRequestView
 } from "@/lib/dashboard";
 
 describe("buildRecentDashboardActivity", () => {
@@ -372,36 +371,5 @@ describe("buildMonthlyRevenueSummary", () => {
   });
 });
 
-describe("sortRequestsForDashboardView", () => {
-  const informed = {
-    id: "informed",
-    pixReservationClientPaidAt: new Date(),
-    pixReservationPaidAt: null
-  };
-  const pending = {
-    id: "pending",
-    pixReservationClientPaidAt: null,
-    pixReservationPaidAt: null
-  };
-
-  it("coloca informados primeiro na view PIX_RESERVATION", () => {
-    expect(
-      sortRequestsForDashboardView([pending, informed], "PIX_RESERVATION").map(
-        (request) => request.id
-      )
-    ).toEqual(["informed", "pending"]);
-  });
-
-  it("mantém a ordem nas demais views", () => {
-    expect(
-      sortRequestsForDashboardView([pending, informed], "OPEN").map(
-        (request) => request.id
-      )
-    ).toEqual(["pending", "informed"]);
-    expect(
-      sortRequestsForDashboardView([pending, informed], null).map(
-        (request) => request.id
-      )
-    ).toEqual(["pending", "informed"]);
-  });
-});
+// A ordenação "informados primeiro" da view PIX_RESERVATION vive no orderBy
+// da query paginada (pixReservationClientPaidAt desc nulls last).
