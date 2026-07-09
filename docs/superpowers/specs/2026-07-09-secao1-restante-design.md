@@ -107,23 +107,19 @@ para a lista genérica; a paginação futura (backlog 2.4) briga com esse modelo
 
 ### Extração de componentes (a parte trabalhosa)
 
-Extrair do `QuoteRequestCard` para `components/quote-request/sections/`,
-mantendo markup e comportamento idênticos:
+**Revisado na implementação (2026-07-09):** em vez de 7 arquivos de seção,
+extrair **um único** `components/quote-request/QuoteRequestDetails.tsx` com
+todo o conteúdo expandido do card (contato, agendamento, descrição, proposta,
+Pix, histórico, notas), mantendo markup e comportamento idênticos. Card e
+página de detalhe renderizam o mesmo componente — mesma reutilização, fração
+do risco de regressão. A granularidade por seção só interessa à paginação
+(backlog 2.4) e pode ser feita lá, se necessária.
 
-- `CustomerContactSection` (cliente + e-mail/telefone/WhatsApp + item)
-- `SchedulingSection` (data/horário/local — só quando presente)
-- `RequestDescriptionSection` (descrição do pedido)
-- `ProposalSection` (link, PDF, badge, mensagens WhatsApp, entrada Pix)
-- `PixReservationSection` (bloco "Pagamento Pix do pedido", inclui o estado
-  "cliente informou pagamento" da 1.1)
-- `StatusHistorySection` (histórico)
-- `InternalNotesSection` (notas: listar/criar/editar/excluir — client component)
-
-O `QuoteRequestCard` passa a compor essas seções no conteúdo expandido; a
-página de detalhe compõe as mesmas seções. Helpers compartilhados
-(`formatDate`, `splitServiceFromDescription`, labels/badges de status) vão para
-um módulo em `components/quote-request/sections/shared.ts` (ou `lib/`), sem
-duplicação.
+Helpers compartilhados (`formatDate`, `formatDateShort`, `getInitials`,
+`splitServiceFromDescription`, labels/badges de status) vão para
+`components/quote-request/format.ts`; a serialização Decimal→string vai para
+`components/quote-request/serialize.ts`, usada pela lista e pela página de
+detalhe.
 
 ### Fase 1: accordion continua
 
