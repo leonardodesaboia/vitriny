@@ -1,6 +1,6 @@
-import type { ProposalStatus, QuoteRequestStatus } from "@prisma/client";
+import type { Prisma, ProposalStatus, QuoteRequestStatus } from "@prisma/client";
 
-import { isPixPaymentExpired } from "@/lib/utils/date";
+import { isPixPaymentExpired, pixPaymentExpiryCutoff } from "@/lib/utils/date";
 
 export type DashboardActivityType =
   | "PIX_RESERVATION_PAID"
@@ -215,6 +215,49 @@ export function buildMonthlyRevenueSummary(
     pixConfirmed: formatBRL(pixConfirmed),
     total: formatBRL(approved + pixConfirmed)
   };
+}
+
+// Espelho Prisma de matchesDashboardRequestView (fonte de verdade testada):
+// permite filtrar no banco para paginar sem carregar tudo.
+export function dashboardRequestViewWhere(
+  view: DashboardRequestView,
+  monthRange: MonthRange,
+  now = new Date()
+): Prisma.QuoteRequestWhereInput {
+  switch (view) {
+    case "MONTH":
+      return { createdAt: { gte: monthRange.start, lt: monthRange.end } };
+    case "OPEN":
+      return { status: { not: "CLOSED" } };
+    case "PIX_RESERVATION":
+      return {
+        pixReservationRequestedAt: { not: null },
+        pixReservationPaidAt: null,
+        OR: [
+          { pixReservationRequestedAt: { gte: pixPaymentExpiryCutoff(now) } },
+          { pixReservationClientPaidAt: { not: null } }
+        ]
+      };
+    case "DEPOSIT":
+      return {
+        proposal: {
+          is: {
+            status: "APPROVED",
+            depositAmount: { gt: 0 },
+            depositPaidAt: null
+          }
+        }
+      };
+    case "APPROVED_MONTH":
+      return {
+        proposal: {
+          is: {
+            status: "APPROVED",
+            respondedAt: { gte: monthRange.start, lt: monthRange.end }
+          }
+        }
+      };
+  }
 }
 
 // Na visão de reservas Pix, pagamentos informados pelo cliente são os mais

@@ -4,6 +4,7 @@ import {
   buildMonthlyRevenueSummary,
   buildRecentDashboardActivity,
   buildOnboardingOutcomeStep,
+  dashboardRequestViewWhere,
   matchesDashboardRequestView,
   parseDashboardRequestView,
   sortRequestsForDashboardView
@@ -284,6 +285,65 @@ describe("matchesDashboardRequestView", () => {
         month
       )
     ).toBe(true);
+  });
+});
+
+describe("dashboardRequestViewWhere", () => {
+  const monthRange = {
+    start: new Date("2026-07-01T00:00:00Z"),
+    end: new Date("2026-08-01T00:00:00Z")
+  };
+  const now = new Date("2026-07-09T12:00:00Z");
+
+  it("MONTH filtra por createdAt no mês", () => {
+    expect(dashboardRequestViewWhere("MONTH", monthRange, now)).toEqual({
+      createdAt: { gte: monthRange.start, lt: monthRange.end }
+    });
+  });
+
+  it("OPEN exclui fechados", () => {
+    expect(dashboardRequestViewWhere("OPEN", monthRange, now)).toEqual({
+      status: { not: "CLOSED" }
+    });
+  });
+
+  it("PIX_RESERVATION espelha a regra de expiração + informado", () => {
+    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    expect(
+      dashboardRequestViewWhere("PIX_RESERVATION", monthRange, now)
+    ).toEqual({
+      pixReservationRequestedAt: { not: null },
+      pixReservationPaidAt: null,
+      OR: [
+        { pixReservationRequestedAt: { gte: cutoff } },
+        { pixReservationClientPaidAt: { not: null } }
+      ]
+    });
+  });
+
+  it("DEPOSIT espelha entrada aprovada não recebida", () => {
+    expect(dashboardRequestViewWhere("DEPOSIT", monthRange, now)).toEqual({
+      proposal: {
+        is: {
+          status: "APPROVED",
+          depositAmount: { gt: 0 },
+          depositPaidAt: null
+        }
+      }
+    });
+  });
+
+  it("APPROVED_MONTH espelha aprovadas pelo respondedAt", () => {
+    expect(
+      dashboardRequestViewWhere("APPROVED_MONTH", monthRange, now)
+    ).toEqual({
+      proposal: {
+        is: {
+          status: "APPROVED",
+          respondedAt: { gte: monthRange.start, lt: monthRange.end }
+        }
+      }
+    });
   });
 });
 
