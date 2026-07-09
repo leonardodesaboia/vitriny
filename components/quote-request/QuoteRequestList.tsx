@@ -1,4 +1,5 @@
-import { QuoteRequestCard, type SerializedQuoteRequest } from "@/components/quote-request/QuoteRequestCard";
+import { QuoteRequestCard } from "@/components/quote-request/QuoteRequestCard";
+import { serializeQuoteRequest } from "@/components/quote-request/serialize";
 import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
 
 type QuoteRequestListProps = {
@@ -40,32 +41,14 @@ export function QuoteRequestList({
 
   return (
     <div className="grid gap-3">
-      {quoteRequests.map((quoteRequest) => {
-        const serialized: SerializedQuoteRequest = {
-          ...quoteRequest,
-          fixedServiceAmount: quoteRequest.fixedServiceAmount?.toString() ?? null,
-          service: quoteRequest.service
-            ? {
-                ...quoteRequest.service,
-                basePrice: quoteRequest.service.basePrice?.toString() ?? null
-              }
-            : null,
-          proposal: quoteRequest.proposal
-            ? {
-                ...quoteRequest.proposal,
-                depositAmount: quoteRequest.proposal.depositAmount?.toString() ?? null
-              }
-            : null
-        };
-        return (
-          <QuoteRequestCard
-            key={quoteRequest.id}
-            pixInfo={pixInfo}
-            quoteRequest={serialized}
-            serviceNamesById={serviceNamesById}
-          />
-        );
-      })}
+      {quoteRequests.map((quoteRequest) => (
+        <QuoteRequestCard
+          key={quoteRequest.id}
+          pixInfo={pixInfo}
+          quoteRequest={serializeQuoteRequest(quoteRequest)}
+          serviceNamesById={serviceNamesById}
+        />
+      ))}
     </div>
   );
 }
