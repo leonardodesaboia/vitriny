@@ -113,9 +113,10 @@ export default async function PublicProposalPage({
   if (!proposal) notFound();
 
   const isExpired = isProposalExpired(proposal.validUntil);
+  // Snapshot primeiro: o histórico conta a verdade da época do pedido.
   const requestItemName =
-    proposal.quoteRequest.service?.name ??
-    proposal.quoteRequest.serviceNameSnapshot;
+    proposal.quoteRequest.serviceNameSnapshot ??
+    proposal.quoteRequest.service?.name;
   const isAnswered =
     proposal.status === "APPROVED" || proposal.status === "REJECTED";
   const canRespond = proposal.status === "SENT" && !isExpired;

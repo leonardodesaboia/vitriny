@@ -83,9 +83,10 @@ export default async function PixReservationPage({ params }: PixReservationPageP
     notFound();
   }
 
+  // Snapshot primeiro: o histórico conta a verdade da época do pedido.
   const itemName =
-    quoteRequest.service?.name ??
     quoteRequest.serviceNameSnapshot ??
+    quoteRequest.service?.name ??
     "Seu pedido";
 
   const pixConfigured = !!(
@@ -125,8 +126,8 @@ export default async function PixReservationPage({ params }: PixReservationPageP
           amount,
           transactionId: quoteRequest.id.replace(/-/g, "").slice(0, 25),
           description:
-            quoteRequest.service?.name ??
             quoteRequest.serviceNameSnapshot ??
+            quoteRequest.service?.name ??
             "Reserva"
         })
       : null;

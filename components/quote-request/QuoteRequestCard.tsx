@@ -32,10 +32,10 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById, pixInfo = nul
     quoteRequest.description ?? "",
     serviceNamesById
   );
-  // Item excluído/renomeado: o snapshot preserva o nome da época do pedido.
+  // Snapshot primeiro: o histórico conta a verdade da época do pedido.
   const serviceLabel =
-    quoteRequest.service?.name ??
     quoteRequest.serviceNameSnapshot ??
+    quoteRequest.service?.name ??
     legacyService.serviceLabel;
 
   return (

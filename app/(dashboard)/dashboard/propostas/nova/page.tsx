@@ -98,8 +98,8 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           Proposta para {quoteRequest.customerName}
         </h1>
         <p className="mt-2 text-sm text-ink-muted">
-          {quoteRequest.service?.name ??
-            quoteRequest.serviceNameSnapshot ??
+          {quoteRequest.serviceNameSnapshot ??
+            quoteRequest.service?.name ??
             "Pedido sem item selecionado"}
         </p>
 
