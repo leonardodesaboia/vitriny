@@ -4,6 +4,15 @@ export function profileLinkMessage(profileUrl: string): string {
   return `Oi! Conheça minha vitrine e envie seu pedido por este link:\n${profileUrl}\nAssim consigo organizar as informações e te responder melhor 😊`;
 }
 
+export function itemShareMessage(
+  name: string,
+  price: string | null,
+  url: string
+): string {
+  const pricePart = price ? ` — ${price}` : "";
+  return `Olá! Veja ${name} na minha vitrine${pricePart}:\n${url}`;
+}
+
 export function proposalReadyMessage(
   customerName: string,
   proposalUrl: string
