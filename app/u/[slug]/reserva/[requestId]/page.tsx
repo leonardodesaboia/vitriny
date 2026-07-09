@@ -7,6 +7,8 @@ export const metadata: Metadata = {
 };
 
 import { CopyPixButton } from "./CopyPixButton";
+import { MarkPaidButton } from "./MarkPaidButton";
+import { markPixReservationClientPaid } from "@/lib/actions/quote-requests";
 import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
@@ -61,6 +63,7 @@ export default async function PixReservationPage({ params }: PixReservationPageP
       fixedServiceAmount: true,
       pixReservationRequestedAt: true,
       pixReservationPaidAt: true,
+      pixReservationClientPaidAt: true,
       service: {
         select: {
           id: true,
@@ -92,11 +95,17 @@ export default async function PixReservationPage({ params }: PixReservationPageP
   );
 
   const amount = quoteRequest.fixedServiceAmount.toString();
+  // Precedência: pago > informado > expirado > pendente. Se o cliente
+  // informou e o prazo venceu depois, a bola está com o negócio — a página
+  // continua mostrando "informado".
   const alreadyPaid = !!quoteRequest.pixReservationPaidAt;
+  const clientInformed =
+    !alreadyPaid && !!quoteRequest.pixReservationClientPaidAt;
   const expired =
     !alreadyPaid &&
+    !clientInformed &&
     isPixPaymentExpired(quoteRequest.pixReservationRequestedAt);
-  const pendingPayment = !alreadyPaid && !expired;
+  const pendingPayment = !alreadyPaid && !clientInformed && !expired;
 
   const paymentDeadline = new Date(
     quoteRequest.pixReservationRequestedAt.getTime() +
@@ -169,6 +178,34 @@ export default async function PixReservationPage({ params }: PixReservationPageP
             >
               Voltar à vitrine
             </Link>
+          </div>
+        ) : clientInformed ? (
+          <div className="mt-8 rounded-xl border border-amber/30 bg-amber/10 p-6">
+            <p className="font-fraunces text-xl font-bold text-ink">
+              Pagamento informado
+            </p>
+            <p className="mt-2 text-sm leading-6 text-ink-muted">
+              Avisamos o negócio de que você fez o pagamento. Seu pedido será
+              confirmado assim que o recebimento for verificado.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {whatsappNumber ? (
+                <a
+                  className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(`Olá! Realizei o pagamento Pix de ${formatMoney(amount)} referente ao item ${itemName}. Vou enviar o comprovante por aqui.`)}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Enviar comprovante no WhatsApp
+                </a>
+              ) : null}
+              <Link
+                className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+                href={`/u/${slug}`}
+              >
+                Voltar à vitrine
+              </Link>
+            </div>
           </div>
         ) : expired ? (
           <div className="mt-8 rounded-xl border border-red-200 bg-red-50 p-6">
@@ -296,6 +333,17 @@ export default async function PixReservationPage({ params }: PixReservationPageP
                   Avisar no WhatsApp
                 </a>
               ) : null}
+              <form
+                action={markPixReservationClientPaid.bind(null, slug)}
+                className="mt-3"
+              >
+                <input name="requestId" type="hidden" value={quoteRequest.id} />
+                <MarkPaidButton />
+              </form>
+              <p className="mt-2 text-xs text-ink-muted">
+                Ao marcar, o negócio é avisado; a confirmação do recebimento
+                continua manual.
+              </p>
             </div>
           </div>
         )}
