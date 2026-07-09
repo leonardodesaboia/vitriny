@@ -15,6 +15,15 @@ type QuoteRequestReceivedEmailInput = {
   dashboardUrl: string;
 };
 
+type PixReservationClientPaidEmailInput = {
+  to: string;
+  businessName: string;
+  customerName: string;
+  serviceName?: string | null;
+  amount: string;
+  dashboardUrl: string;
+};
+
 type ProposalSentEmailInput = {
   to: string;
   businessName: string;
@@ -202,6 +211,33 @@ export async function sendQuoteRequestReceivedEmail({
           : `${customerName} enviou um novo pedido.`
       ),
       emailButton("Ver pedido no painel", dashboardUrl)
+    ].join("")
+  });
+}
+
+export async function sendPixReservationClientPaidEmail({
+  to,
+  businessName,
+  customerName,
+  serviceName,
+  amount,
+  dashboardUrl
+}: PixReservationClientPaidEmailInput) {
+  await sendAppEmail({
+    to,
+    subject: "Cliente informou pagamento Pix — Vitriny",
+    preview: `${customerName} informou o pagamento de ${amount}.`,
+    html: [
+      paragraph(`Olá, ${businessName}.`),
+      paragraph(
+        serviceName
+          ? `${customerName} informou o pagamento Pix de ${amount} referente ao item ${serviceName}.`
+          : `${customerName} informou o pagamento Pix de ${amount}.`
+      ),
+      paragraph(
+        "Confirme o recebimento no seu banco antes de dar o pedido como pago."
+      ),
+      emailButton("Confirmar no painel", dashboardUrl)
     ].join("")
   });
 }

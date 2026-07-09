@@ -7,7 +7,8 @@ vi.mock("@/lib/actions/auth-guard", () => ({
 }));
 vi.mock("@/lib/email", () => ({
   sendQuoteRequestReceivedEmail: vi.fn(),
-  sendQuoteRequestConfirmationToCustomerEmail: vi.fn()
+  sendQuoteRequestConfirmationToCustomerEmail: vi.fn(),
+  sendPixReservationClientPaidEmail: vi.fn()
 }));
 // after() exige request scope do Next; nos testes executa o callback direto.
 vi.mock("next/server", () => ({
@@ -487,6 +488,135 @@ describe("markPixReservationPaid", () => {
       data: { pixReservationPaidAt: expect.any(Date) },
       where: { id: "request-1" }
     });
+  });
+});
+
+describe("markPixReservationClientPaid", () => {
+  function mockReservation(overrides: Record<string, unknown> = {}) {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Vitriny Serviços",
+      email: "perfil@example.com",
+      user: { email: "conta@example.com" }
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      customerName: "Maria",
+      serviceNameSnapshot: "Pintura",
+      fixedServiceAmount: { toString: () => "500" },
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null,
+      pixReservationClientPaidAt: null,
+      service: { name: "Pintura" },
+      ...overrides
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+  }
+
+  it("grava o sinal e envia e-mail quando a reserva está pendente", async () => {
+    mockReservation();
+    const { sendPixReservationClientPaidEmail } = await import("@/lib/email");
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: { pixReservationClientPaidAt: expect.any(Date) },
+      where: { id: "request-1" }
+    });
+    expect(sendPixReservationClientPaidEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "perfil@example.com",
+        businessName: "Vitriny Serviços",
+        customerName: "Maria",
+        serviceName: "Pintura",
+        // Moeda pt-BR usa espaço não separável — gerar o esperado com o
+        // mesmo formatador em vez de string literal.
+        amount: new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        }).format(500),
+        dashboardUrl: expect.stringContaining("/dashboard/pedidos")
+      })
+    );
+  });
+
+  it("é idempotente: segundo clique não regrava nem erra", async () => {
+    mockReservation({ pixReservationClientPaidAt: new Date() });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não grava quando o negócio já confirmou o pagamento", async () => {
+    mockReservation({ pixReservationPaidAt: new Date() });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não grava quando a reserva expirou", async () => {
+    const threeDaysAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+    mockReservation({ pixReservationRequestedAt: threeDaysAgo });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita pedido que não pertence ao perfil do slug", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Vitriny Serviços",
+      email: "perfil@example.com",
+      user: { email: "conta@example.com" }
+    });
+    db.quoteRequest.findFirst.mockResolvedValue(null);
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-de-outro" })
+      )
+    ).rejects.toThrow("/u/vitriny");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
   });
 });
 
