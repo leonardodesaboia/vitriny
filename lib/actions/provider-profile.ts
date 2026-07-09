@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
 import type { BusinessType, ProviderThemePreset } from "@prisma/client";
 
+import { canUseThemePresets } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
 import { requireAuth } from "@/lib/actions/auth-guard";
@@ -101,7 +102,7 @@ export async function saveProviderProfile(
   const dataToSave = {
     ...parsed.data,
     themePreset:
-      currentProfile?.plan === "PRO"
+      currentProfile && canUseThemePresets(currentProfile.plan)
         ? parsed.data.themePreset
         : currentProfile?.themePreset ?? "DEFAULT"
   };

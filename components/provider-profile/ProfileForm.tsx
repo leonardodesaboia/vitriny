@@ -8,6 +8,7 @@ import {
   type ProviderProfileFormState,
 } from "@/lib/actions/provider-profile";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { canUseThemePresets } from "@/lib/plan-limits";
 import { THEME_PRESET_OPTIONS } from "@/lib/theme-presets";
 
 type ProfileFormProps = {
@@ -86,7 +87,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
   const formKey = values ? `profile-error-${state.submittedAt}` : "profile";
   const currentThemePreset =
     values?.themePreset ?? profile?.themePreset ?? "DEFAULT";
-  const isPro = profile?.plan === "PRO";
+  const isPro = profile ? canUseThemePresets(profile.plan) : false;
 
   return (
     <form action={formAction} className="mt-6 grid gap-6" key={formKey}>

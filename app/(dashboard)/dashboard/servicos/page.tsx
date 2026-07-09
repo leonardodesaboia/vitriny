@@ -5,7 +5,10 @@ import { auth } from "@/auth";
 import { NewServiceSection } from "@/components/services/NewServiceSection";
 import { ServiceList } from "@/components/services/ServiceList";
 import { getCatalogItemTypePolicy } from "@/lib/catalog-item-type";
-import { LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
+import {
+  canUseServiceImages,
+  LIMIT_ERROR_MESSAGES
+} from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 
 type ServicesPageProps = {
@@ -126,14 +129,14 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
             allowItemTypeSelection={itemTypePolicy.canChooseItemType}
             defaultItemType={itemTypePolicy.defaultItemType}
             defaultOpen={profile.services.length === 0}
-            isPro={profile.plan === "PRO"}
+            isPro={canUseServiceImages(profile.plan)}
             label={newItemLabel}
           />
 
           <div className="min-w-0">
             <ServiceList
               allowItemTypeSelection={itemTypePolicy.canChooseItemType}
-              isPro={profile.plan === "PRO"}
+              isPro={canUseServiceImages(profile.plan)}
               slug={profile.slug}
               services={profile.services.map((s) => ({
                 id: s.id,

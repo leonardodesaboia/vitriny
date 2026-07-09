@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { QuoteRequestForm } from "@/components/quote-request/QuoteRequestForm";
-import { PUBLIC_LIMIT_ERROR_MESSAGES } from "@/lib/plan-limits";
+import {
+  canUseServiceImages,
+  PUBLIC_LIMIT_ERROR_MESSAGES
+} from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
@@ -156,7 +159,7 @@ export default async function PublicQuoteRequestPage({
             {/* Service card with image */}
             {selectedService ? (
               <div className="mt-6 overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card">
-                {profile.plan === "PRO" && selectedService.imageUrl ? (
+                {canUseServiceImages(profile.plan) && selectedService.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     alt={selectedService.name}

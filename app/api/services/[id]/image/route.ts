@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { canUseServiceImages } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { uploadToStorage, deleteFromStorage } from "@/lib/storage";
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
-  if (profile.plan !== "PRO") {
+  if (!canUseServiceImages(profile.plan)) {
     return NextResponse.json(
       { error: "Recurso disponível apenas no plano PRO." },
       { status: 403 }
@@ -141,7 +142,7 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
-  if (profile.plan !== "PRO") {
+  if (!canUseServiceImages(profile.plan)) {
     return NextResponse.json(
       { error: "Recurso disponível apenas no plano PRO." },
       { status: 403 }

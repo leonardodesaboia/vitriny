@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
+import { canUseServiceImages } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import {
@@ -247,7 +248,7 @@ export default async function PublicProviderProfilePage({
               services={profile.services.map((s) => ({
                 ...s,
                 basePrice: s.basePrice?.toString() ?? null,
-                imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null,
+                imageUrl: canUseServiceImages(profile.plan) ? (s.imageUrl ?? null) : null,
                 pixConfigured,
               }))}
               slug={slug}

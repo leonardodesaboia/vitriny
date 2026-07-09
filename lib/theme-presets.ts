@@ -1,5 +1,7 @@
 import type { PlanTier, ProviderThemePreset } from "@prisma/client";
 
+import { canUseThemePresets } from "@/lib/plan-limits";
+
 export type PublicThemePreset = {
   id: ProviderThemePreset;
   name: string;
@@ -100,6 +102,6 @@ export function getPublicThemePreset(
   plan: PlanTier,
   savedPreset: ProviderThemePreset | null | undefined
 ): PublicThemePreset {
-  if (plan !== "PRO") return THEME_PRESETS.DEFAULT;
+  if (!canUseThemePresets(plan)) return THEME_PRESETS.DEFAULT;
   return getThemePreset(savedPreset);
 }
