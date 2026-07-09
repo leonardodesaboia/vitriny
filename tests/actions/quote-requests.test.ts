@@ -217,7 +217,7 @@ describe("createQuoteRequest", () => {
         businessName: "Vitriny Serviços",
         customerName: "Maria",
         serviceName: "Pintura",
-        dashboardUrl: expect.stringContaining("/dashboard/pedidos")
+        dashboardUrl: expect.stringContaining("/dashboard/pedidos/request-1")
       })
     );
   });
@@ -594,7 +594,7 @@ describe("markPixReservationClientPaid", () => {
           style: "currency",
           currency: "BRL"
         }).format(500),
-        dashboardUrl: expect.stringContaining("/dashboard/pedidos")
+        dashboardUrl: expect.stringContaining("/dashboard/pedidos/request-1")
       })
     );
   });

@@ -197,7 +197,7 @@ export async function createQuoteRequest(
           businessName: profile.businessName,
           customerName: created.customerName,
           serviceName: service?.name,
-          dashboardUrl: appUrl("/dashboard/pedidos")
+          dashboardUrl: appUrl(`/dashboard/pedidos/${created.id}`)
         });
       } catch (error) {
         console.error("Falha ao enviar e-mail de novo pedido.", {
@@ -337,7 +337,7 @@ export async function markPixReservationClientPaid(
         serviceName:
           quoteRequest.serviceNameSnapshot ?? quoteRequest.service?.name,
         amount,
-        dashboardUrl: appUrl("/dashboard/pedidos")
+        dashboardUrl: appUrl(`/dashboard/pedidos/${quoteRequest.id}`)
       });
     } catch (error) {
       console.error("Falha ao enviar e-mail de pagamento informado.", {
