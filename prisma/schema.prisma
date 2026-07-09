@@ -168,6 +168,9 @@ model QuoteRequest {
   fixedServiceAmount        Decimal?           @db.Decimal(10, 2)
   pixReservationRequestedAt DateTime?
   pixReservationPaidAt      DateTime?
+  // Sinal do cliente ("Já fiz o pagamento"); a confirmação continua manual
+  // pelo negócio via pixReservationPaidAt.
+  pixReservationClientPaidAt DateTime?
   createdAt                 DateTime           @default(now())
   updatedAt                 DateTime           @updatedAt
 
