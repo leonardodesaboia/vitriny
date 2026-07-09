@@ -37,13 +37,16 @@ type Props = {
   serviceNamesById: Record<string, string>;
   pixInfo?: { pixKey: string; pixHolderName: string } | null;
   detailHref?: string;
+  // Página de origem para os redirects das actions (validado no servidor).
+  returnTo?: string;
 };
 
 export function QuoteRequestDetails({
   quoteRequest,
   serviceNamesById,
   pixInfo = null,
-  detailHref
+  detailHref,
+  returnTo
 }: Props) {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
@@ -428,6 +431,9 @@ export function QuoteRequestDetails({
                   </span>
                   <form action={markPixReservationPaid}>
                     <input type="hidden" name="requestId" value={quoteRequest.id} />
+                    {returnTo ? (
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                    ) : null}
                     <button
                       type="submit"
                       className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
@@ -452,6 +458,9 @@ export function QuoteRequestDetails({
                   </span>
                   <form action={markPixReservationPaid}>
                     <input type="hidden" name="requestId" value={quoteRequest.id} />
+                    {returnTo ? (
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                    ) : null}
                     <button
                       type="submit"
                       className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
@@ -513,6 +522,9 @@ export function QuoteRequestDetails({
                 {editingNoteId === note.id ? (
                   <form action={updateQuoteRequestNote} onSubmit={() => setEditingNoteId(null)}>
                     <input type="hidden" name="noteId" value={note.id} />
+                    {returnTo ? (
+                      <input type="hidden" name="returnTo" value={returnTo} />
+                    ) : null}
                     <textarea
                       name="content"
                       defaultValue={note.content}
@@ -576,6 +588,9 @@ export function QuoteRequestDetails({
 
         <form action={createQuoteRequestNote} className="mt-4 grid gap-2">
           <input name="requestId" type="hidden" value={quoteRequest.id} />
+          {returnTo ? (
+            <input type="hidden" name="returnTo" value={returnTo} />
+          ) : null}
           <label
             className="text-xs font-semibold uppercase tracking-widest text-ink-muted"
             htmlFor={`note-${quoteRequest.id}`}
@@ -618,6 +633,7 @@ export function QuoteRequestDetails({
           startDeleteTransition(async () => {
             const formData = new FormData();
             formData.set("noteId", id);
+            if (returnTo) formData.set("returnTo", returnTo);
             await deleteQuoteRequestNote(formData);
           });
         }}

@@ -12,6 +12,7 @@ import {
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
+import { resolveQuoteRequestReturnPath } from "@/lib/actions/return-path";
 import type { ActionResult } from "@/types";
 import {
   quoteRequestSchema,
@@ -235,10 +236,11 @@ export async function createQuoteRequest(
 
 export async function markPixReservationPaid(formData: FormData) {
   const { profile } = await requireProviderProfile();
-  if (!profile) redirect("/dashboard/pedidos?error=profile");
+  const returnTo = resolveQuoteRequestReturnPath(formData.get("returnTo"));
+  if (!profile) redirect(`${returnTo}?error=profile`);
 
   const requestId = String(formData.get("requestId") ?? "");
-  if (!requestId) redirect("/dashboard/pedidos?error=not-found");
+  if (!requestId) redirect(`${returnTo}?error=not-found`);
 
   const quoteRequest = await prisma.quoteRequest.findFirst({
     where: { id: requestId, providerId: profile.id },
@@ -250,11 +252,11 @@ export async function markPixReservationPaid(formData: FormData) {
   });
 
   if (!quoteRequest || !quoteRequest.pixReservationRequestedAt) {
-    redirect("/dashboard/pedidos?error=not-found");
+    redirect(`${returnTo}?error=not-found`);
   }
 
   if (quoteRequest.pixReservationPaidAt) {
-    redirect("/dashboard/pedidos");
+    redirect(returnTo);
   }
 
   await prisma.quoteRequest.update({
@@ -263,7 +265,8 @@ export async function markPixReservationPaid(formData: FormData) {
   });
 
   revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  revalidatePath("/dashboard/pedidos/[id]", "page");
+  redirect(returnTo);
 }
 
 export async function markPixReservationClientPaid(

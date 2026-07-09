@@ -6,18 +6,20 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { quoteRequestStatusSchema } from "@/lib/validations/quote-request-status";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
+import { resolveQuoteRequestReturnPath } from "@/lib/actions/return-path";
 
 export async function updateQuoteRequestStatus(formData: FormData) {
   const { profile } = await requireProviderProfile();
   const requestId = String(formData.get("requestId") ?? "");
+  const returnTo = resolveQuoteRequestReturnPath(formData.get("returnTo"));
   const parsed = quoteRequestStatusSchema.safeParse(formData.get("status"));
 
   if (!profile) {
-    redirect("/dashboard/pedidos?error=profile");
+    redirect(`${returnTo}?error=profile`);
   }
 
   if (!requestId || !parsed.success) {
-    redirect("/dashboard/pedidos?error=invalid");
+    redirect(`${returnTo}?error=invalid`);
   }
 
   const quoteRequest = await prisma.quoteRequest.findFirst({
@@ -32,7 +34,7 @@ export async function updateQuoteRequestStatus(formData: FormData) {
   });
 
   if (!quoteRequest) {
-    redirect("/dashboard/pedidos?error=not-found");
+    redirect(`${returnTo}?error=not-found`);
   }
 
   if (quoteRequest.status !== parsed.data) {
@@ -59,5 +61,6 @@ export async function updateQuoteRequestStatus(formData: FormData) {
   }
 
   revalidatePath("/dashboard/pedidos");
-  redirect("/dashboard/pedidos");
+  revalidatePath("/dashboard/pedidos/[id]", "page");
+  redirect(returnTo);
 }

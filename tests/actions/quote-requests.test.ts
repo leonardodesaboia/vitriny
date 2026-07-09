@@ -489,6 +489,57 @@ describe("markPixReservationPaid", () => {
       where: { id: "request-1" }
     });
   });
+
+  it("ignora returnTo fora da área de pedidos", async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+
+    const { markPixReservationPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationPaid(
+        makeFormData({ requestId: "request-1", returnTo: "https://evil.com" })
+      )
+    ).rejects.toThrow("/dashboard/pedidos");
+  });
+
+  it("respeita returnTo da página de detalhe", async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+
+    const { markPixReservationPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationPaid(
+        makeFormData({
+          requestId: "request-1",
+          returnTo: "/dashboard/pedidos/request-1"
+        })
+      )
+    ).rejects.toThrow("/dashboard/pedidos/request-1");
+  });
 });
 
 describe("markPixReservationClientPaid", () => {

@@ -108,6 +108,7 @@ export default async function RequestDetailPage({ params }: RequestDetailPagePro
               : null
           }
           quoteRequest={serializeQuoteRequest(quoteRequest)}
+          returnTo={`/dashboard/pedidos/${quoteRequest.id}`}
           serviceNamesById={serviceNamesById}
         />
       </div>

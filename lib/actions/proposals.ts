@@ -270,4 +270,5 @@ export async function markDepositPaid(formData: FormData) {
   });
 
   revalidatePath("/dashboard/pedidos");
+  revalidatePath("/dashboard/pedidos/[id]", "page");
 }
