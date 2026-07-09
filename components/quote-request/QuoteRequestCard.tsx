@@ -210,16 +210,20 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById, pixInfo = nul
                 className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${
                   quoteRequest.pixReservationPaidAt
                     ? "border-mint bg-mint text-leaf"
-                    : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-                      ? "border-red-200 bg-red-50 text-red-700"
-                      : "border-amber-200 bg-amber-50 text-amber-700"
+                    : quoteRequest.pixReservationClientPaidAt
+                      ? "border-amber-300 bg-amber-100 text-amber-800"
+                      : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
+                        ? "border-red-200 bg-red-50 text-red-700"
+                        : "border-amber-200 bg-amber-50 text-amber-700"
                 }`}
               >
                 {quoteRequest.pixReservationPaidAt
                   ? "Pagamento Pix confirmado"
-                  : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-                    ? "Pix expirado"
-                    : "Pagamento Pix pendente"}
+                  : quoteRequest.pixReservationClientPaidAt
+                    ? "Cliente informou pagamento"
+                    : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
+                      ? "Pix expirado"
+                      : "Pagamento Pix pendente"}
               </span>
             ) : null}
           </div>
@@ -581,6 +585,23 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById, pixInfo = nul
                         ✓ Pix confirmado em{" "}
                         {formatDateShort(quoteRequest.pixReservationPaidAt)}
                       </span>
+                    </div>
+                  ) : quoteRequest.pixReservationClientPaidAt ? (
+                    <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 sm:flex-row sm:items-center">
+                      <span className="text-xs font-semibold text-amber-800">
+                        Cliente informou pagamento em{" "}
+                        {formatDateShort(quoteRequest.pixReservationClientPaidAt)}{" "}
+                        — confira o recebimento no seu banco.
+                      </span>
+                      <form action={markPixReservationPaid}>
+                        <input type="hidden" name="requestId" value={quoteRequest.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
+                        >
+                          Confirmar recebimento
+                        </button>
+                      </form>
                     </div>
                   ) : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt) ? (
                     <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
