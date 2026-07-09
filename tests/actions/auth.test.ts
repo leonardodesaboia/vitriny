@@ -231,4 +231,48 @@ describe("requestPasswordReset", () => {
     expect(db.passwordResetToken.create).not.toHaveBeenCalled();
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
   });
+
+  it("grava o hash do token, nunca o token puro", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      password: "hash",
+      emailVerified: new Date(),
+    });
+    const { requestPasswordReset } = await import("@/lib/actions/auth");
+
+    await expect(
+      requestPasswordReset(makeFormData({ email: "ana@example.com" })),
+    ).rejects.toThrow("/esqueci-senha?sent=1");
+
+    const createArg = db.passwordResetToken.create.mock.calls[0][0];
+    expect(createArg.data.tokenHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(createArg.data.token).toBeUndefined();
+  });
+});
+
+describe("resetPassword", () => {
+  it("busca o token pelo hash", async () => {
+    const { hashToken } = await import("@/lib/auth/tokens");
+    db.passwordResetToken.findUnique.mockResolvedValue({
+      userId: "user-1",
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+    db.user.update.mockResolvedValue({});
+    db.passwordResetToken.deleteMany.mockResolvedValue({});
+    const { resetPassword } = await import("@/lib/actions/auth");
+
+    await expect(
+      resetPassword(
+        makeFormData({
+          token: "tok-puro",
+          password: "SenhaForte1",
+          confirmPassword: "SenhaForte1",
+        }),
+      ),
+    ).rejects.toThrow("/login?reset=1");
+
+    expect(db.passwordResetToken.findUnique).toHaveBeenCalledWith({
+      where: { tokenHash: hashToken("tok-puro") },
+    });
+  });
 });

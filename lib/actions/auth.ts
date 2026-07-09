@@ -15,6 +15,7 @@ import {
   PENDING_VERIFICATION_EMAIL_COOKIE,
   PENDING_VERIFICATION_EMAIL_MAX_AGE,
 } from "@/lib/auth/email-verification";
+import { hashToken } from "@/lib/auth/tokens";
 import { prisma } from "@/lib/prisma";
 import {
   sendEmailVerificationEmail,
@@ -174,7 +175,8 @@ export async function requestPasswordReset(formData: FormData) {
       prisma.passwordResetToken.create({
         data: {
           userId: user.id,
-          token,
+          // Só o hash vai ao banco; o token puro vive apenas no link enviado.
+          tokenHash: hashToken(token),
           expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
         }
       })
@@ -304,7 +306,7 @@ export async function resetPassword(formData: FormData) {
   }
 
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token: parsed.data.token }
+    where: { tokenHash: hashToken(parsed.data.token) }
   });
 
   if (!resetToken || resetToken.expiresAt < new Date()) {

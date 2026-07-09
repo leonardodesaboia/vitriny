@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { hashToken } from "@/lib/auth/tokens";
+
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const PENDING_VERIFICATION_EMAIL_COOKIE =
@@ -7,7 +9,7 @@ export const PENDING_VERIFICATION_EMAIL_COOKIE =
 export const PENDING_VERIFICATION_EMAIL_MAX_AGE = 24 * 60 * 60;
 
 export function hashEmailVerificationToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return hashToken(token);
 }
 
 export function createEmailVerificationToken(now = new Date()) {

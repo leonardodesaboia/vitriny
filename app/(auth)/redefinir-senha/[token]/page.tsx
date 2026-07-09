@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { hashToken } from "@/lib/auth/tokens";
 import { prisma } from "@/lib/prisma";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 
@@ -16,7 +17,7 @@ export default async function ResetPasswordPage({
   const query = await searchParams;
 
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token },
+    where: { tokenHash: hashToken(token) },
     select: { expiresAt: true }
   });
 
