@@ -4,7 +4,8 @@ import {
   buildRecentDashboardActivity,
   buildOnboardingOutcomeStep,
   matchesDashboardRequestView,
-  parseDashboardRequestView
+  parseDashboardRequestView,
+  sortRequestsForDashboardView
 } from "@/lib/dashboard";
 
 describe("buildRecentDashboardActivity", () => {
@@ -180,6 +181,7 @@ describe("matchesDashboardRequestView", () => {
   };
   const request = {
     createdAt: new Date("2026-06-15T12:00:00.000Z"),
+    pixReservationClientPaidAt: null,
     pixReservationPaidAt: null,
     pixReservationRequestedAt: null,
     proposal: null,
@@ -231,6 +233,22 @@ describe("matchesDashboardRequestView", () => {
     ).toBe(false);
   });
 
+  it("inclui reserva expirada quando o cliente informou pagamento", () => {
+    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
+
+    expect(
+      matchesDashboardRequestView(
+        {
+          ...request,
+          pixReservationRequestedAt: expiredRequestedAt,
+          pixReservationClientPaidAt: new Date()
+        },
+        "PIX_RESERVATION",
+        month
+      )
+    ).toBe(true);
+  });
+
   it("identifica entrada aprovada ainda não confirmada", () => {
     expect(
       matchesDashboardRequestView(
@@ -265,5 +283,39 @@ describe("matchesDashboardRequestView", () => {
         month
       )
     ).toBe(true);
+  });
+});
+
+describe("sortRequestsForDashboardView", () => {
+  const informed = {
+    id: "informed",
+    pixReservationClientPaidAt: new Date(),
+    pixReservationPaidAt: null
+  };
+  const pending = {
+    id: "pending",
+    pixReservationClientPaidAt: null,
+    pixReservationPaidAt: null
+  };
+
+  it("coloca informados primeiro na view PIX_RESERVATION", () => {
+    expect(
+      sortRequestsForDashboardView([pending, informed], "PIX_RESERVATION").map(
+        (request) => request.id
+      )
+    ).toEqual(["informed", "pending"]);
+  });
+
+  it("mantém a ordem nas demais views", () => {
+    expect(
+      sortRequestsForDashboardView([pending, informed], "OPEN").map(
+        (request) => request.id
+      )
+    ).toEqual(["pending", "informed"]);
+    expect(
+      sortRequestsForDashboardView([pending, informed], null).map(
+        (request) => request.id
+      )
+    ).toEqual(["pending", "informed"]);
   });
 });

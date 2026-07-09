@@ -7,7 +7,8 @@ import { QuoteRequestList } from "@/components/quote-request/QuoteRequestList";
 import {
   DASHBOARD_REQUEST_VIEW_LABELS,
   matchesDashboardRequestView,
-  parseDashboardRequestView
+  parseDashboardRequestView,
+  sortRequestsForDashboardView
 } from "@/lib/dashboard";
 import { getCurrentMonthRange } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
@@ -140,14 +141,16 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
         : (profile?.quoteRequests.filter((request) => request.status === filter.value).length ?? 0)
     ])
   ) as Record<QuoteRequestStatus | "ALL", number>;
-  const filteredRequests =
+  const filteredRequests = sortRequestsForDashboardView(
     activeView
       ? (profile?.quoteRequests.filter((request) =>
           matchesDashboardRequestView(request, activeView, monthRange)
         ) ?? [])
       : activeStatus === "ALL"
       ? (profile?.quoteRequests ?? [])
-      : (profile?.quoteRequests.filter((request) => request.status === activeStatus) ?? []);
+      : (profile?.quoteRequests.filter((request) => request.status === activeStatus) ?? []),
+    activeView
+  );
 
   return (
     <div className="min-w-0 p-4 sm:p-6 md:p-8">

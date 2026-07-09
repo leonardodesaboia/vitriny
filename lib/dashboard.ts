@@ -101,6 +101,7 @@ type MonthRange = {
 
 type DashboardRequest = {
   createdAt: Date;
+  pixReservationClientPaidAt: Date | null;
   pixReservationPaidAt: Date | null;
   pixReservationRequestedAt: Date | null;
   proposal: {
@@ -188,6 +189,26 @@ export function buildOnboardingOutcomeStep({
   };
 }
 
+// Na visão de reservas Pix, pagamentos informados pelo cliente são os mais
+// acionáveis e vêm primeiro; a ordem relativa dos demais não muda.
+export function sortRequestsForDashboardView<
+  T extends {
+    pixReservationClientPaidAt: Date | null;
+    pixReservationPaidAt: Date | null;
+  }
+>(requests: T[], view: DashboardRequestView | null): T[] {
+  if (view !== "PIX_RESERVATION") return requests;
+
+  const isInformed = (request: T) =>
+    request.pixReservationClientPaidAt !== null &&
+    request.pixReservationPaidAt === null;
+
+  return [
+    ...requests.filter(isInformed),
+    ...requests.filter((request) => !isInformed(request))
+  ];
+}
+
 export function parseDashboardRequestView(
   value: string | undefined
 ): DashboardRequestView | null {
@@ -211,11 +232,13 @@ export function matchesDashboardRequestView(
     case "OPEN":
       return request.status !== "CLOSED";
     case "PIX_RESERVATION":
-      // Reservas expiradas não são acionáveis; ficam fora das pendências.
+      // Reservas expiradas não são acionáveis — exceto quando o cliente
+      // informou o pagamento: aí a bola está com o negócio.
       return (
         request.pixReservationRequestedAt !== null &&
         request.pixReservationPaidAt === null &&
-        !isPixPaymentExpired(request.pixReservationRequestedAt)
+        (!isPixPaymentExpired(request.pixReservationRequestedAt) ||
+          request.pixReservationClientPaidAt !== null)
       );
     case "DEPOSIT":
       return (
