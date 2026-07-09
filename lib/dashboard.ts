@@ -189,6 +189,34 @@ export function buildOnboardingOutcomeStep({
   };
 }
 
+const formatBRL = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(value);
+
+export type MonthlyRevenueSummary = {
+  approved: string;
+  pixConfirmed: string;
+  total: string;
+};
+
+// Somas Decimal chegam como string (fronteira server→client) e saem
+// formatadas em BRL, prontas para renderizar.
+export function buildMonthlyRevenueSummary(
+  approvedSum: string | null,
+  pixConfirmedSum: string | null
+): MonthlyRevenueSummary {
+  const approved = Number(approvedSum ?? 0);
+  const pixConfirmed = Number(pixConfirmedSum ?? 0);
+
+  return {
+    approved: formatBRL(approved),
+    pixConfirmed: formatBRL(pixConfirmed),
+    total: formatBRL(approved + pixConfirmed)
+  };
+}
+
 // Na visão de reservas Pix, pagamentos informados pelo cliente são os mais
 // acionáveis e vêm primeiro; a ordem relativa dos demais não muda.
 export function sortRequestsForDashboardView<

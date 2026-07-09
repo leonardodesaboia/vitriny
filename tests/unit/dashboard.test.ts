@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildMonthlyRevenueSummary,
   buildRecentDashboardActivity,
   buildOnboardingOutcomeStep,
   matchesDashboardRequestView,
@@ -283,6 +284,31 @@ describe("matchesDashboardRequestView", () => {
         month
       )
     ).toBe(true);
+  });
+});
+
+describe("buildMonthlyRevenueSummary", () => {
+  // Moeda pt-BR usa espaço não separável — comparar com o mesmo formatador.
+  const brl = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }).format(value);
+
+  it("soma propostas aprovadas e pedidos Pix confirmados", () => {
+    expect(buildMonthlyRevenueSummary("1500.5", "249.5")).toEqual({
+      approved: brl(1500.5),
+      pixConfirmed: brl(249.5),
+      total: brl(1750)
+    });
+  });
+
+  it("trata somas nulas como zero", () => {
+    expect(buildMonthlyRevenueSummary(null, null)).toEqual({
+      approved: brl(0),
+      pixConfirmed: brl(0),
+      total: brl(0)
+    });
   });
 });
 
