@@ -36,6 +36,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
     select: {
       plan: true,
       businessType: true,
+      slug: true,
       services: {
         orderBy: { createdAt: "desc" },
         select: {
@@ -133,6 +134,7 @@ export default async function ServicesPage({ searchParams }: ServicesPageProps) 
             <ServiceList
               allowItemTypeSelection={itemTypePolicy.canChooseItemType}
               isPro={profile.plan === "PRO"}
+              slug={profile.slug}
               services={profile.services.map((s) => ({
                 id: s.id,
                 name: s.name,

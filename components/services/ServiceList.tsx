@@ -5,12 +5,14 @@ type ServiceListProps = {
   services: ServiceForClient[];
   isPro?: boolean;
   allowItemTypeSelection?: boolean;
+  slug?: string | null;
 };
 
 export function ServiceList({
   services,
   isPro = false,
-  allowItemTypeSelection = false
+  allowItemTypeSelection = false,
+  slug = null
 }: ServiceListProps) {
   if (services.length === 0) {
     return (
@@ -30,6 +32,7 @@ export function ServiceList({
           isPro={isPro}
           key={service.id}
           service={service}
+          slug={slug}
         />
       ))}
     </div>

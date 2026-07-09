@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { DeleteServiceButton } from "@/components/services/DeleteServiceButton";
 import { ServiceForm } from "@/components/services/ServiceForm";
+import { CopyButton } from "@/components/ui/CopyButton";
+import { itemShareMessage } from "@/lib/whatsapp-messages";
 import {
   getServiceSaleMode,
   SALE_MODE_BADGE_LABEL,
@@ -15,6 +17,7 @@ type ServiceItemProps = {
   service: ServiceForClient;
   isPro?: boolean;
   allowItemTypeSelection?: boolean;
+  slug?: string | null;
 };
 
 const saleModeBadge: Record<ServiceSaleMode, string> = {
@@ -38,10 +41,15 @@ function formatPrice(price: string | null): string | null {
 export function ServiceItem({
   service,
   isPro = false,
-  allowItemTypeSelection = false
+  allowItemTypeSelection = false,
+  slug = null
 }: ServiceItemProps) {
   const [expanded, setExpanded] = useState(false);
   const formattedPrice = formatPrice(service.basePrice);
+  // Link de venda por item: a página de orçamento pré-seleciona via serviceId.
+  const shareUrl = slug
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}/orcamento?serviceId=${service.id}`
+    : null;
   const saleMode = getServiceSaleMode({
     pricingType: service.pricingType,
     fixedServiceCheckoutMode: service.fixedServiceCheckoutMode,
@@ -137,6 +145,25 @@ export function ServiceItem({
 
       {expanded ? (
         <div className="min-w-0 border-t border-paper-soft p-4 sm:p-5">
+          {shareUrl && service.isActive ? (
+            <div className="mb-5 rounded-lg border border-paper-soft bg-paper px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Divulgar
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <a
+                  className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+                  href={`https://wa.me/?text=${encodeURIComponent(itemShareMessage(service.name, formattedPrice, shareUrl))}`}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Compartilhar no WhatsApp
+                </a>
+                <CopyButton label="Copiar link" text={shareUrl} />
+              </div>
+            </div>
+          ) : null}
+
           <ServiceForm
             allowItemTypeSelection={allowItemTypeSelection}
             embedded
