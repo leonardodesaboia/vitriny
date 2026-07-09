@@ -28,6 +28,8 @@ const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
   "/verificar-email": { limit: 10, windowMs: 300_000 },
   // Formulário público de pedido (Server Action em /u/*/orcamento)
   "/u/orcamento": { limit: 20, windowMs: 60_000 },
+  // Botão público "Já fiz o pagamento" (Server Action em /u/*/reserva/*)
+  "/u/reserva": { limit: 10, windowMs: 60_000 },
 };
 
 function getClientIp(request: NextRequest): string {
@@ -60,6 +62,11 @@ function matchRateLimitRule(pathname: string, method: string): RateLimitRule | n
     if (pattern === "/u/orcamento") {
       // Matches /u/[slug]/orcamento
       if (/^\/u\/[^/]+\/orcamento/.test(pathname)) return rule;
+      continue;
+    }
+    if (pattern === "/u/reserva") {
+      // Matches /u/[slug]/reserva/[requestId]
+      if (/^\/u\/[^/]+\/reserva\//.test(pathname)) return rule;
       continue;
     }
     if (pathname === pattern || pathname.startsWith(pattern + "/")) return rule;
@@ -104,5 +111,6 @@ export const config = {
     "/verifique-seu-email",
     "/verificar-email/:path*",
     "/u/:slug/orcamento",
+    "/u/:slug/reserva/:requestId",
   ],
 };
