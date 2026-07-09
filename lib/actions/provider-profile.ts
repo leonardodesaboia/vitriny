@@ -102,7 +102,7 @@ export async function saveProviderProfile(
   const dataToSave = {
     ...parsed.data,
     themePreset:
-      currentProfile && canUseThemePresets(currentProfile.plan)
+      currentProfile?.plan && canUseThemePresets(currentProfile.plan)
         ? parsed.data.themePreset
         : currentProfile?.themePreset ?? "DEFAULT"
   };
