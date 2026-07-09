@@ -3,6 +3,11 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { PLAN_PRICES } from "@/lib/plan-limits";
+
+// A landing exibe centavos em corpo menor; o preço vem da fonte única.
+const [proPriceMain, proPriceCents] = PLAN_PRICES.PRO.split(",");
+
 const free = [
   "Vitrine pública com link próprio",
   "Até 3 itens ativos",
@@ -72,7 +77,7 @@ export function LandingPricing() {
               Grátis
             </p>
             <div className="mt-4 flex items-end gap-1">
-              <span className="font-fraunces text-5xl font-bold text-ink">R$ 0</span>
+              <span className="font-fraunces text-5xl font-bold text-ink">{PLAN_PRICES.FREE}</span>
               <span className="mb-1.5 text-sm text-ink-muted">/mês</span>
             </div>
             <p className="mt-2 text-sm text-ink-muted">
@@ -117,8 +122,8 @@ export function LandingPricing() {
               PRO
             </p>
             <div className="mt-4 flex items-end gap-1">
-              <span className="font-fraunces text-5xl font-bold text-ink">R$ 19</span>
-              <span className="mb-2 font-fraunces text-2xl font-bold text-ink">,90</span>
+              <span className="font-fraunces text-5xl font-bold text-ink">{proPriceMain}</span>
+              <span className="mb-2 font-fraunces text-2xl font-bold text-ink">,{proPriceCents}</span>
               <span className="mb-1.5 text-sm text-ink-muted">/mês</span>
             </div>
             <p className="mt-2 text-sm text-ink-muted">
