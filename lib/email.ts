@@ -242,6 +242,39 @@ export async function sendPixReservationClientPaidEmail({
   });
 }
 
+type PixReservationReopenedEmailInput = {
+  to: string;
+  customerName: string;
+  businessName: string;
+  serviceName?: string | null;
+  amount: string;
+  reservaUrl: string;
+};
+
+export async function sendPixReservationReopenedEmail({
+  to,
+  customerName,
+  businessName,
+  serviceName,
+  amount,
+  reservaUrl
+}: PixReservationReopenedEmailInput) {
+  await sendAppEmail({
+    to,
+    subject: "Prazo de pagamento renovado — Vitriny",
+    preview: `${businessName} renovou o prazo do seu pagamento Pix.`,
+    html: [
+      paragraph(`Olá, ${customerName}.`),
+      paragraph(
+        serviceName
+          ? `${businessName} renovou o prazo do pagamento Pix de ${amount} referente ao item ${serviceName}. Você tem mais 48 horas.`
+          : `${businessName} renovou o prazo do seu pagamento Pix de ${amount}. Você tem mais 48 horas.`
+      ),
+      emailButton("Pagar agora", reservaUrl)
+    ].join("")
+  });
+}
+
 export async function sendProposalSentEmail({
   to,
   businessName,

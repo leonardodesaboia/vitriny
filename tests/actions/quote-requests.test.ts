@@ -8,7 +8,8 @@ vi.mock("@/lib/actions/auth-guard", () => ({
 vi.mock("@/lib/email", () => ({
   sendQuoteRequestReceivedEmail: vi.fn(),
   sendQuoteRequestConfirmationToCustomerEmail: vi.fn(),
-  sendPixReservationClientPaidEmail: vi.fn()
+  sendPixReservationClientPaidEmail: vi.fn(),
+  sendPixReservationReopenedEmail: vi.fn()
 }));
 // after() exige request scope do Next; nos testes executa o callback direto.
 vi.mock("next/server", () => ({
@@ -539,6 +540,94 @@ describe("markPixReservationPaid", () => {
         })
       )
     ).rejects.toThrow("/dashboard/pedidos/request-1");
+  });
+});
+
+describe("reopenPixReservation", () => {
+  function setup(overrides: Record<string, unknown> = {}) {
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      serviceNameSnapshot: "Pintura",
+      fixedServiceAmount: { toString: () => "500" },
+      pixReservationRequestedAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+      pixReservationPaidAt: null,
+      provider: { slug: "vitriny", businessName: "Vitriny Serviços" },
+      ...overrides
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+  }
+
+  beforeEach(async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+  });
+
+  it("reabre reserva expirada com novo prazo e avisa o cliente", async () => {
+    setup();
+    const { sendPixReservationReopenedEmail } = await import("@/lib/email");
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: { pixReservationRequestedAt: expect.any(Date) },
+      where: { id: "request-1" }
+    });
+    expect(sendPixReservationReopenedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "maria@example.com",
+        customerName: "Maria",
+        reservaUrl: expect.stringContaining("/u/vitriny/reserva/request-1")
+      })
+    );
+  });
+
+  it("não reabre reserva dentro do prazo", async () => {
+    setup({ pixReservationRequestedAt: new Date() });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não reabre reserva já paga", async () => {
+    setup({ pixReservationPaidAt: new Date() });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita pedido de outro provider", async () => {
+    db.quoteRequest.findFirst.mockResolvedValue(null);
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "alheio" }))
+    ).rejects.toThrow("/dashboard/pedidos?error=not-found");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
   });
 });
 

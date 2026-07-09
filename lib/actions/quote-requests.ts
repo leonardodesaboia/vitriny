@@ -20,6 +20,7 @@ import {
 } from "@/lib/validations/quote-request";
 import {
   sendPixReservationClientPaidEmail,
+  sendPixReservationReopenedEmail,
   sendQuoteRequestConfirmationToCustomerEmail,
   sendQuoteRequestReceivedEmail
 } from "@/lib/email";
@@ -262,6 +263,79 @@ export async function markPixReservationPaid(formData: FormData) {
   await prisma.quoteRequest.update({
     where: { id: quoteRequest.id },
     data: { pixReservationPaidAt: new Date() }
+  });
+
+  revalidatePath("/dashboard/pedidos");
+  revalidatePath("/dashboard/pedidos/[id]", "page");
+  redirect(returnTo);
+}
+
+export async function reopenPixReservation(formData: FormData) {
+  const { profile } = await requireProviderProfile();
+  const returnTo = resolveQuoteRequestReturnPath(formData.get("returnTo"));
+  if (!profile) redirect(`${returnTo}?error=profile`);
+
+  const requestId = String(formData.get("requestId") ?? "");
+  if (!requestId) redirect(`${returnTo}?error=not-found`);
+
+  const quoteRequest = await prisma.quoteRequest.findFirst({
+    where: { id: requestId, providerId: profile.id },
+    select: {
+      id: true,
+      customerName: true,
+      customerEmail: true,
+      serviceNameSnapshot: true,
+      fixedServiceAmount: true,
+      pixReservationRequestedAt: true,
+      pixReservationPaidAt: true,
+      provider: { select: { slug: true, businessName: true } }
+    }
+  });
+
+  if (!quoteRequest?.pixReservationRequestedAt) {
+    redirect(`${returnTo}?error=not-found`);
+  }
+
+  // Só reserva expirada e não paga ganha novo prazo; nos demais estados o
+  // clique é no-op (idempotência).
+  if (
+    quoteRequest.pixReservationPaidAt ||
+    !isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
+  ) {
+    redirect(returnTo);
+  }
+
+  await prisma.quoteRequest.update({
+    where: { id: quoteRequest.id },
+    data: { pixReservationRequestedAt: new Date() }
+  });
+
+  const customerEmail = quoteRequest.customerEmail;
+  const amount = new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(Number(quoteRequest.fixedServiceAmount ?? 0));
+  const reservaUrl = appUrl(
+    `/u/${quoteRequest.provider.slug}/reserva/${quoteRequest.id}`
+  );
+
+  after(async () => {
+    if (!customerEmail) return;
+    try {
+      await sendPixReservationReopenedEmail({
+        to: customerEmail,
+        customerName: quoteRequest.customerName,
+        businessName: quoteRequest.provider.businessName,
+        serviceName: quoteRequest.serviceNameSnapshot,
+        amount,
+        reservaUrl
+      });
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de prazo renovado.", {
+        error,
+        quoteRequestId: quoteRequest.id
+      });
+    }
   });
 
   revalidatePath("/dashboard/pedidos");
