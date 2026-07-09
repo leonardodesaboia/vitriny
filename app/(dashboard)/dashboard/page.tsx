@@ -9,6 +9,7 @@ import {
 } from "@/components/dashboard/DashboardMetricGrid";
 import { DashboardPendingActions } from "@/components/dashboard/DashboardPendingActions";
 import { DashboardRecentActivity } from "@/components/dashboard/DashboardRecentActivity";
+import { DashboardRevenueCard } from "@/components/dashboard/DashboardRevenueCard";
 import {
   OnboardingChecklist,
   type OnboardingStep
@@ -17,7 +18,10 @@ import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { profileLinkMessage } from "@/lib/whatsapp-messages";
 import { Card } from "@/components/ui/Card";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
-import { buildOnboardingOutcomeStep } from "@/lib/dashboard";
+import {
+  buildMonthlyRevenueSummary,
+  buildOnboardingOutcomeStep
+} from "@/lib/dashboard";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
@@ -65,7 +69,9 @@ export default async function DashboardPage() {
     pendingPixReservations,
     clientInformedPixReservations,
     pendingProposalDeposits,
-    fixedRequestCount
+    fixedRequestCount,
+    approvedRevenue,
+    pixRevenue
   ] = profile
     ? await prisma.$transaction([
         prisma.quoteRequest.count({
@@ -131,13 +137,34 @@ export default async function DashboardPage() {
             providerId: profile.id,
             service: { pricingType: "FIXED" }
           }
+        }),
+        prisma.proposal.aggregate({
+          _sum: { totalAmount: true },
+          where: {
+            providerId: profile.id,
+            respondedAt: { gte: monthRange.start, lt: monthRange.end },
+            status: "APPROVED"
+          }
+        }),
+        prisma.quoteRequest.aggregate({
+          _sum: { fixedServiceAmount: true },
+          where: {
+            providerId: profile.id,
+            pixReservationPaidAt: { gte: monthRange.start, lt: monthRange.end }
+          }
         })
       ])
-    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null];
 
   const recentActivity = profile
     ? await getRecentDashboardActivity(profile.id)
     : [];
+
+  // Decimal → string na fronteira; o resumo sai pronto em BRL.
+  const revenueSummary = buildMonthlyRevenueSummary(
+    approvedRevenue?._sum.totalAmount?.toString() ?? null,
+    pixRevenue?._sum.fixedServiceAmount?.toString() ?? null
+  );
 
   const limits = profile ? getPlanLimits(profile.plan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
@@ -293,6 +320,8 @@ export default async function DashboardPage() {
       />
 
       <DashboardPendingActions actions={pendingActions} />
+
+      <DashboardRevenueCard summary={revenueSummary} />
 
       <DashboardMetricGrid metrics={metrics} />
 
