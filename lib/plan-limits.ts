@@ -48,6 +48,30 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
   PRO: "Pro"
 };
 
+// Capacidades por plano: um plano novo entra aqui e nos limites — nunca em
+// checagens `plan === "PRO"` espalhadas.
+export const PLAN_FEATURES: Record<
+  PlanTier,
+  { serviceImages: boolean; themePresets: boolean }
+> = {
+  FREE: { serviceImages: false, themePresets: false },
+  PRO: { serviceImages: true, themePresets: true }
+};
+
+export const canUseServiceImages = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].serviceImages;
+
+export const canUseThemePresets = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].themePresets;
+
+export const isPaidPlan = (plan: PlanTier) => plan !== "FREE";
+
+// Fonte única do preço exibido na landing (o preço real vive no Stripe).
+export const PLAN_PRICES: Record<PlanTier, string> = {
+  FREE: "R$ 0",
+  PRO: "R$ 19,90"
+};
+
 export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   "limit-active-services":
     "Limite de itens ativos atingido para o plano atual.",
