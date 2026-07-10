@@ -102,7 +102,11 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   try {
     imageUrl = await uploadToStorage(storageKey, buffer, detectedMime);
   } catch (err) {
-    console.error("Falha ao enviar imagem para o storage.", { err });
+    // name/message são não-enumeráveis nos erros do SDK; logar explícito.
+    console.error("Falha ao enviar imagem para o storage.", {
+      name: err instanceof Error ? err.name : "unknown",
+      message: err instanceof Error ? err.message : String(err)
+    });
     return NextResponse.json(
       { error: "Falha ao enviar imagem. Tente novamente." },
       { status: 500 }
@@ -120,7 +124,8 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     } catch (err) {
       console.error("Falha ao deletar imagem anterior.", {
         key: service.imageStorageKey,
-        err
+        name: err instanceof Error ? err.name : "unknown",
+        message: err instanceof Error ? err.message : String(err)
       });
     }
   }
@@ -162,7 +167,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   } catch (err) {
     console.error("Falha ao deletar imagem do storage.", {
       key: service.imageStorageKey,
-      err
+      name: err instanceof Error ? err.name : "unknown",
+      message: err instanceof Error ? err.message : String(err)
     });
     return NextResponse.json(
       { error: "Falha ao remover imagem. Tente novamente." },
