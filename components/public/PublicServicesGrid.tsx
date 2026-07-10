@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useReducedMotion } from "framer-motion";
 
 import type { PublicService } from "@/types";
 
@@ -19,26 +18,6 @@ export function PublicServicesGrid({
   services: PublicService[];
   slug: string;
 }) {
-  const reducedMotion = useReducedMotion();
-
-  const container = reducedMotion
-    ? undefined
-    : {
-        hidden: {},
-        show: { transition: { staggerChildren: 0.09 } }
-      };
-
-  const item = reducedMotion
-    ? undefined
-    : {
-        hidden: { opacity: 0, y: 20 },
-        show: {
-          opacity: 1,
-          y: 0,
-          transition: { type: "spring" as const, stiffness: 280, damping: 28 }
-        }
-      };
-
   if (services.length === 0) {
     return (
       <div className="mt-6 rounded-xl border border-paper-soft bg-white p-8 shadow-card">
@@ -55,13 +34,10 @@ export function PublicServicesGrid({
 
   return (
     <>
-      <motion.div
-        className="mt-6 grid gap-4 sm:grid-cols-2"
-        initial={reducedMotion ? undefined : "hidden"}
-        whileInView={reducedMotion ? undefined : "show"}
-        viewport={{ once: true, amount: 0.1 }}
-        variants={container}
-      >
+      {/* Sem animação de entrada: a vitrine é o conteúdo público que vende
+          (e o LCP) — não pode nascer invisível esperando hidratação. Era
+          também a fonte de hydration mismatch via useReducedMotion. */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2">
         {services.map((service) => {
           const isPix =
             service.pricingType === "FIXED" &&
@@ -70,9 +46,8 @@ export function PublicServicesGrid({
           const href = `/u/${slug}/orcamento?serviceId=${service.id}`;
 
           return (
-            <motion.article
+            <article
               key={service.id}
-              variants={item}
               className="group relative flex flex-col overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card transition-[border-color,box-shadow] hover:border-leaf/30 hover:shadow-card-hover"
             >
               {!pixUnavailable && (
@@ -144,10 +119,10 @@ export function PublicServicesGrid({
                   </span>
                 )}
               </div>
-            </motion.article>
+            </article>
           );
         })}
-      </motion.div>
+      </div>
     </>
   );
 }
