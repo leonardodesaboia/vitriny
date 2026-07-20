@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { TIME_REGEX } from "@/lib/business-hours";
 import { normalizeSocialUrl, type SocialNetwork } from "@/lib/social-links";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
 import {
@@ -33,8 +34,6 @@ const optionalPhone = optionalText.pipe(
     .transform((value) => (value ? formatPhoneBR(value) : null))
 );
 
-const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
-
 const dayHoursSchema = z
   .object({
     open: z.string().regex(TIME_REGEX, "Horário inválido."),
@@ -43,25 +42,27 @@ const dayHoursSchema = z
   .nullable()
   .refine(
     (day) => day === null || day.open !== day.close,
-    "Horário de abrir e fechar não podem ser iguais."
+    "Horários de abertura e fechamento não podem ser iguais."
   );
 
-const businessHoursSchema = z.preprocess(
-  (value) => {
-    if (value == null || value === "") return null;
-    if (typeof value !== "string") return value;
-    try {
-      return JSON.parse(value);
-    } catch {
-      // Valor não-JSON cai na união e falha com mensagem de horários inválidos.
-      return value;
-    }
-  },
-  z.union(
-    [z.array(dayHoursSchema).length(7, "Horários incompletos."), z.null()],
-    { error: "Horários inválidos." }
+const businessHoursSchema = z
+  .preprocess(
+    (value) => {
+      if (value == null || value === "") return null;
+      if (typeof value !== "string") return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        // Valor não-JSON cai na união e falha com mensagem de horários inválidos.
+        return value;
+      }
+    },
+    z.union(
+      [z.array(dayHoursSchema).length(7, "Horários incompletos."), z.null()],
+      { error: "Horários inválidos." }
+    )
   )
-);
+  .transform((days) => (days?.some((day) => day !== null) ? days : null));
 
 const optionalSocial = (network: SocialNetwork) =>
   optionalText.pipe(

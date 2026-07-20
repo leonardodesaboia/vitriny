@@ -128,4 +128,35 @@ describe("providerProfileSchema — identidade", () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it("aceita janela noturna (close < open, fecha após a meia-noite)", () => {
+    const parsed = providerProfileSchema.safeParse({
+      ...baseInput,
+      businessHours: JSON.stringify([
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        { open: "18:00", close: "02:00" },
+      ]),
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.businessHours?.[6]).toEqual({
+      open: "18:00",
+      close: "02:00",
+    });
+  });
+
+  it("semana toda fechada vira null (mesma semântica de parseBusinessHours)", () => {
+    const parsed = providerProfileSchema.safeParse({
+      ...baseInput,
+      businessHours: JSON.stringify([null, null, null, null, null, null, null]),
+    });
+    expect(parsed.success).toBe(true);
+    if (!parsed.success) return;
+    expect(parsed.data.businessHours).toBeNull();
+  });
 });

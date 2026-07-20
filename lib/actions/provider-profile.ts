@@ -103,7 +103,9 @@ export async function saveProviderProfile(
     themePreset:
       currentProfile?.plan === "PRO"
         ? parsed.data.themePreset
-        : currentProfile?.themePreset ?? "DEFAULT"
+        : currentProfile?.themePreset ?? "DEFAULT",
+    // Prisma requires Prisma.JsonNull (not plain null) for nullable JSON columns.
+    businessHours: parsed.data.businessHours ?? Prisma.JsonNull
   };
 
   try {
