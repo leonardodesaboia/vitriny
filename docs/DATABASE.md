@@ -72,6 +72,9 @@ Campos importantes:
 - `isPublished`: controla se o perfil aparece publicamente.
 - `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
 - `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para entrada de proposta e pagamento antecipado de serviço fixo.
+- `address`: endereço livre (rua, número, bairro) usado no link "Ver no mapa" da vitrine pública. Opcional.
+- `instagram`, `facebook`, `tiktok`: valor digitado pelo dono (`@handle`, handle ou URL); normalizado para URL na renderização por `lib/social-links.ts`. Opcionais.
+- `businessHours`: `Json?` — array de 7 posições (índice 0 = domingo), cada uma `{ open, close }` em `"HH:MM"` ou `null` (fechado). `close < open` significa fechamento após a meia-noite. Validado por Zod na escrita e `parseBusinessHours` na leitura. Opcional.
 
 Relaciona-se com:
 

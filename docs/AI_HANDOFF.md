@@ -63,6 +63,8 @@ O MVP principal está implementado.
 
 ## Mudanças recentes
 
+- O perfil ganhou `address`, `instagram`, `facebook`, `tiktok` e `businessHours` (Json de 7 dias, índice 0 = domingo); helpers puros em `lib/business-hours.ts` e `lib/social-links.ts`; a vitrine pública exibe badge "Aberto agora" (calculado no navegador via `components/public/OpenNowBadge.tsx`), card de horários, link "Ver no mapa" e links sociais — tudo opcional e FREE.
+
 ### Fases de transição — linguagem e UI
 
 **Fase 1 — Linguagem ampla de itens da vitrine**

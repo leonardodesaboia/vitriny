@@ -121,6 +121,7 @@ Route handlers autenticados ou server-to-server:
 - O cliente não precisa de login.
 - Login do negócio é por Google OAuth ou e-mail/senha; GitHub OAuth foi removido.
 - O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
+- **Recursos de identidade são FREE**: endereço, redes sociais e horário de funcionamento com badge "Aberto agora" ficam disponíveis em todos os planos. Identidade do negócio não é gatilho de upgrade; os limites PRO continuam nos recursos que o dono sente (itens, propostas, fotos, temas).
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
 - **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
 - **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.
