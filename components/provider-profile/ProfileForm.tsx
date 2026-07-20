@@ -9,6 +9,7 @@ import {
 } from "@/lib/actions/provider-profile";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { THEME_PRESET_OPTIONS } from "@/lib/theme-presets";
+import { BusinessHoursEditor } from "@/components/provider-profile/BusinessHoursEditor";
 
 type ProfileFormProps = {
   profile: ProviderProfile | null;
@@ -336,6 +337,80 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               type="text"
             />
           </div>
+        </div>
+
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="address">
+            Endereço{" "}
+            <span className="font-normal text-ink-muted">(opcional)</span>
+          </label>
+          <input
+            className={inputClass}
+            defaultValue={values?.address ?? profile?.address ?? ""}
+            id="address"
+            name="address"
+            placeholder="Rua, número e bairro — vira link para o Google Maps"
+            type="text"
+          />
+        </div>
+      </div>
+
+      {/* ── Presença e horários ────────────────────── */}
+      <SectionHeader
+        label="Presença e horários"
+        description="Redes sociais e horário de funcionamento exibidos na sua vitrine. Todos opcionais."
+      />
+
+      <div className="grid gap-5">
+        <div className="grid gap-5 sm:grid-cols-3">
+          <div className="grid gap-2">
+            <label className={labelClass} htmlFor="instagram">
+              Instagram
+            </label>
+            <input
+              className={inputClass}
+              defaultValue={values?.instagram ?? profile?.instagram ?? ""}
+              id="instagram"
+              name="instagram"
+              placeholder="@seunegocio"
+              type="text"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <label className={labelClass} htmlFor="facebook">
+              Facebook
+            </label>
+            <input
+              className={inputClass}
+              defaultValue={values?.facebook ?? profile?.facebook ?? ""}
+              id="facebook"
+              name="facebook"
+              placeholder="@seunegocio"
+              type="text"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <label className={labelClass} htmlFor="tiktok">
+              TikTok
+            </label>
+            <input
+              className={inputClass}
+              defaultValue={values?.tiktok ?? profile?.tiktok ?? ""}
+              id="tiktok"
+              name="tiktok"
+              placeholder="@seunegocio"
+              type="text"
+            />
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <p className={labelClass}>Horário de funcionamento</p>
+          <BusinessHoursEditor
+            defaultValue={values?.businessHours ?? profile?.businessHours ?? null}
+          />
         </div>
       </div>
 
