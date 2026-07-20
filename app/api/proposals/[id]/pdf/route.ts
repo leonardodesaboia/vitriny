@@ -10,6 +10,8 @@ import { ProposalPdf, type ProposalPdfData } from "@/components/proposals/Propos
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   const { id } = await params;
 

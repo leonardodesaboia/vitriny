@@ -8,6 +8,8 @@ type ResetPasswordPageProps = {
   searchParams: Promise<{ error?: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ResetPasswordPage({
   params,
   searchParams

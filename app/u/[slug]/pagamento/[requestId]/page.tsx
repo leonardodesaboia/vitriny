@@ -20,6 +20,8 @@ type PixPaymentPageProps = {
   }>;
 };
 
+export const dynamic = "force-dynamic";
+
 function formatMoney(value: string) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",

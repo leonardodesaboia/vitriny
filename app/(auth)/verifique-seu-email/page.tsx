@@ -17,6 +17,8 @@ const errorMessages: Record<string, string> = {
     "Este link é inválido, expirou ou já foi utilizado. Solicite uma nova confirmação.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function VerifyEmailNoticePage({
   searchParams,
 }: VerifyEmailNoticePageProps) {

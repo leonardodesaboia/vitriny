@@ -19,6 +19,8 @@ type PublicProposalPageProps = {
   }>;
 };
 
+export const dynamic = "force-dynamic";
+
 const statusLabels: Record<string, string> = {
   DRAFT: "Rascunho",
   SENT: "Enviada",

@@ -9,6 +9,8 @@ type ConfirmEmailPageProps = {
   params: Promise<{ token: string }>;
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function ConfirmEmailPage({ params }: ConfirmEmailPageProps) {
   const session = await auth();
   if (session?.user) redirect("/dashboard");

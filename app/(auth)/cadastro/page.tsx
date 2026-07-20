@@ -12,6 +12,8 @@ type RegisterPageProps = {
 const googleButtonClassName =
   "mt-8 inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf";
 
+export const dynamic = "force-dynamic";
+
 export default async function RegisterPage({ searchParams }: RegisterPageProps) {
   const session = await auth();
   if (session?.user) {
