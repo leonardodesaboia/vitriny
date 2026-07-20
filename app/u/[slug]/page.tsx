@@ -2,8 +2,11 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { OpenNowBadge } from "@/components/public/OpenNowBadge";
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
+import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
+import { normalizeSocialUrl, SOCIAL_LABELS } from "@/lib/social-links";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import {
   formatPhoneBR,
@@ -27,6 +30,11 @@ const getProfile = cache(async (slug: string) => {
       email: true,
       city: true,
       state: true,
+      address: true,
+      instagram: true,
+      facebook: true,
+      tiktok: true,
+      businessHours: true,
       isPublished: true,
       plan: true,
       themePreset: true,
@@ -101,6 +109,28 @@ export default async function PublicProviderProfilePage({
   );
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
+
+  const hours = parseBusinessHours(profile.businessHours);
+
+  const mapsQuery = [profile.address, profile.city, profile.state]
+    .filter(Boolean)
+    .join(", ");
+  const mapsUrl = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : null;
+
+  const socialLinks = (
+    [
+      ["instagram", profile.instagram],
+      ["facebook", profile.facebook],
+      ["tiktok", profile.tiktok],
+    ] as const
+  ).flatMap(([network, value]) => {
+    if (!value) return [];
+    const href = normalizeSocialUrl(network, value);
+    return href ? [{ network, label: SOCIAL_LABELS[network], href }] : [];
+  });
+
   const profilePhoneDisplay = formatPhoneBR(profile.phone);
   const whatsappNumber = profile.phone
     ? phoneToWhatsAppNumber(profile.phone)
@@ -131,8 +161,8 @@ export default async function PublicProviderProfilePage({
     location
       ? {
           label: "Localização",
-          value: location,
-          href: null,
+          value: mapsUrl ? `${location} · Ver no mapa` : location,
+          href: mapsUrl,
           whatsappHref: null,
         }
       : null,
@@ -160,10 +190,26 @@ export default async function PublicProviderProfilePage({
           <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
             {profile.businessName}
           </h1>
+          <OpenNowBadge businessHours={profile.businessHours} />
           {profile.description ? (
             <p className="mt-5 max-w-2xl break-words text-base leading-7 text-white/80">
               {profile.description}
             </p>
+          ) : null}
+          {socialLinks.length > 0 ? (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {socialLinks.map((link) => (
+                <a
+                  className="rounded-full border border-white/30 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10"
+                  href={link.href}
+                  key={link.network}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {link.label}
+                </a>
+              ))}
+            </div>
           ) : null}
         </div>
       </div>
@@ -219,6 +265,25 @@ export default async function PublicProviderProfilePage({
                   )}
                 </div>
               ))}
+            </div>
+          ) : null}
+
+          {hours ? (
+            <div className="mt-3 rounded-xl border border-paper-soft bg-white p-4 shadow-card">
+              <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                Horário de funcionamento
+              </p>
+              <dl className="mt-3 grid gap-1.5 sm:grid-cols-2 sm:gap-x-10">
+                {formatWeek(hours).map((entry) => (
+                  <div
+                    className="flex items-baseline justify-between gap-4 text-sm"
+                    key={entry.day}
+                  >
+                    <dt className="text-ink-muted">{entry.day}</dt>
+                    <dd className="font-semibold text-ink">{entry.label}</dd>
+                  </div>
+                ))}
+              </dl>
             </div>
           ) : null}
 
