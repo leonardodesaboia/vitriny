@@ -18,7 +18,7 @@ export const DAY_LABELS = [
 
 export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
-const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
+export const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
 
 function toMinutes(time: string): number {
   const [hours, minutes] = time.split(":").map(Number);

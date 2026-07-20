@@ -5,10 +5,9 @@ import { useState } from "react";
 import {
   DAY_LABELS,
   parseBusinessHours,
+  WEEK_DISPLAY_ORDER,
   type DayHours,
 } from "@/lib/business-hours";
-
-const WEEK_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 const EMPTY_WEEK: DayHours[] = [null, null, null, null, null, null, null];
 const DEFAULT_DAY: NonNullable<DayHours> = { open: "08:00", close: "18:00" };
 
@@ -18,11 +17,23 @@ type BusinessHoursEditorProps = {
   defaultValue: unknown;
 };
 
+function lenientDay(entry: unknown): DayHours {
+  if (entry === null || typeof entry !== "object") return null;
+  const { open, close } = entry as { open?: unknown; close?: unknown };
+  if (typeof open !== "string" || typeof close !== "string") return null;
+  // Mantém o que o usuário digitou, mesmo inválido — a validação é do servidor.
+  return { open, close };
+}
+
 function parseDefault(value: unknown): DayHours[] {
   if (typeof value === "string") {
     if (!value) return [...EMPTY_WEEK];
     try {
-      return parseBusinessHours(JSON.parse(value)) ?? [...EMPTY_WEEK];
+      const parsed: unknown = JSON.parse(value);
+      if (Array.isArray(parsed) && parsed.length === 7) {
+        return parsed.map(lenientDay);
+      }
+      return [...EMPTY_WEEK];
     } catch {
       return [...EMPTY_WEEK];
     }
@@ -61,6 +72,7 @@ export function BusinessHoursEditor({ defaultValue }: BusinessHoursEditorProps) 
             </span>
             <label className="flex cursor-pointer items-center gap-2 text-xs text-ink-muted">
               <input
+                aria-label={`${DAY_LABELS[index]} aberto`}
                 checked={day !== null}
                 onChange={(e) =>
                   setDay(index, e.target.checked ? { ...DEFAULT_DAY } : null)
@@ -72,6 +84,7 @@ export function BusinessHoursEditor({ defaultValue }: BusinessHoursEditorProps) 
             {day ? (
               <>
                 <input
+                  aria-label={`Abertura de ${DAY_LABELS[index]}`}
                   className="min-h-9 rounded-lg border border-paper-soft bg-white px-2 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   onChange={(e) => setDay(index, { ...day, open: e.target.value })}
                   type="time"
@@ -79,6 +92,7 @@ export function BusinessHoursEditor({ defaultValue }: BusinessHoursEditorProps) 
                 />
                 <span className="text-xs text-ink-muted">até</span>
                 <input
+                  aria-label={`Fechamento de ${DAY_LABELS[index]}`}
                   className="min-h-9 rounded-lg border border-paper-soft bg-white px-2 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
                   onChange={(e) => setDay(index, { ...day, close: e.target.value })}
                   type="time"

@@ -406,12 +406,12 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           </div>
         </div>
 
-        <div className="grid gap-2">
-          <p className={labelClass}>Horário de funcionamento</p>
+        <fieldset className="grid gap-2">
+          <legend className={`${labelClass} mb-2`}>Horário de funcionamento</legend>
           <BusinessHoursEditor
             defaultValue={values?.businessHours ?? profile?.businessHours ?? null}
           />
-        </div>
+        </fieldset>
       </div>
 
       {/* ── Aparência ─────────────────────────────── */}
