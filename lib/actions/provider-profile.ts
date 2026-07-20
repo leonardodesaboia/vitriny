@@ -24,6 +24,11 @@ export type ProviderProfileFormValues = {
   pixCity: string;
   themePreset: ProviderThemePreset;
   businessType: BusinessType;
+  address: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  businessHours: string;
 };
 
 export type ProviderProfileFormState =
@@ -59,7 +64,12 @@ function readProviderProfileFormValues(
     pixHolderName: formValue(formData, "pixHolderName"),
     pixCity: formValue(formData, "pixCity"),
     themePreset: (themePreset || "DEFAULT") as ProviderThemePreset,
-    businessType: (businessType || "SERVICES") as BusinessType
+    businessType: (businessType || "SERVICES") as BusinessType,
+    address: formValue(formData, "address"),
+    instagram: formValue(formData, "instagram"),
+    facebook: formValue(formData, "facebook"),
+    tiktok: formValue(formData, "tiktok"),
+    businessHours: formValue(formData, "businessHours")
   };
 }
 
@@ -98,14 +108,15 @@ export async function saveProviderProfile(
     };
   }
 
+  const { businessHours, ...profileData } = parsed.data;
+
   const dataToSave = {
-    ...parsed.data,
+    ...profileData,
+    businessHours: businessHours ?? Prisma.DbNull,
     themePreset:
       currentProfile?.plan === "PRO"
         ? parsed.data.themePreset
-        : currentProfile?.themePreset ?? "DEFAULT",
-    // Prisma requires Prisma.JsonNull (not plain null) for nullable JSON columns.
-    businessHours: parsed.data.businessHours ?? Prisma.JsonNull
+        : currentProfile?.themePreset ?? "DEFAULT"
   };
 
   try {
