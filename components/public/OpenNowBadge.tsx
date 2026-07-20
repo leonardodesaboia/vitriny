@@ -31,7 +31,7 @@ export function OpenNowBadge({ businessHours }: { businessHours: unknown }) {
   const label = getTodayLabel(hours, now);
 
   return (
-    <span className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
+    <span className="inline-flex min-h-8 items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3 py-1 text-xs font-semibold text-white">
       <span
         className={`h-2 w-2 rounded-full ${open ? "bg-emerald-400" : "bg-red-400"}`}
       />
