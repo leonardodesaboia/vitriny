@@ -116,6 +116,14 @@ model ProviderProfile {
   pixHolderName String?
   pixCity       String?
   businessType BusinessType @default(SERVICES)
+  address       String?
+  instagram     String?
+  facebook      String?
+  tiktok        String?
+  // Horário de funcionamento: array JSON de 7 posições (0 = domingo),
+  // cada uma { open, close } em "HH:MM" ou null (fechado). Validado por Zod
+  // na escrita e por parseBusinessHours na leitura.
+  businessHours Json?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
