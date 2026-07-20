@@ -8,20 +8,25 @@ import {
   parseBusinessHours,
 } from "@/lib/business-hours";
 
-function useClientNow(): Date | null {
+const emptySubscribe = () => () => {};
+
+// Gate de hidratação: false no servidor, true no cliente. Snapshots booleanos
+// são estáveis para Object.is, ao contrário de retornar `new Date()` aqui.
+function useIsClient(): boolean {
   return useSyncExternalStore(
-    () => () => {},
-    () => new Date(),
-    () => null,
+    emptySubscribe,
+    () => true,
+    () => false,
   );
 }
 
 export function OpenNowBadge({ businessHours }: { businessHours: unknown }) {
-  const now = useClientNow();
+  const isClient = useIsClient();
 
   const hours = parseBusinessHours(businessHours);
-  if (!now || !hours) return null;
+  if (!isClient || !hours) return null;
 
+  const now = new Date();
   const open = isOpenAt(hours, now);
   const label = getTodayLabel(hours, now);
 
