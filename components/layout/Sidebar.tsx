@@ -130,7 +130,9 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [expanded, setExpanded] = useState(false);
+  // Expandido por padrão para novos usuários (rótulos visíveis); a preferência
+  // persiste em localStorage. Ver docs/UX_UI_AUDIT.md P1.
+  const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -263,11 +265,18 @@ export function Sidebar() {
 
         <nav className="flex flex-col gap-1 px-2 py-2">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
+                title={item.label}
+                aria-current={active ? "page" : undefined}
                 className={[
                   "relative flex min-h-10 items-center gap-3 rounded-md px-2",
                   "text-sm font-medium transition-colors",
@@ -276,7 +285,10 @@ export function Sidebar() {
                     : "text-ink-muted hover:bg-paper hover:text-ink",
                 ].join(" ")}
               >
-                <span className="flex w-5 shrink-0 items-center justify-center">
+                <span
+                  aria-hidden="true"
+                  className="flex w-5 shrink-0 items-center justify-center"
+                >
                   {item.icon}
                 </span>
                 <AnimatePresence>

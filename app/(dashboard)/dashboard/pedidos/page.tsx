@@ -241,10 +241,10 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
             </div>
           ) : null}
 
-          <div className="mb-5 overflow-x-auto pb-1">
+          <div className="mb-5">
             <nav
               aria-label="Filtrar pedidos por status"
-              className="flex min-w-max gap-2"
+              className="flex flex-wrap gap-2"
             >
               {statusFilters.map((filter) => {
                 const active = !activeView && filter.value === activeStatus;

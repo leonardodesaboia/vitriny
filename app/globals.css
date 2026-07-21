@@ -7,7 +7,8 @@
   --color-paper: 245 240 232;
   --color-paper-soft: 237 232 222;
   --color-ink: 28 25 23;
-  --color-ink-muted: 120 113 108;
+  /* ~5.2:1 sobre --color-paper (WCAG AA para texto normal). Ver docs/UX_UI_AUDIT.md P2. */
+  --color-ink-muted: 107 99 93;
   --color-leaf: 27 94 59;
   --color-leaf-hover: 45 122 82;
   --color-mint: 212 235 217;
@@ -21,7 +22,7 @@
   --color-paper: 245 240 232;
   --color-paper-soft: 237 232 222;
   --color-ink: 28 25 23;
-  --color-ink-muted: 120 113 108;
+  --color-ink-muted: 107 99 93;
   --color-leaf: 27 94 59;
   --color-leaf-hover: 45 122 82;
   --color-mint: 212 235 217;

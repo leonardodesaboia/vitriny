@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -16,7 +15,6 @@ import {
 } from "@/components/onboarding/OnboardingChecklist";
 import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { profileLinkMessage } from "@/lib/whatsapp-messages";
-import { Card } from "@/components/ui/Card";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import {
   buildMonthlyRevenueSummary,
@@ -354,66 +352,6 @@ export default async function DashboardPage() {
           ]}
         />
       ) : null}
-
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Vitrine
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            {profile ? profile.businessName : "Criar vitrine"}
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            {profile
-              ? profile.isPublished
-                ? `Publicado em /u/${profile.slug}`
-                : "Vitrine criada, mas não publicada"
-              : "Você ainda não criou sua vitrine pública."}
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-            href="/dashboard/perfil"
-          >
-            {profile ? "Editar vitrine" : "Criar vitrine"}
-          </Link>
-        </Card>
-
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Itens da vitrine
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            Seus produtos e serviços
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            Cadastre os itens que você oferece para exibir na vitrine pública.
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-            href="/dashboard/servicos"
-          >
-            Gerenciar itens
-          </Link>
-        </Card>
-
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Pedidos
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            Pedidos recebidos
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            Veja os pedidos enviados pela vitrine e crie propostas quando necessário.
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-            href="/dashboard/pedidos"
-          >
-            Ver pedidos
-          </Link>
-        </Card>
-      </div>
     </div>
   );
 }
