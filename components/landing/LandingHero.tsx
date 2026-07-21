@@ -31,16 +31,6 @@ export function LandingHero() {
       <div className="mx-auto grid max-w-6xl gap-16 px-6 pb-24 pt-20 md:grid-cols-[1fr_1.2fr] md:items-center md:pb-32 md:pt-28">
         {/* Left */}
         <div>
-          <motion.span
-            custom={0}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="inline-flex items-center gap-2 rounded-full border border-mint bg-white px-3 py-1 text-xs font-semibold text-leaf"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-leaf" />
-            Para pequenos negócios
-          </motion.span>
 
           <motion.h1
             custom={1}
@@ -98,15 +88,6 @@ export function LandingHero() {
             </a>
           </motion.div>
 
-          <motion.p
-            custom={4}
-            variants={fadeUp}
-            initial="hidden"
-            animate="show"
-            className="mt-4 text-xs text-ink-muted"
-          >
-            Grátis para sempre · Sem cartão de crédito
-          </motion.p>
         </div>
 
         {/* Right — browser mockup */}
