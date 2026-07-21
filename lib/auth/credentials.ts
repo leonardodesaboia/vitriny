@@ -8,10 +8,6 @@ export class InvalidCredentialsError extends CredentialsSignin {
   code = "invalid-credentials";
 }
 
-export class GoogleOnlyAccountError extends CredentialsSignin {
-  code = "google-account";
-}
-
 export class EmailNotVerifiedError extends CredentialsSignin {
   code = "email-not-verified";
 }
@@ -31,8 +27,11 @@ export async function authorizeCredentials(credentials: unknown) {
     throw new InvalidCredentialsError();
   }
 
+  // Conta sem senha é Google-only. Devolve o mesmo erro genérico do login
+  // inválido: distinguir aqui (antes de validar a senha) revelaria a existência
+  // e o método da conta, permitindo enumeração — mesma postura do "esqueci a senha".
   if (!user.password) {
-    throw new GoogleOnlyAccountError();
+    throw new InvalidCredentialsError();
   }
 
   const valid = await bcrypt.compare(parsed.data.password, user.password);

@@ -4,6 +4,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { after } from "next/server";
 import { AuthError, CredentialsSignin } from "next-auth";
 import { Prisma } from "@prisma/client";
 
@@ -183,19 +184,20 @@ export async function requestPasswordReset(formData: FormData) {
     ]);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+    const resetUrl = `${appUrl.replace(/\/$/, "")}/redefinir-senha/${token}`;
 
-    try {
-      await sendPasswordResetEmail(
-        parsed.data.email,
-        `${appUrl.replace(/\/$/, "")}/redefinir-senha/${token}`
-      );
-    } catch (error) {
-      // A resposta precisa ser idêntica em todos os casos para não revelar
-      // quais e-mails têm conta; falha de envio não pode virar erro visível.
-      console.error("Falha ao enviar e-mail de redefinição de senha.", {
-        error
-      });
-    }
+    // Envio fora do caminho de resposta: iguala o tempo de resposta entre conta
+    // existente e inexistente (não enumera por timing) e não trava a UI. A
+    // resposta é idêntica em todos os casos; falha de envio nunca vira erro visível.
+    after(async () => {
+      try {
+        await sendPasswordResetEmail(parsed.data.email, resetUrl);
+      } catch (error) {
+        console.error("Falha ao enviar e-mail de redefinição de senha.", {
+          error
+        });
+      }
+    });
   }
 
   redirect("/esqueci-senha?sent=1");
@@ -276,18 +278,22 @@ export async function resendEmailVerification(formData: FormData) {
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+    const email = user.email;
+    const verificationUrl = getEmailVerificationUrl(appUrl, verification.token);
+    const userId = user.id;
 
-    try {
-      await sendEmailVerificationEmail(
-        user.email,
-        getEmailVerificationUrl(appUrl, verification.token),
-      );
-    } catch (error) {
-      console.error("Falha ao reenviar confirmação de cadastro.", {
-        error,
-        userId: user.id,
-      });
-    }
+    // Envio fora do caminho de resposta: iguala o tempo de resposta e não trava
+    // a UI. Resposta idêntica para conta pendente, inexistente ou já verificada.
+    after(async () => {
+      try {
+        await sendEmailVerificationEmail(email, verificationUrl);
+      } catch (error) {
+        console.error("Falha ao reenviar confirmação de cadastro.", {
+          error,
+          userId,
+        });
+      }
+    });
   }
 
   redirect("/verifique-seu-email?sent=1");
@@ -301,7 +307,7 @@ export async function resetPassword(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const token = String(formData.get("token") ?? "");
+    const token = encodeURIComponent(String(formData.get("token") ?? ""));
     redirect(`/redefinir-senha/${token}?error=invalid`);
   }
 

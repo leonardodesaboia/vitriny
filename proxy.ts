@@ -21,6 +21,9 @@ const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
   "/login": { limit: 10, windowMs: 60_000 },
   // Requisição de reset de senha (Server Action em /esqueci-senha)
   "/esqueci-senha": { limit: 5, windowMs: 300_000 },
+  // Submissão da nova senha (Server Action em /redefinir-senha/[token]) — evita
+  // abuso de bcrypt e brute force do token.
+  "/redefinir-senha": { limit: 5, windowMs: 300_000 },
   // Criação de conta (Server Action em /cadastro)
   "/cadastro": { limit: 5, windowMs: 300_000 },
   // Reenvio e confirmação de e-mail
@@ -110,6 +113,7 @@ export const config = {
     "/cadastro",
     "/verifique-seu-email",
     "/verificar-email/:path*",
+    "/redefinir-senha/:path*",
     "/u/:slug/orcamento",
     "/u/:slug/reserva/:requestId",
   ],

@@ -13,7 +13,6 @@ const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-mut
 
 const errorMessages: Record<string, string> = {
   "invalid-credentials": "E-mail ou senha incorretos.",
-  "google-account": "Este e-mail está cadastrado com Google. Entre com Google.",
   "email-not-verified": "Confirme seu e-mail antes de entrar.",
   OAuthAccountNotLinked: "Este e-mail já está cadastrado com outro método de login.",
   auth: "Não foi possível entrar. Tente novamente."

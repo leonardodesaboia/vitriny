@@ -22,6 +22,12 @@ vi.mock("@/lib/email", () => ({
   sendEmailVerificationEmail: vi.fn(),
   sendPasswordResetEmail: vi.fn(),
 }));
+// after() exige request scope do Next; nos testes executa o callback direto.
+vi.mock("next/server", () => ({
+  after: (callback: () => unknown) => {
+    void callback();
+  },
+}));
 
 let db: PrismaMock;
 
@@ -238,6 +244,7 @@ describe("requestPasswordReset", () => {
       password: "hash",
       emailVerified: new Date(),
     });
+    const { sendPasswordResetEmail } = await import("@/lib/email");
     const { requestPasswordReset } = await import("@/lib/actions/auth");
 
     await expect(
@@ -247,6 +254,11 @@ describe("requestPasswordReset", () => {
     const createArg = db.passwordResetToken.create.mock.calls[0][0];
     expect(createArg.data.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     expect(createArg.data.token).toBeUndefined();
+    // Enviado via after(), fora do caminho de resposta (timing uniforme).
+    expect(sendPasswordResetEmail).toHaveBeenCalledWith(
+      "ana@example.com",
+      expect.stringMatching(/^https:\/\/app\.test\/redefinir-senha\/[a-f0-9]{64}$/),
+    );
   });
 });
 

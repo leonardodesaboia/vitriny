@@ -174,6 +174,10 @@ Schemas ficam em `lib/validations/`:
 
 O pedido público exige pelo menos e-mail ou telefone e um item da vitrine selecionado (não existe pedido genérico sem item). Regras dependentes do serviço são validadas novamente na Server Action: descrição para `CUSTOM`, dados completos de agendamento quando configurados e data real não passada.
 
+## Fuso horário
+
+As funções de data em `lib/utils/date.ts` (`getCurrentMonthRange`, `startOfLocalDay`, `isProposalExpired`) e o parse de `validUntil` usam horário local do processo. Como o produto é do Brasil, `instrumentation.ts` fixa `process.env.TZ = "America/Sao_Paulo"` (Brasil não tem horário de verão desde 2019) quando `TZ` não vem do ambiente. Sem isso, um servidor em UTC calcularia o reset do limite mensal e a expiração de proposta na meia-noite UTC (21h de Brasília), errando o dia por ~3h. O deploy pode sobrescrever definindo `TZ`. A expiração do Pix (`isPixPaymentExpired`) usa diferença absoluta em ms e independe do fuso.
+
 ## Planos e limites
 
 As regras de limites ficam centralizadas em `lib/plan-limits.ts`.
@@ -210,6 +214,7 @@ Limites `FREE`:
 - Senha de usuário sempre hash bcrypt, nunca texto puro.
 - E-mail duplicado entre Google e e-mail/senha é bloqueado, nunca vinculado automaticamente.
 - "Esqueci minha senha" nunca revela se um e-mail existe no sistema (mesma resposta em todos os casos).
+- O login por credenciais responde `invalid-credentials` genérico também para conta Google-only (sem senha): não revela existência nem método da conta antes de validar a senha. O aviso `email-not-verified` só aparece após a senha correta, então não serve para enumeração.
 
 ## Testes
 

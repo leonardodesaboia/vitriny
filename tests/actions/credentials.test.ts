@@ -57,6 +57,26 @@ describe("authorizeCredentials", () => {
     expect(bcrypt.compare).toHaveBeenCalledWith("password123", "hash");
   });
 
+  it("não revela conta Google (sem senha): devolve erro genérico", async () => {
+    const bcrypt = (await import("bcryptjs")).default;
+    db.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      name: "Ana",
+      email: "ana@example.com",
+      password: null,
+      emailVerified: new Date(),
+    });
+
+    const { authorizeCredentials } = await import("@/lib/auth/credentials");
+
+    await expect(
+      authorizeCredentials({ email: "ana@example.com", password: "password123" }),
+    ).rejects.toMatchObject({ code: "invalid-credentials" });
+    // Não deve nem chegar a comparar senha — conta sem senha é indistinguível
+    // de credenciais inválidas para quem está de fora.
+    expect(bcrypt.compare).not.toHaveBeenCalled();
+  });
+
   it("não revela conta pendente quando a senha está errada", async () => {
     const bcrypt = (await import("bcryptjs")).default;
     vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
