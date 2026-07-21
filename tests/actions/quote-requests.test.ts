@@ -579,7 +579,10 @@ describe("reopenPixReservation", () => {
     ).rejects.toThrow("/dashboard/pedidos");
 
     expect(db.quoteRequest.update).toHaveBeenCalledWith({
-      data: { pixReservationRequestedAt: expect.any(Date) },
+      data: {
+        pixReservationRequestedAt: expect.any(Date),
+        pixReservationClientPaidAt: null
+      },
       where: { id: "request-1" }
     });
     expect(sendPixReservationReopenedEmail).toHaveBeenCalledWith(
@@ -589,6 +592,25 @@ describe("reopenPixReservation", () => {
         reservaUrl: expect.stringContaining("/u/vitriny/reserva/request-1")
       })
     );
+  });
+
+  it("limpa o sinal 'já paguei' da janela anterior ao reabrir", async () => {
+    setup({ pixReservationClientPaidAt: new Date(Date.now() - 60 * 60 * 1000) });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: {
+        pixReservationRequestedAt: expect.any(Date),
+        pixReservationClientPaidAt: null
+      },
+      where: { id: "request-1" }
+    });
   });
 
   it("não reabre reserva dentro do prazo", async () => {

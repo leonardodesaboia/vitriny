@@ -307,7 +307,12 @@ export async function reopenPixReservation(formData: FormData) {
 
   await prisma.quoteRequest.update({
     where: { id: quoteRequest.id },
-    data: { pixReservationRequestedAt: new Date() }
+    data: {
+      pixReservationRequestedAt: new Date(),
+      // Nova janela de pagamento: zera o sinal "já paguei" da janela anterior
+      // para a reserva reaberta não renderizar presa em "pagamento informado".
+      pixReservationClientPaidAt: null
+    }
   });
 
   const customerEmail = quoteRequest.customerEmail;
