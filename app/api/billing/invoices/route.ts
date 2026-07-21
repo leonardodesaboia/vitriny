@@ -4,6 +4,8 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   const session = await auth();
 

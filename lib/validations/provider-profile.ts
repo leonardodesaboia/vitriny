@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { TIME_REGEX } from "@/lib/business-hours";
+import { normalizeSocialUrl, type SocialNetwork } from "@/lib/social-links";
 import { formatPhoneBR, isValidPhoneBR } from "@/lib/utils/phone";
 import {
   isValidPixKey,
@@ -31,6 +33,48 @@ const optionalPhone = optionalText.pipe(
     .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
     .transform((value) => (value ? formatPhoneBR(value) : null))
 );
+
+const dayHoursSchema = z
+  .object({
+    open: z.string().regex(TIME_REGEX, "Horário inválido."),
+    close: z.string().regex(TIME_REGEX, "Horário inválido.")
+  })
+  .nullable()
+  .refine(
+    (day) => day === null || day.open !== day.close,
+    "Horários de abertura e fechamento não podem ser iguais."
+  );
+
+const businessHoursSchema = z
+  .preprocess(
+    (value) => {
+      if (value == null || value === "") return null;
+      if (typeof value !== "string") return value;
+      try {
+        return JSON.parse(value);
+      } catch {
+        // Valor não-JSON cai na união e falha com mensagem de horários inválidos.
+        return value;
+      }
+    },
+    z.union(
+      [z.array(dayHoursSchema).length(7, "Horários incompletos."), z.null()],
+      { error: "Horários inválidos." }
+    )
+  )
+  .transform((days) => (days?.some((day) => day !== null) ? days : null));
+
+const optionalSocial = (network: SocialNetwork) =>
+  optionalText.pipe(
+    z
+      .string()
+      .max(120, "Use no máximo 120 caracteres.")
+      .nullable()
+      .refine(
+        (value) => value === null || normalizeSocialUrl(network, value) !== null,
+        "Informe um @usuario ou link válido."
+      )
+  );
 
 export const providerProfileSchema = z
   .object({
@@ -78,7 +122,14 @@ export const providerProfileSchema = z
       z.string().max(80, "Use no máximo 80 caracteres.").nullable()
     ),
     themePreset: providerThemePresetSchema.default("DEFAULT"),
-    businessType: businessTypeSchema.default("SERVICES")
+    businessType: businessTypeSchema.default("SERVICES"),
+    address: optionalText.pipe(
+      z.string().max(160, "Use no máximo 160 caracteres.").nullable()
+    ),
+    instagram: optionalSocial("instagram"),
+    facebook: optionalSocial("facebook"),
+    tiktok: optionalSocial("tiktok"),
+    businessHours: businessHoursSchema
   })
   .superRefine((data, ctx) => {
     const hasPixKey = Boolean(data.pixKey);

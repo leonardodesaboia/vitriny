@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 // Crawlers consultam o sitemap com frequência; 1h de cache evita uma query
 // por hit sem atrasar de forma relevante a entrada de vitrines novas.
+export const dynamic = "force-dynamic";
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

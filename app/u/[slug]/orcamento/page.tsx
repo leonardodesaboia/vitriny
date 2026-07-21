@@ -22,6 +22,8 @@ type PublicQuoteRequestPageProps = {
   }>;
 };
 
+export const dynamic = "force-dynamic";
+
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do pedido.",
   service: "O item selecionado não está disponível.",

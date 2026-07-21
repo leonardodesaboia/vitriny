@@ -6,6 +6,8 @@ import { canUseServiceImages } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { uploadToStorage, deleteFromStorage } from "@/lib/storage";
 
+export const dynamic = "force-dynamic";
+
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
 
 function detectImageMimeType(buf: Buffer): string | null {

@@ -4,6 +4,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children
 }: {
