@@ -110,7 +110,7 @@ Funciona hoje:
 - **modos de venda (`saleMode`)**: Sob consulta, Preço fixo solicitar primeiro, Preço fixo pagar via Pix — abstrações de UI centralizadas em `lib/service-sale-mode.ts`;
 - itens com tipos de preço (`FIXED` / `CUSTOM`): FIXED exige `basePrice`, exibido publicamente; CUSTOM fica sob orçamento;
 - itens com `requiresSchedulingDetails` (Boolean, default false): quando true, data futura ou atual, horário/período e local são obrigatórios no navegador e no servidor;
-- itens com imagem (feature PRO): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público apenas quando `plan === "PRO"`; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
+- itens com imagem (todos os planos): `imageUrl String?` e `imageStorageKey String?`; upload via `POST /api/services/[id]/image`, remoção via `DELETE`; imagem exibida no card público em qualquer plano; o limite de 3 itens do FREE já limita a 3 fotos; storage MinIO via `@aws-sdk/client-s3` em `lib/storage.ts`;
 - exclusão de item com confirmação (`deleteService`);
 - lista de itens colapsável — accordion idêntico ao padrão do painel de pedidos;
 - **pagamento Pix obrigatório para itens FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `REQUIRE_PIX_PAYMENT`); quando obrigatório, existe um único CTA "Pagar com Pix", o servidor impede bypass e redireciona para `/u/[slug]/reserva/[requestId]`; `fixedServiceAmount` é snapshot imutável e a confirmação é manual pelo negócio via `markPixReservationPaid`;

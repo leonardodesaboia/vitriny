@@ -155,8 +155,8 @@ describe("getCurrentMonthRange", () => {
 });
 
 describe("capacidades por plano", () => {
-  it("FREE não tem imagens nem temas; PRO tem ambos", () => {
-    expect(canUseServiceImages("FREE")).toBe(false);
+  it("FREE tem imagens mas não temas; PRO tem ambos", () => {
+    expect(canUseServiceImages("FREE")).toBe(true);
     expect(canUseThemePresets("FREE")).toBe(false);
     expect(canUseServiceImages("PRO")).toBe(true);
     expect(canUseThemePresets("PRO")).toBe(true);

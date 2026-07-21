@@ -38,7 +38,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Lista de itens colapsável com padrão accordion (expandir ao clicar)
 - Pagamento Pix obrigatório para itens com preço fixo, com confirmação manual
 - Entrada Pix em proposta aprovada
-- Imagem por item para usuários PRO
+- Imagem por item (disponível em todos os planos)
 - Geração autenticada de PDF de proposta
 - Temas globais de cores e fontes para usuários PRO
 - Filtro de pedidos por status

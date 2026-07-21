@@ -18,33 +18,46 @@ type PlanUsageItem = {
 type PlanUsageCardProps = {
   plan: PlanTier;
   usage: PlanUsageItem[];
+  // Na página de billing o BillingCard já exibe "Plano atual / {plano}"; ali
+  // passamos false para não duplicar o cabeçalho. Ver docs/UX_UI_AUDIT.md MF3.
+  showPlanHeader?: boolean;
 };
 
-export function PlanUsageCard({ plan, usage }: PlanUsageCardProps) {
+export function PlanUsageCard({
+  plan,
+  usage,
+  showPlanHeader = true
+}: PlanUsageCardProps) {
   return (
     <section className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Plano atual
-          </p>
-          <h2 className="mt-2 font-fraunces text-2xl font-bold text-ink">
-            {PLAN_NAMES[plan]}
-          </h2>
+      {showPlanHeader ? (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+              Plano atual
+            </p>
+            <h2 className="mt-2 font-fraunces text-2xl font-bold text-ink">
+              {PLAN_NAMES[plan]}
+            </h2>
+          </div>
+          {plan === "FREE" ? (
+            <a
+              href="/dashboard/billing"
+              className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white transition hover:bg-leaf-hover"
+            >
+              Assinar PRO
+            </a>
+          ) : (
+            <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
+              Plano PRO ativo
+            </span>
+          )}
         </div>
-        {plan === "FREE" ? (
-          <a
-            href="/dashboard/billing"
-            className="rounded-full bg-leaf px-3 py-1 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-          >
-            Assinar PRO
-          </a>
-        ) : (
-          <span className="rounded-full bg-mint px-3 py-1 text-xs font-semibold text-leaf">
-            Plano PRO ativo
-          </span>
-        )}
-      </div>
+      ) : (
+        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+          Uso do plano
+        </p>
+      )}
 
       <div className="mt-5 grid gap-3 md:grid-cols-4">
         {usage.map((item) => {

@@ -109,7 +109,7 @@ Route handlers autenticados ou server-to-server:
 
 - `/api/billing/invoices`: lista faturas do cliente Stripe autenticado.
 - `/api/proposals/[id]/pdf`: gera PDF de proposta aprovada ou recusada após validar autenticação e ownership.
-- `/api/services/[id]/image`: envia ou remove imagem de serviço após validar plano PRO e ownership.
+- `/api/services/[id]/image`: envia ou remove imagem de serviço após validar ownership (foto por item é disponível em todos os planos).
 - `/api/stripe/webhook`: recebe eventos Stripe com validação de assinatura.
 
 ## Decisões de produto
@@ -120,8 +120,8 @@ Route handlers autenticados ou server-to-server:
 - A página pública da proposta não usa ID interno.
 - O cliente não precisa de login.
 - Login do negócio é por Google OAuth ou e-mail/senha; GitHub OAuth foi removido.
-- O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas/imagens dependem do plano persistido no perfil.
-- **Recursos de identidade são FREE**: endereço, redes sociais e horário de funcionamento com badge "Aberto agora" ficam disponíveis em todos os planos. Identidade do negócio não é gatilho de upgrade; os limites PRO continuam nos recursos que o dono sente (itens, propostas, fotos, temas).
+- O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas visuais dependem do plano persistido no perfil. Foto por item é disponível em todos os planos.
+- **Recursos de identidade são FREE**: endereço, redes sociais e horário de funcionamento com badge "Aberto agora" ficam disponíveis em todos os planos. Identidade do negócio não é gatilho de upgrade; os limites PRO continuam nos recursos que o dono sente (itens e propostas ilimitados, temas visuais). Foto por item também é FREE — o limite de 3 itens já limita a 3 fotos.
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
 - **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
 - **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.

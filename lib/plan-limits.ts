@@ -54,7 +54,9 @@ export const PLAN_FEATURES: Record<
   PlanTier,
   { serviceImages: boolean; themePresets: boolean }
 > = {
-  FREE: { serviceImages: false, themePresets: false },
+  // Foto por item é FREE (o limite de 3 itens já limita a 3 fotos); o gatilho
+  // PRO fica em itens/propostas ilimitados e temas visuais. Ver backlog §8.2.
+  FREE: { serviceImages: true, themePresets: false },
   PRO: { serviceImages: true, themePresets: true }
 };
 

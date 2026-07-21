@@ -98,7 +98,7 @@ Campos importantes:
 - `pricingType`: tipo de precificação (`FIXED` ou `CUSTOM`). Default `CUSTOM`. Controla se o serviço tem preço fixo exibido publicamente ou se está sob orçamento.
 - `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. `REQUEST_ONLY` = apenas pedido normal; `REQUIRE_PIX_PAYMENT` = o cliente precisa pagar via Pix para concluir a solicitação.
 - `requiresSchedulingDetails`: quando `true`, formulário público exibe campos de data, horário e local.
-- `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente apenas quando `plan === "PRO"`.
+- `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente em qualquer plano (foto por item é FREE).
 
 ### QuoteRequest
 

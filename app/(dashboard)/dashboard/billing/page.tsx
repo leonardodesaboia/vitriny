@@ -105,6 +105,7 @@ export default async function BillingPage({
 
           <PlanUsageCard
             plan={profile.plan}
+            showPlanHeader={false}
             usage={[
               {
                 current: profile.services.filter((s) => s.isActive).length,

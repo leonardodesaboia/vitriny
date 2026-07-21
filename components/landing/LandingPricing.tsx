@@ -11,6 +11,7 @@ const [proPriceMain, proPriceCents] = PLAN_PRICES.PRO.split(",");
 const free = [
   "Vitrine pública com link próprio",
   "Até 3 itens ativos",
+  "Foto em cada item",
   "10 pedidos/mês",
   "5 propostas/mês",
   "1 template de proposta",
@@ -23,7 +24,6 @@ const pro = [
   "Pedidos ilimitados",
   "Propostas ilimitadas",
   "Templates ilimitados",
-  "Fotos nos itens da vitrine",
   "Temas visuais para sua página"
 ];
 
