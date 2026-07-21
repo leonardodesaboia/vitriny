@@ -45,6 +45,22 @@ export function PublicServicesGrid({
           const pixUnavailable = isPix && !service.pixConfigured;
           const href = `/u/${slug}/orcamento?serviceId=${service.id}`;
 
+          // Nome + preço + ação no rótulo, para o leitor de tela distinguir os
+          // itens (o preço e o CTA visíveis são aria-hidden). Ver docs P CJ-B.
+          const priceLabel = service.basePrice
+            ? service.pricingType === "FIXED"
+              ? formatMoney(service.basePrice)
+              : `a partir de ${formatMoney(service.basePrice)}`
+            : "sob consulta";
+          const actionLabel = pixUnavailable
+            ? "pagamento indisponível"
+            : isPix
+              ? "pagar com Pix"
+              : service.pricingType === "FIXED"
+                ? "solicitar"
+                : "solicitar orçamento";
+          const cardAriaLabel = `${service.name}, ${priceLabel}, ${actionLabel}`;
+
           return (
             <article
               key={service.id}
@@ -53,7 +69,7 @@ export function PublicServicesGrid({
               {!pixUnavailable && (
                 <Link
                   href={href}
-                  aria-label={service.name}
+                  aria-label={cardAriaLabel}
                   className="absolute inset-0 z-10 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-inset"
                 />
               )}

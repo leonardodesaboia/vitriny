@@ -161,11 +161,6 @@ export default async function PixReservationPage({ params }: PixReservationPageP
           </p>
         </div>
 
-        <div className="mt-6 flex gap-1">
-          <div className="h-1 flex-1 rounded-full bg-amber" />
-          <div className="h-1 flex-1 rounded-full bg-amber" />
-          <div className="h-1 flex-1 rounded-full bg-paper-soft" />
-        </div>
 
         {alreadyPaid ? (
           <div className="mt-8 rounded-xl border border-mint bg-mint/40 p-6">

@@ -111,6 +111,7 @@ export function QuoteRequestForm({
         <input
           className={inputClass}
           id="customerName"
+          maxLength={120}
           name="customerName"
           placeholder="Seu nome completo"
           required
@@ -126,6 +127,7 @@ export function QuoteRequestForm({
           <input
             className={inputClass}
             id="customerEmail"
+            maxLength={120}
             name="customerEmail"
             placeholder="seu@email.com"
             type="email"
@@ -143,6 +145,9 @@ export function QuoteRequestForm({
           />
         </div>
       </div>
+      <p className="-mt-3 text-xs text-ink-muted">
+        Informe ao menos um: e-mail ou telefone.
+      </p>
 
       {!selectedService && services.length > 0 ? (
         <div className="grid gap-2">
@@ -232,6 +237,7 @@ export function QuoteRequestForm({
         <textarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
           id="description"
+          maxLength={1200}
           name="description"
           placeholder={
             activeService?.pricingType === "CUSTOM"

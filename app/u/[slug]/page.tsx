@@ -28,6 +28,7 @@ const getProfile = cache(async (slug: string) => {
     where: { slug },
     select: {
       businessName: true,
+      businessType: true,
       description: true,
       phone: true,
       email: true,
@@ -112,6 +113,13 @@ export default async function PublicProviderProfilePage({
   );
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
+  // Rótulo do catálogo conforme o tipo do negócio. Ver docs/UX_UI_AUDIT.md P12.
+  const catalogLabel =
+    profile.businessType === "PRODUCTS"
+      ? "Produtos"
+      : profile.businessType === "SERVICES"
+        ? "Serviços"
+        : "Produtos e serviços";
   const locationDisplay = [profile.address, location]
     .filter(Boolean)
     .join(" · ");
@@ -182,8 +190,8 @@ export default async function PublicProviderProfilePage({
       {/* Hero */}
       <div className="grain relative bg-leaf px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-12">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-            Produtos e serviços{location ? ` · ${location}` : ""}
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            {catalogLabel}{location ? ` · ${location}` : ""}
           </p>
           <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
             {profile.businessName}
@@ -197,6 +205,15 @@ export default async function PublicProviderProfilePage({
             <p className="mt-5 max-w-2xl break-words text-base leading-7 text-white/80">
               {profile.description}
             </p>
+          ) : null}
+
+          {hasServices ? (
+            <a
+              href="#itens"
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+            >
+              Ver {catalogLabel.toLowerCase()} ↓
+            </a>
           ) : null}
         </div>
       </div>
@@ -338,11 +355,11 @@ export default async function PublicProviderProfilePage({
           ) : null}
 
           {/* Services */}
-          <div className="mt-12">
+          <div id="itens" className="mt-12 scroll-mt-6">
             {hasServices ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Produtos e serviços
+                  {catalogLabel}
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
                   O que ofereço
@@ -351,7 +368,7 @@ export default async function PublicProviderProfilePage({
             ) : (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Produtos e serviços
+                  {catalogLabel}
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
                   Em breve

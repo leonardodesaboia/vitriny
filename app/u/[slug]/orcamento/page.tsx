@@ -151,13 +151,6 @@ export default async function PublicQuoteRequestPage({
               {pageDescription}
             </p>
 
-            {/* Progress bar */}
-            <div className="mt-6 flex gap-1">
-              <div className="h-1 flex-1 rounded-full bg-amber" />
-              <div className="h-1 flex-1 rounded-full bg-paper-soft" />
-              <div className="h-1 flex-1 rounded-full bg-paper-soft" />
-            </div>
-
             {/* Service card with image */}
             {selectedService ? (
               <div className="mt-6 overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card">
@@ -175,7 +168,7 @@ export default async function PublicQuoteRequestPage({
                   </span>
                   <p className="mt-2 font-semibold text-ink">{selectedService.name}</p>
                   {selectedService.description ? (
-                    <p className="mt-1 text-sm leading-5 text-ink-muted line-clamp-3">
+                    <p className="mt-1 whitespace-pre-line break-words text-sm leading-5 text-ink-muted">
                       {selectedService.description}
                     </p>
                   ) : null}
