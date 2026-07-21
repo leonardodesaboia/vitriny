@@ -42,7 +42,7 @@ export default async function ResetPasswordPage({
             Este link é inválido ou já expirou.
           </p>
           <Link
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-ink px-5 text-sm font-semibold text-white transition hover:bg-ink/80"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
             href="/esqueci-senha"
           >
             Solicitar novo link
