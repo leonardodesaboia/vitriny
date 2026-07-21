@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { createService, updateService } from "@/lib/actions/services";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import { ItemCardPreview } from "@/components/services/ItemCardPreview";
 import {
   getServiceSaleMode,
@@ -266,7 +267,7 @@ export function ServiceForm({
           <label className="text-sm font-semibold text-ink" htmlFor={`description-${service?.id ?? "new"}`}>
             Descrição <span className="font-normal text-ink-muted">(opcional)</span>
           </label>
-          <textarea
+          <CharCountTextarea
             className="min-h-24 w-full min-w-0 rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={service?.description ?? ""}
             id={`description-${service?.id ?? "new"}`}
@@ -275,7 +276,6 @@ export function ServiceForm({
             onChange={(e) => setPreviewDescription(e.target.value)}
             placeholder="Descreva o item, o que está incluso e seus diferenciais…"
           />
-          <p className="text-xs text-ink-muted">Máximo 600 caracteres.</p>
         </div>
 
         {allowItemTypeSelection ? (

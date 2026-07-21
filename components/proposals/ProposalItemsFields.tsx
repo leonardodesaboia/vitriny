@@ -108,6 +108,7 @@ export function ProposalItemsFields({
                 <input
                   className="min-h-10 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
                   id={`itemDescription-${row.key}`}
+                  maxLength={200}
                   name="itemDescription"
                   onChange={(e) => updateRow(row.key, "description", e.target.value)}
                   placeholder="Ex: Mão de obra, Tinta, Visita técnica…"
@@ -128,6 +129,7 @@ export function ProposalItemsFields({
                   className="min-h-10 w-full rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
                   id={`itemQuantity-${row.key}`}
                   min="1"
+                  max="999"
                   name="itemQuantity"
                   onChange={(e) => updateRow(row.key, "quantity", e.target.value)}
                   required

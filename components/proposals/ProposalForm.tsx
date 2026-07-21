@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { ProposalItemsFields } from "@/components/proposals/ProposalItemsFields";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import { createProposal, type ProposalFormState } from "@/lib/actions/proposals";
 
 type PricingMode = "SIMPLE" | "ITEMIZED";
@@ -70,7 +71,7 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
           Mensagem ao cliente{" "}
           <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
-        <textarea
+        <CharCountTextarea
           className="min-h-24 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
           defaultValue={initialValues?.description ?? ""}
           id="description"

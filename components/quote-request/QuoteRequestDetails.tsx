@@ -9,6 +9,7 @@ import {
   updateQuoteRequestNote
 } from "@/lib/actions/quote-request-notes";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import {
   buildWaUrl,
   pixDepositMessage,
@@ -528,7 +529,7 @@ export function QuoteRequestDetails({
                     {returnTo ? (
                       <input type="hidden" name="returnTo" value={returnTo} />
                     ) : null}
-                    <textarea
+                    <CharCountTextarea
                       name="content"
                       defaultValue={note.content}
                       maxLength={1000}
@@ -600,7 +601,7 @@ export function QuoteRequestDetails({
           >
             Nova nota interna
           </label>
-          <textarea
+          <CharCountTextarea
             className="min-h-20 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none focus:border-leaf"
             id={`note-${quoteRequest.id}`}
             maxLength={1000}

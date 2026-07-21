@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { createQuoteRequest, type QuoteRequestFormState } from "@/lib/actions/quote-requests";
 import { DateInput } from "@/components/ui/DateInput";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import type { ServiceSummary } from "@/types";
 
 type SelectedService = {
@@ -234,7 +235,7 @@ export function QuoteRequestForm({
             ? "Descreva o que você precisa *"
             : "Observações adicionais"}
         </label>
-        <textarea
+        <CharCountTextarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
           id="description"
           maxLength={1200}

@@ -8,6 +8,7 @@ import {
   type ProviderProfileFormState,
 } from "@/lib/actions/provider-profile";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import { canUseThemePresets } from "@/lib/plan-limits";
 import { THEME_PRESET_OPTIONS } from "@/lib/theme-presets";
 import { BusinessHoursEditor } from "@/components/provider-profile/BusinessHoursEditor";
@@ -172,6 +173,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             className={inputClass}
             defaultValue={values?.businessName ?? profile?.businessName ?? ""}
             id="businessName"
+            maxLength={120}
             name="businessName"
             placeholder="Ex: Studio da Ana, Pinturas Silva"
             required
@@ -191,6 +193,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className="min-h-11 w-full rounded-lg border border-paper-soft bg-white pl-8 pr-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
               defaultValue={values?.slug ?? profile?.slug ?? ""}
               id="slug"
+              maxLength={60}
               name="slug"
               onChange={(e) => setSlug(e.target.value.toLowerCase())}
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
@@ -228,10 +231,11 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             Descrição{" "}
             <span className="font-normal text-ink-muted">(opcional)</span>
           </label>
-          <textarea
+          <CharCountTextarea
             className="min-h-28 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
             defaultValue={values?.description ?? profile?.description ?? ""}
             id="description"
+            maxLength={600}
             name="description"
             placeholder="Conte um pouco sobre o seu negócio, especialidades e diferenciais…"
           />
@@ -301,6 +305,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.email ?? profile?.email ?? userEmail ?? ""}
               id="email"
+              maxLength={120}
               name="email"
               placeholder="contato@seunegocio.com"
               type="email"
@@ -318,6 +323,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.city ?? profile?.city ?? ""}
               id="city"
+              maxLength={80}
               name="city"
               placeholder="São Paulo"
               type="text"
@@ -333,6 +339,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.state ?? profile?.state ?? ""}
               id="state"
+              maxLength={80}
               name="state"
               placeholder="SP"
               type="text"
@@ -349,6 +356,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             className={inputClass}
             defaultValue={values?.address ?? profile?.address ?? ""}
             id="address"
+            maxLength={160}
             name="address"
             placeholder="Rua, número e bairro — vira link para o Google Maps"
             type="text"
@@ -372,6 +380,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.instagram ?? profile?.instagram ?? ""}
               id="instagram"
+              maxLength={120}
               name="instagram"
               placeholder="@seunegocio"
               type="text"
@@ -386,6 +395,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.facebook ?? profile?.facebook ?? ""}
               id="facebook"
+              maxLength={120}
               name="facebook"
               placeholder="@seunegocio"
               type="text"
@@ -400,6 +410,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
               className={inputClass}
               defaultValue={values?.tiktok ?? profile?.tiktok ?? ""}
               id="tiktok"
+              maxLength={120}
               name="tiktok"
               placeholder="@seunegocio"
               type="text"
@@ -513,6 +524,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             className={inputClass}
             defaultValue={values?.pixKey ?? profile?.pixKey ?? ""}
             id="pixKey"
+            maxLength={140}
             name="pixKey"
             placeholder="CPF, e-mail, telefone ou chave aleatória"
             type="text"
@@ -546,6 +558,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             className={inputClass}
             defaultValue={values?.pixHolderName ?? profile?.pixHolderName ?? ""}
             id="pixHolderName"
+            maxLength={120}
             name="pixHolderName"
             placeholder="Nome como aparece na conta Pix"
             type="text"
@@ -560,6 +573,7 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
             className={inputClass}
             defaultValue={values?.pixCity ?? profile?.pixCity ?? ""}
             id="pixCity"
+            maxLength={80}
             name="pixCity"
             placeholder="Ex: São Paulo"
             type="text"

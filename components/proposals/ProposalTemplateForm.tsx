@@ -7,6 +7,7 @@ import {
   updateProposalTemplate
 } from "@/lib/actions/proposal-templates";
 import { ProposalItemsFields } from "@/components/proposals/ProposalItemsFields";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import type { ProposalTemplateData, ActionResult } from "@/types";
 
 type ProposalTemplateFormProps = {
@@ -51,6 +52,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
             className="min-h-11 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
             defaultValue={template?.name ?? ""}
             id={`name-${template?.id ?? "new"}`}
+            maxLength={120}
             name="name"
             required
             type="text"
@@ -68,6 +70,7 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
             className="min-h-11 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
             defaultValue={template?.title ?? ""}
             id={`title-${template?.id ?? "new"}`}
+            maxLength={120}
             name="title"
             required
             type="text"
@@ -83,10 +86,11 @@ export function ProposalTemplateForm({ template }: ProposalTemplateFormProps) {
           Descrição sugerida{" "}
           <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
-        <textarea
+        <CharCountTextarea
           className="min-h-24 rounded-md border border-paper-soft bg-white px-3 py-3 text-sm outline-none focus:border-leaf"
           defaultValue={template?.description ?? ""}
           id={`description-${template?.id ?? "new"}`}
+          maxLength={1000}
           name="description"
           placeholder="Ex: Detalhes gerais do pedido ou item solicitado."
         />
