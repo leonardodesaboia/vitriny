@@ -329,7 +329,13 @@ export default async function PublicProviderProfilePage({
 
           {locationDisplay ? (
             <section
-              className={contacts.length > 0 || socialLinks.length > 0 ? "mt-6" : ""}
+              className={
+                contacts.length > 0 ||
+                socialLinks.length > 0 ||
+                customLinks.length > 0
+                  ? "mt-6"
+                  : ""
+              }
             >
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
                 Local
@@ -355,7 +361,10 @@ export default async function PublicProviderProfilePage({
           {hours ? (
             <section
               className={
-                contacts.length > 0 || socialLinks.length > 0 || locationDisplay
+                contacts.length > 0 ||
+                socialLinks.length > 0 ||
+                customLinks.length > 0 ||
+                locationDisplay
                   ? "mt-6"
                   : ""
               }

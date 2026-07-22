@@ -55,6 +55,7 @@ export function ProfileLinksFields({ initialLinks }: ProfileLinksFieldsProps) {
           key={row.key}
         >
           <input
+            aria-label="Rótulo do link"
             className={inputClass}
             maxLength={40}
             name="linkLabel"
@@ -64,6 +65,7 @@ export function ProfileLinksFields({ initialLinks }: ProfileLinksFieldsProps) {
             value={row.label}
           />
           <input
+            aria-label="URL do link"
             className={inputClass}
             inputMode="url"
             name="linkUrl"
