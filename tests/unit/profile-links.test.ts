@@ -60,6 +60,14 @@ describe("sanitizeProfileLinks", () => {
     expect(result.errors.length).toBe(1);
   });
 
+  it("rejeita URL com esquema perigoso", () => {
+    const result = sanitizeProfileLinks([
+      { label: "Site", url: "javascript:alert(1)" },
+    ]);
+    expect(result.links).toEqual([]);
+    expect(result.errors.length).toBe(1);
+  });
+
   it("rejeita rótulo muito longo", () => {
     const result = sanitizeProfileLinks([
       { label: "x".repeat(41), url: "exemplo.com" },
@@ -92,6 +100,15 @@ describe("parseProfileLinks", () => {
   it("ignora itens malformados", () => {
     expect(
       parseProfileLinks([{ label: "Site" }, 42, { label: "Ok", url: "https://x.com/" }])
+    ).toEqual([{ label: "Ok", url: "https://x.com/" }]);
+  });
+
+  it("descarta URLs com esquema não http(s) vindas do banco", () => {
+    expect(
+      parseProfileLinks([
+        { label: "Ruim", url: "javascript:alert(1)" },
+        { label: "Ok", url: "https://x.com/" },
+      ])
     ).toEqual([{ label: "Ok", url: "https://x.com/" }]);
   });
 });

@@ -34,6 +34,8 @@ export function sanitizeProfileLinks(
   const errors: string[] = [];
 
   for (const row of raw) {
+    if (links.length >= MAX_PROFILE_LINKS) break;
+
     const label = row.label.trim();
     const rawUrl = row.url.trim();
 
@@ -76,6 +78,12 @@ export function parseProfileLinks(value: unknown): ProfileLink[] {
         typeof (item as { url?: unknown }).url === "string"
       ) {
         const link = item as ProfileLink;
+        if (
+          !link.url.startsWith("http://") &&
+          !link.url.startsWith("https://")
+        ) {
+          return [];
+        }
         return [{ label: link.label, url: link.url }];
       }
       return [];
