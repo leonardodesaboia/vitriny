@@ -52,12 +52,12 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
 // checagens `plan === "PRO"` espalhadas.
 export const PLAN_FEATURES: Record<
   PlanTier,
-  { serviceImages: boolean; themePresets: boolean }
+  { serviceImages: boolean; themePresets: boolean; storefrontAnalytics: boolean }
 > = {
   // Foto por item é FREE (o limite de 3 itens já limita a 3 fotos); o gatilho
-  // PRO fica em itens/propostas ilimitados e temas visuais. Ver backlog §8.2.
-  FREE: { serviceImages: true, themePresets: false },
-  PRO: { serviceImages: true, themePresets: true }
+  // PRO fica em itens/propostas ilimitados, temas visuais e analytics detalhado.
+  FREE: { serviceImages: true, themePresets: false, storefrontAnalytics: false },
+  PRO: { serviceImages: true, themePresets: true, storefrontAnalytics: true }
 };
 
 export const canUseServiceImages = (plan: PlanTier) =>
@@ -65,6 +65,9 @@ export const canUseServiceImages = (plan: PlanTier) =>
 
 export const canUseThemePresets = (plan: PlanTier) =>
   PLAN_FEATURES[plan].themePresets;
+
+export const canUseStorefrontAnalytics = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].storefrontAnalytics;
 
 export const isPaidPlan = (plan: PlanTier) => plan !== "FREE";
 

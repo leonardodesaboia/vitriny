@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   canUseServiceImages,
   canUseThemePresets,
+  canUseStorefrontAnalytics,
   getPlanLimits,
   getPlanLimit,
   hasReachedLimit,
@@ -169,6 +170,13 @@ describe("capacidades por plano", () => {
 
   it("expõe o preço de cada plano", () => {
     expect(PLAN_PRICES.PRO).toBe("R$ 19,90");
+  });
+});
+
+describe("canUseStorefrontAnalytics", () => {
+  it("é PRO-only", () => {
+    expect(canUseStorefrontAnalytics("FREE")).toBe(false);
+    expect(canUseStorefrontAnalytics("PRO")).toBe(true);
   });
 });
 
