@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 
+import {
+  CATALOG_ITEM_TYPE_BADGE,
+  CATALOG_ITEM_TYPE_LABEL,
+} from "@/lib/catalog-item-type";
 import type { PublicService } from "@/types";
 
 function formatMoney(value: string) {
@@ -85,8 +89,8 @@ export function PublicServicesGrid({
               ) : null}
 
               <div className="flex flex-1 flex-col p-6">
-                <span className="mb-2 w-fit rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                  {service.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+                <span className={`mb-2 w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${CATALOG_ITEM_TYPE_BADGE[service.itemType]}`}>
+                  {CATALOG_ITEM_TYPE_LABEL[service.itemType]}
                 </span>
                 <h3 className="line-clamp-2 break-words font-jakarta text-base font-bold text-ink">
                   {service.name}

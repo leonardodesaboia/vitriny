@@ -1,6 +1,10 @@
 import Link from "next/link";
 
 import {
+  CATALOG_ITEM_TYPE_BADGE,
+  CATALOG_ITEM_TYPE_LABEL,
+} from "@/lib/catalog-item-type";
+import {
   getServiceSaleMode,
   SALE_MODE_BADGE_LABEL,
 } from "@/lib/service-sale-mode";
@@ -69,8 +73,8 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
               {formatDateShort(quoteRequest.createdAt)}
             </span>
             {quoteRequest.service ? (
-              <span className="hidden shrink-0 rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700 sm:inline-flex">
-                {quoteRequest.service.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+              <span className={`hidden shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold sm:inline-flex ${CATALOG_ITEM_TYPE_BADGE[quoteRequest.service.itemType]}`}>
+                {CATALOG_ITEM_TYPE_LABEL[quoteRequest.service.itemType]}
               </span>
             ) : null}
             {quoteRequest.service ? (

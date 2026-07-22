@@ -1,3 +1,7 @@
+import {
+  CATALOG_ITEM_TYPE_BADGE,
+  CATALOG_ITEM_TYPE_LABEL,
+} from "@/lib/catalog-item-type";
 import type { ServiceSaleMode } from "@/lib/service-sale-mode";
 import type { CatalogItemType } from "@/types/service";
 
@@ -24,8 +28,8 @@ export function ItemCardPreview({ name, description, basePrice, itemType, saleMo
   return (
     <div className="overflow-hidden rounded-xl border border-paper-soft bg-white shadow-card">
       <div className="flex flex-col p-4">
-        <span className="mb-2 w-fit rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-          {itemType === "PRODUCT" ? "Produto" : "Serviço"}
+        <span className={`mb-2 w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${CATALOG_ITEM_TYPE_BADGE[itemType]}`}>
+          {CATALOG_ITEM_TYPE_LABEL[itemType]}
         </span>
         <p className={`line-clamp-2 font-jakarta text-sm font-bold ${displayName ? "text-ink" : "text-ink-muted/50"}`}>
           {displayName || "Nome do item"}

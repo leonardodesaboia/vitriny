@@ -3,6 +3,10 @@ import { notFound } from "next/navigation";
 
 import { QuoteRequestForm } from "@/components/quote-request/QuoteRequestForm";
 import {
+  CATALOG_ITEM_TYPE_BADGE,
+  CATALOG_ITEM_TYPE_LABEL,
+} from "@/lib/catalog-item-type";
+import {
   canUseServiceImages,
   PUBLIC_LIMIT_ERROR_MESSAGES
 } from "@/lib/plan-limits";
@@ -163,8 +167,8 @@ export default async function PublicQuoteRequestPage({
                   />
                 ) : null}
                 <div className="p-4">
-                  <span className="inline-block rounded-full border border-blue-100 bg-blue-50 px-2 py-0.5 text-xs font-semibold text-blue-700">
-                    {selectedService.itemType === "PRODUCT" ? "Produto" : "Serviço"}
+                  <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${CATALOG_ITEM_TYPE_BADGE[selectedService.itemType]}`}>
+                    {CATALOG_ITEM_TYPE_LABEL[selectedService.itemType]}
                   </span>
                   <p className="mt-2 font-semibold text-ink">{selectedService.name}</p>
                   {selectedService.description ? (
