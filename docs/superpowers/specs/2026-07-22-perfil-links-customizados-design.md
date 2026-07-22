@@ -10,7 +10,7 @@ uso: site próprio, cardápio, WhatsApp, catálogo, YouTube, ou qualquer outra
 página. Os links aparecem na vitrine pública.
 
 Recurso de **identidade**: disponível em **todos os planos** (FREE e PRO),
-com teto de **20 links**, coerente com a decisão "identidade é FREE"
+com teto de **10 links**, coerente com a decisão "identidade é FREE"
 (ver `docs/PROJECT_OVERVIEW.md`).
 
 ## Modelo de dados
@@ -30,7 +30,7 @@ Guarda um array ordenado de objetos `{ label, url }`. Exemplo:
 ]
 ```
 
-- **Por que JSON e não uma tabela `ProviderLink`:** a lista é pequena (≤20),
+- **Por que JSON e não uma tabela `ProviderLink`:** a lista é pequena (≤10),
   sempre lida e gravada por inteiro junto do resto do perfil, e já há
   precedente no schema (`businessHours` é `Json`). Uma tabela relacional
   (migration + joins + ordenação explícita) seria overkill. Alternativa
@@ -45,7 +45,7 @@ Módulo puro e testável, sem dependência de request/Prisma.
 ```ts
 export type ProfileLink = { label: string; url: string };
 
-export const MAX_PROFILE_LINKS = 20;
+export const MAX_PROFILE_LINKS = 10;
 export const MAX_LINK_LABEL_LENGTH = 40;
 
 // Sanitiza uma lista crua (vinda do formulário) para persistência.
@@ -68,7 +68,7 @@ Regras de `sanitizeProfileLinks`:
 3. `label` obrigatório quando a linha tem url (e vice-versa); erro por linha.
 4. `label` máx. `MAX_LINK_LABEL_LENGTH` (40) caracteres.
 5. `url` passa por `normalizeLinkUrl`; se retornar `null`, erro na linha.
-6. Após validar, **corta em `MAX_PROFILE_LINKS` (20)** — o servidor não confia
+6. Após validar, **corta em `MAX_PROFILE_LINKS` (10)** — o servidor não confia
    no cliente.
 
 Regras de `normalizeLinkUrl` (segurança):
@@ -88,7 +88,7 @@ redes sociais (mantém todos os links agrupados no mesmo lugar; a aba é
   `components/proposals/ProposalItemsFields.tsx` (estado local com `useState`,
   "Adicionar link" e "Remover" por linha), reaproveitando o primitivo
   `components/ui/Field.tsx`.
-- Teto de 20: o botão "Adicionar link" some/desabilita ao chegar em 20.
+- Teto de 10: o botão "Adicionar link" some/desabilita ao chegar em 10.
 - Campos enviados como `linkLabel` e `linkUrl` (repetidos, lidos com
   `formData.getAll`, casados por índice — igual aos itens de proposta).
 - Client-side é conveniência; a validação real é no servidor via helper.
@@ -121,14 +121,14 @@ Unitários de `lib/profile-links.ts`:
   `http://`/`https://` válidas; rejeita `javascript:`, `data:`, `mailto:`,
   string inválida.
 - `sanitizeProfileLinks`: descarta linhas vazias; exige label quando há url;
-  aplica limite de 40 chars no label; corta em 20; propaga erros por linha.
+  aplica limite de 40 chars no label; corta em 10; propaga erros por linha.
 - `parseProfileLinks`: lê JSON válido; retorna `[]` para `null`/formato
   inesperado (defensivo).
 
 ## Documentação a atualizar na implementação
 
 - `docs/PROJECT_OVERVIEW.md`: entidade `ProviderProfile` ganha `links`;
-  decisão de produto (links customizados FREE, teto 20).
+  decisão de produto (links customizados FREE, teto 10).
 - `docs/DATABASE.md`: coluna `links` (Json) em `ProviderProfile`.
 - `docs/ROADMAP.md`: item em "Concluído".
 - `docs/AI_HANDOFF.md`: menção ao novo campo/limite, se listar campos do perfil.
@@ -138,8 +138,8 @@ Unitários de `lib/profile-links.ts`:
 - **Segurança de URL arbitrária:** mitigada por whitelist de esquema
   (`http`/`https`) no helper e `rel="noopener noreferrer nofollow"` na
   vitrine. Sem isso, `javascript:` seria XSS.
-- **Teto de 20 no servidor:** evita spam/SEO e vitrine poluída mesmo se o
-  cliente for burlado. 20 é folgado para uso legítimo (site, redes extras,
+- **Teto de 10 no servidor:** evita spam/SEO e vitrine poluída mesmo se o
+  cliente for burlado. 10 é folgado para uso legítimo (site, redes extras,
   cardápio, catálogo, canais) e ainda limita abuso.
 - **JSON vs tabela:** JSON escolhido pela simplicidade; se no futuro os links
   precisarem de ordenação arrastável complexa, cliques/analytics por link, ou
