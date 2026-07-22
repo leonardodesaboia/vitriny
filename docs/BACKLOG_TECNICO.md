@@ -85,9 +85,11 @@ Ordem de prioridade sugerida: seção 1 → 2 → 3; as demais conforme demanda.
 3. **Endpoint `POST /api/storefront-view`**: recebe beacon, filtra dono logado e bots, faz `upsert` com `count: { increment: 1 }`.
 4. **Dashboard** (`app/(dashboard)/dashboard/page.tsx`): card "Visitas à vitrine" exibindo últimos 7 dias (primário) e 30 dias (subtext), agregação `_sum` no banco. FREE em todos os planos.
 
-**Fase 2 (PRO, não entregue):** detalhe por item, origem do tráfego (referrer), e gating PRO do detalhe — a contagem agregada fica FREE.
+**Fase 2 (PRO, ✅ entregue 22/07/2026):** detalhe por item via `ItemView` model (`(serviceId, date)` PK), ranking top 5 dos itens mais vistos nos últimos 30 dias na dashboard. Gating via `canUseStorefrontAnalytics` (PRO); FREE vê card de upsell. Beacon estendido com `serviceId` em `/u/[slug]/orcamento?serviceId=X`; endpoint upsert aplica-se a ambos `StorefrontView` e `ItemView`.
 
-**Esforço real:** ~1 dia (beacon, model, endpoint, card de dashboard).
+**Fase 3 (PRO, próxima):** origem do tráfego via links marcados com `?ref=` (não via referrer — unreliable em navegadores in-app de Instagram/WhatsApp). Requer schema adicional e beacon expandido.
+
+**Esforço real (fases 1+2 juntas):** ~1.5 dias (beacon, models, endpoint, cards de dashboard).
 
 ---
 

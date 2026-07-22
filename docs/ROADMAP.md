@@ -58,6 +58,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Modelos de proposta contextualizados no fluxo de proposta (fora do menu lateral) com "Salvar esta proposta como modelo"
 - Links customizados no perfil (até 10, FREE) exibidos na vitrine pública
 - Estatísticas de visitas da vitrine na dashboard (últimos 7/30 dias, FREE, sem PII)
+- Itens mais vistos na dashboard (ranking top 5, PRO) — fase 2 das estatísticas de visitas
 
 ## Próximos passos recomendados
 

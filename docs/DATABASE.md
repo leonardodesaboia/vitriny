@@ -117,6 +117,22 @@ Escrita: via `upsert` em `POST /api/storefront-view`, acionado por beacon client
 
 Leitura: agregação `_sum` de `count` para janelas de 7 dias (últimos 7) e 30 dias (últimos 30) na dashboard (`app/(dashboard)/dashboard/page.tsx`).
 
+### ItemView
+
+Contagem de interesse por item agregada por dia (abertura da página de orçamento do item).
+
+Campos importantes:
+
+- `serviceId`: item dono da contagem. Relação com `Service`, `onDelete: Cascade`.
+- `date`: dia da contagem (`@db.Date`), bucket de 24h em UTC.
+- `count`: `Int` — número de vezes que o item foi visualizado no dia.
+
+Chave primária composta: `(serviceId, date)` — um registro por dia por item.
+
+Escrita: via `upsert` em `POST /api/storefront-view` (com `serviceId` enviado junto), acionado por beacon client no carregamento de `/u/[slug]/orcamento?serviceId=X`. O endpoint filtra o dono logado e user agents de bot antes de contar.
+
+Leitura: agregação `groupBy` de `count` agrupando por `serviceId`, ordenado decrescente, limitado a top 5 com janela de 30 dias na dashboard; exibição condicionada a PRO via `canUseStorefrontAnalytics`. FREE vê um card de upsell.
+
 ### QuoteRequest
 
 Pedido público de orçamento.
