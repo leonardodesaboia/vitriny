@@ -57,6 +57,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Reabrir reserva Pix expirada com novo prazo e aviso ao cliente
 - Modelos de proposta contextualizados no fluxo de proposta (fora do menu lateral) com "Salvar esta proposta como modelo"
 - Links customizados no perfil (até 10, FREE) exibidos na vitrine pública
+- Estatísticas de visitas da vitrine na dashboard (últimos 7/30 dias, FREE, sem PII)
 
 ## Próximos passos recomendados
 

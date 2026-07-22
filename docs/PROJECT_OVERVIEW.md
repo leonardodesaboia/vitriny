@@ -47,6 +47,7 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 - `ProposalTemplateItem`: item reutilizável do template.
 - `PlanTier`: plano comercial do negócio para aplicar limites de uso.
 - `ProviderThemePreset`: preset visual salvo para personalização simples da aplicação por tokens globais de cor e fonte.
+- `StorefrontView`: contagem de visitas da vitrine agregada por dia (`(providerId, date)`).
 - `PasswordResetToken`: token de uso único para redefinição de senha.
 
 ## Glossário
@@ -123,6 +124,7 @@ Route handlers autenticados ou server-to-server:
 - O plano PRO possui cobrança recorrente via Stripe; limites e acesso a temas visuais dependem do plano persistido no perfil. Foto por item é disponível em todos os planos.
 - **Recursos de identidade são FREE**: endereço, redes sociais e horário de funcionamento com badge "Aberto agora" ficam disponíveis em todos os planos. Identidade do negócio não é gatilho de upgrade; os limites PRO continuam nos recursos que o dono sente (itens e propostas ilimitados, temas visuais). Foto por item também é FREE — o limite de 3 itens já limita a 3 fotos.
 - **Links customizados do perfil são FREE**: além de Instagram/Facebook/TikTok, o dono adiciona até 10 links livres (rótulo + URL) exibidos na vitrine pública. Recurso de identidade, disponível em todos os planos. URLs aceitam só `http`/`https` (validado em `lib/profile-links.ts`).
+- **Estatísticas de visitas são FREE**: a dashboard mostra quantas vezes a vitrine foi vista (últimos 7/30 dias). Contagem via beacon client, agregada por dia, sem PII/cookie (dedupe por sessão em `sessionStorage`); exclui o dono logado e bots. Detalhe por item/origem fica para a fase 2 (PRO).
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
 - **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
 - **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.

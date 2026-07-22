@@ -101,6 +101,22 @@ Campos importantes:
 - `requiresSchedulingDetails`: quando `true`, formulário público exibe campos de data, horário e local.
 - `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente em qualquer plano (foto por item é FREE).
 
+### StorefrontView
+
+Contagem de visitas da vitrine pública agregada por dia.
+
+Campos importantes:
+
+- `providerId`: prestador dono da vitrine. Relação com `ProviderProfile`, `onDelete: Cascade`.
+- `date`: dia da contagem (`@db.Date`), bucket de 24h em UTC.
+- `count`: `Int` — número de visitantes únicos dedupados por sessão do navegador no dia.
+
+Chave primária composta: `(providerId, date)` — um registro por dia por prestador.
+
+Escrita: via `upsert` em `POST /api/storefront-view`, acionado por beacon client no carregamento de `/u/[slug]`. O endpoint filtra o dono logado e user agents de bot antes de contar.
+
+Leitura: agregação `_sum` de `count` para janelas de 7 dias (últimos 7) e 30 dias (últimos 30) na dashboard (`app/(dashboard)/dashboard/page.tsx`).
+
 ### QuoteRequest
 
 Pedido público de orçamento.

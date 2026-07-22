@@ -74,6 +74,21 @@ Ordem de prioridade sugerida: seção 1 → 2 → 3; as demais conforme demanda.
 
 **Esforço:** ~2 horas.
 
+### 1.5 Contagem de visitas da vitrine na dashboard ✅ (entregue 22/07/2026)
+
+**Problema:** sem observabilidade sobre o tráfego, o dono não sente o valor da vitrine pública — não sabe se a página está sendo vista.
+
+**Como fez:**
+
+1. **Beacon client** em `/u/[slug]`: request silencioso a `POST /api/storefront-view` ao carregar. Dedupado por sessão em `sessionStorage`.
+2. **Model `StorefrontView`**: `(providerId, date)` PK composta, campo `count` (Int). Schema em `prisma/schema.prisma`.
+3. **Endpoint `POST /api/storefront-view`**: recebe beacon, filtra dono logado e bots, faz `upsert` com `count: { increment: 1 }`.
+4. **Dashboard** (`app/(dashboard)/dashboard/page.tsx`): card "Visitas à vitrine" exibindo últimos 7 dias (primário) e 30 dias (subtext), agregação `_sum` no banco. FREE em todos os planos.
+
+**Fase 2 (PRO, não entregue):** detalhe por item, origem do tráfego (referrer), e gating PRO do detalhe — a contagem agregada fica FREE.
+
+**Esforço real:** ~1 dia (beacon, model, endpoint, card de dashboard).
+
 ---
 
 ## 2. Mudanças de lógica
