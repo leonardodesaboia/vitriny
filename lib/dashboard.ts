@@ -289,6 +289,23 @@ export function dashboardRequestViewWhere(
   }
 }
 
+export type TopItem = { serviceId: string; name: string; count: number };
+
+// Junta o resultado do groupBy com os nomes, preservando a ordem do ranking
+// (o groupBy já vem ordenado por count desc) e descartando itens sem nome
+// (removidos entre a agregação e a leitura).
+export function mergeItemViewRanking(
+  groups: Array<{ serviceId: string; _sum: { count: number | null } }>,
+  names: Array<{ id: string; name: string }>
+): TopItem[] {
+  const nameById = new Map(names.map((n) => [n.id, n.name]));
+  return groups.flatMap((group) => {
+    const name = nameById.get(group.serviceId);
+    if (name === undefined) return [];
+    return [{ serviceId: group.serviceId, name, count: group._sum.count ?? 0 }];
+  });
+}
+
 export function parseDashboardRequestView(
   value: string | undefined
 ): DashboardRequestView | null {

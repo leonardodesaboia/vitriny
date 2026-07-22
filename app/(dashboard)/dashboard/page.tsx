@@ -9,6 +9,7 @@ import {
 import { DashboardPendingActions } from "@/components/dashboard/DashboardPendingActions";
 import { DashboardRecentActivity } from "@/components/dashboard/DashboardRecentActivity";
 import { DashboardRevenueCard } from "@/components/dashboard/DashboardRevenueCard";
+import { DashboardTopItemsCard } from "@/components/dashboard/DashboardTopItemsCard";
 import { DashboardViewsCard } from "@/components/dashboard/DashboardViewsCard";
 import {
   OnboardingChecklist,
@@ -20,10 +21,12 @@ import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import {
   buildMonthlyRevenueSummary,
   buildOnboardingOutcomeStep,
-  buildStorefrontViewsSummary
+  buildStorefrontViewsSummary,
+  mergeItemViewRanking,
+  type TopItem
 } from "@/lib/dashboard";
 import { toDayBucket } from "@/lib/storefront-views";
-import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
+import { canUseStorefrontAnalytics, getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
 
@@ -198,6 +201,29 @@ export default async function DashboardPage() {
     hasRecentOrders: recentOrdersCount > 0,
   });
 
+  const canSeeItemViews = profile
+    ? canUseStorefrontAnalytics(profile.plan)
+    : false;
+
+  let topItems: TopItem[] = [];
+  if (profile && canSeeItemViews) {
+    const itemViewGroups = await prisma.itemView.groupBy({
+      by: ["serviceId"],
+      where: {
+        service: { providerId: profile.id },
+        date: { gte: viewsCutoff30 },
+      },
+      _sum: { count: true },
+      orderBy: { _sum: { count: "desc" } },
+      take: 5,
+    });
+    const itemNames = await prisma.service.findMany({
+      where: { id: { in: itemViewGroups.map((g) => g.serviceId) } },
+      select: { id: true, name: true },
+    });
+    topItems = mergeItemViewRanking(itemViewGroups, itemNames);
+  }
+
   const limits = profile ? getPlanLimits(profile.plan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
   const activeServicesCount = activeServices.length;
@@ -354,6 +380,7 @@ export default async function DashboardPage() {
       <DashboardPendingActions actions={pendingActions} />
 
       <DashboardViewsCard summary={viewsSummary} />
+      <DashboardTopItemsCard isPro={canSeeItemViews} topItems={topItems} />
       <DashboardRevenueCard summary={revenueSummary} />
 
       <DashboardMetricGrid metrics={metrics} />
