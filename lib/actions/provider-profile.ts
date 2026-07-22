@@ -9,6 +9,7 @@ import { canUseThemePresets } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import { sanitizeProfileLinks } from "@/lib/profile-links";
 
 export type ProviderProfileFormValues = {
   businessName: string;
@@ -30,6 +31,7 @@ export type ProviderProfileFormValues = {
   facebook: string;
   tiktok: string;
   businessHours: string;
+  links: { label: string; url: string }[];
 };
 
 export type ProviderProfileFormState =
@@ -51,6 +53,13 @@ function readProviderProfileFormValues(
   const themePreset = formValue(formData, "themePreset");
   const businessType = formValue(formData, "businessType");
 
+  const linkLabels = formData.getAll("linkLabel");
+  const linkUrls = formData.getAll("linkUrl");
+  const links = linkLabels.map((label, index) => ({
+    label: typeof label === "string" ? label : "",
+    url: typeof linkUrls[index] === "string" ? (linkUrls[index] as string) : "",
+  }));
+
   return {
     businessName: formValue(formData, "businessName"),
     slug: formValue(formData, "slug"),
@@ -70,7 +79,8 @@ function readProviderProfileFormValues(
     instagram: formValue(formData, "instagram"),
     facebook: formValue(formData, "facebook"),
     tiktok: formValue(formData, "tiktok"),
-    businessHours: formValue(formData, "businessHours")
+    businessHours: formValue(formData, "businessHours"),
+    links
   };
 }
 
@@ -109,11 +119,19 @@ export async function saveProviderProfile(
     };
   }
 
+  const { links: sanitizedLinks, errors: linkErrors } = sanitizeProfileLinks(
+    values.links
+  );
+  if (linkErrors.length > 0) {
+    return { error: linkErrors[0], values, submittedAt: Date.now() };
+  }
+
   const { businessHours, ...profileData } = parsed.data;
 
   const dataToSave = {
     ...profileData,
     businessHours: businessHours ?? Prisma.DbNull,
+    links: sanitizedLinks.length > 0 ? sanitizedLinks : Prisma.DbNull,
     themePreset:
       currentProfile?.plan && canUseThemePresets(currentProfile.plan)
         ? parsed.data.themePreset
