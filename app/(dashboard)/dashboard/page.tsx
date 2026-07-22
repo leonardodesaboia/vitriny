@@ -9,6 +9,7 @@ import {
 import { DashboardPendingActions } from "@/components/dashboard/DashboardPendingActions";
 import { DashboardRecentActivity } from "@/components/dashboard/DashboardRecentActivity";
 import { DashboardRevenueCard } from "@/components/dashboard/DashboardRevenueCard";
+import { DashboardViewsCard } from "@/components/dashboard/DashboardViewsCard";
 import {
   OnboardingChecklist,
   type OnboardingStep
@@ -18,8 +19,10 @@ import { profileLinkMessage } from "@/lib/whatsapp-messages";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import {
   buildMonthlyRevenueSummary,
-  buildOnboardingOutcomeStep
+  buildOnboardingOutcomeStep,
+  buildStorefrontViewsSummary
 } from "@/lib/dashboard";
+import { toDayBucket } from "@/lib/storefront-views";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
@@ -163,6 +166,31 @@ export default async function DashboardPage() {
     approvedRevenue?._sum.totalAmount?.toString() ?? null,
     pixRevenue?._sum.fixedServiceAmount?.toString() ?? null
   );
+
+  const today = toDayBucket(new Date());
+  const viewsCutoff7 = new Date(today);
+  viewsCutoff7.setUTCDate(viewsCutoff7.getUTCDate() - 6); // janela de 7 dias incl. hoje
+  const viewsCutoff30 = new Date(today);
+  viewsCutoff30.setUTCDate(viewsCutoff30.getUTCDate() - 29);
+
+  const [views7Agg, views30Agg] = profile
+    ? await Promise.all([
+        prisma.storefrontView.aggregate({
+          _sum: { count: true },
+          where: { providerId: profile.id, date: { gte: viewsCutoff7 } },
+        }),
+        prisma.storefrontView.aggregate({
+          _sum: { count: true },
+          where: { providerId: profile.id, date: { gte: viewsCutoff30 } },
+        }),
+      ])
+    : [{ _sum: { count: null } }, { _sum: { count: null } }];
+
+  const viewsSummary = buildStorefrontViewsSummary({
+    views7: views7Agg._sum.count ?? 0,
+    views30: views30Agg._sum.count ?? 0,
+    hasRecentOrders: monthlyQuoteRequests > 0,
+  });
 
   const limits = profile ? getPlanLimits(profile.plan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
@@ -319,6 +347,7 @@ export default async function DashboardPage() {
 
       <DashboardPendingActions actions={pendingActions} />
 
+      <DashboardViewsCard summary={viewsSummary} />
       <DashboardRevenueCard summary={revenueSummary} />
 
       <DashboardMetricGrid metrics={metrics} />

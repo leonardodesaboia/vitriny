@@ -217,6 +217,35 @@ export function buildMonthlyRevenueSummary(
   };
 }
 
+export type StorefrontViewsSummary = {
+  views7: number;
+  message: string;
+};
+
+// View model do card de visitas. O framing evita desânimo: nunca acusa
+// "views sem pedido", vira dica acionável.
+export function buildStorefrontViewsSummary(input: {
+  views7: number;
+  views30: number;
+  hasRecentOrders: boolean;
+}): StorefrontViewsSummary {
+  const { views7, views30, hasRecentOrders } = input;
+
+  if (views30 === 0) {
+    return { views7, message: "Comece a divulgar o link da sua vitrine." };
+  }
+
+  if (views7 > 0 && !hasRecentOrders) {
+    return {
+      views7,
+      message:
+        "Muita gente viu — que tal revisar preço, foto ou o texto dos itens?",
+    };
+  }
+
+  return { views7, message: `${views30} nos últimos 30 dias` };
+}
+
 // Espelho Prisma de matchesDashboardRequestView (fonte de verdade testada):
 // permite filtrar no banco para paginar sem carregar tudo.
 export function dashboardRequestViewWhere(
