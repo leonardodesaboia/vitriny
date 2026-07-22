@@ -18,10 +18,7 @@ beforeEach(async () => {
   const profile = await seedProfile(ownerId);
   profileId = profile.id;
   slug = profile.slug;
-  await testDb.providerProfile.update({
-    where: { id: profileId },
-    data: { isPublished: true },
-  });
+  // seedProfile já cria a vitrine publicada (isPublished: true).
 
   const { auth } = await import("@/auth");
   vi.mocked(auth).mockResolvedValue(null as never);
@@ -48,6 +45,8 @@ describe("POST /api/storefront-view (integração)", () => {
     expect(rows[0].count).toBe(2);
   });
 
+  // Ordem importa: sobrescrever o mock de auth ANTES de importar a rota,
+  // pois vi.resetModules() (no beforeEach) recarrega o módulo da rota.
   it("não conta o dono logado", async () => {
     const { auth } = await import("@/auth");
     vi.mocked(auth).mockResolvedValue({ user: { id: ownerId } } as never);
@@ -77,6 +76,31 @@ describe("POST /api/storefront-view (integração)", () => {
 
     expect(res.status).toBe(204);
     const rows = await testDb.storefrontView.findMany({});
+    expect(rows.length).toBe(0);
+  });
+
+  it("responde 400 quando falta o slug no corpo", async () => {
+    const { POST } = await import("@/app/api/storefront-view/route");
+    const res = await POST(makeRequest({}));
+
+    expect(res.status).toBe(400);
+    const rows = await testDb.storefrontView.findMany({});
+    expect(rows.length).toBe(0);
+  });
+
+  it("não conta vitrine não publicada (204)", async () => {
+    await testDb.providerProfile.update({
+      where: { id: profileId },
+      data: { isPublished: false },
+    });
+
+    const { POST } = await import("@/app/api/storefront-view/route");
+    const res = await POST(makeRequest({ slug }));
+
+    expect(res.status).toBe(204);
+    const rows = await testDb.storefrontView.findMany({
+      where: { providerId: profileId },
+    });
     expect(rows.length).toBe(0);
   });
 });
