@@ -2,11 +2,13 @@ import type { ProviderProfile } from "@prisma/client";
 
 import type { ProviderProfileFormValues } from "@/lib/actions/provider-profile";
 import { BusinessHoursEditor } from "@/components/provider-profile/BusinessHoursEditor";
+import { ProfileLinksFields } from "@/components/provider-profile/ProfileLinksFields";
 import { Field, labelClass } from "@/components/ui/Field";
 import {
   inputClass,
   SectionHeader,
 } from "@/components/provider-profile/profile-form-ui";
+import { parseProfileLinks } from "@/lib/profile-links";
 
 type PresenceSectionProps = {
   values: ProviderProfileFormValues | undefined;
@@ -14,6 +16,7 @@ type PresenceSectionProps = {
 };
 
 export function PresenceSection({ values, profile }: PresenceSectionProps) {
+  const initialLinks = values?.links ?? parseProfileLinks(profile?.links);
   return (
     <div className="grid gap-5">
       <SectionHeader
@@ -58,6 +61,8 @@ export function PresenceSection({ values, profile }: PresenceSectionProps) {
           />
         </Field>
       </div>
+
+      <ProfileLinksFields initialLinks={initialLinks} />
 
       <fieldset className="grid gap-2">
         <legend className={`${labelClass} mb-2`}>
