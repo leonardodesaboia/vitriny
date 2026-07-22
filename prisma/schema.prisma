@@ -124,6 +124,9 @@ model ProviderProfile {
   // cada uma { open, close } em "HH:MM" ou null (fechado). Validado por Zod
   // na escrita e por parseBusinessHours na leitura.
   businessHours Json?
+  // Links livres do perfil: array JSON de { label, url }. Validado e cortado
+  // em MAX_PROFILE_LINKS por lib/profile-links.ts na escrita e na leitura.
+  links Json?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
