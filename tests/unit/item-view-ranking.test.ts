@@ -36,4 +36,8 @@ describe("mergeItemViewRanking", () => {
       { serviceId: "a", name: "Item A", count: 0 },
     ]);
   });
+
+  it("retorna [] quando não há grupos", () => {
+    expect(mergeItemViewRanking([], [])).toEqual([]);
+  });
 });

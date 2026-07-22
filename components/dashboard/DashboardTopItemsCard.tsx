@@ -4,12 +4,14 @@ import { Card } from "@/components/ui/Card";
 import type { TopItem } from "@/lib/dashboard";
 
 type DashboardTopItemsCardProps = {
-  isPro: boolean;
+  // Gate de acesso ao detalhe (hoje = PRO via canUseStorefrontAnalytics, mas o
+  // nome não amarra a um tier específico caso o gating mude no futuro).
+  canViewAnalytics: boolean;
   topItems: TopItem[];
 };
 
 export function DashboardTopItemsCard({
-  isPro,
+  canViewAnalytics,
   topItems,
 }: DashboardTopItemsCardProps) {
   return (
@@ -18,7 +20,7 @@ export function DashboardTopItemsCard({
         Itens mais vistos
       </p>
 
-      {!isPro ? (
+      {!canViewAnalytics ? (
         <>
           <p className="mt-2 text-sm text-ink">
             Descubra quais itens da sua vitrine geram mais interesse.

@@ -380,7 +380,10 @@ export default async function DashboardPage() {
       <DashboardPendingActions actions={pendingActions} />
 
       <DashboardViewsCard summary={viewsSummary} />
-      <DashboardTopItemsCard isPro={canSeeItemViews} topItems={topItems} />
+      <DashboardTopItemsCard
+        canViewAnalytics={canSeeItemViews}
+        topItems={topItems}
+      />
       <DashboardRevenueCard summary={revenueSummary} />
 
       <DashboardMetricGrid metrics={metrics} />
