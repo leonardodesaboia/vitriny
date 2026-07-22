@@ -107,7 +107,7 @@ Server Actions ficam em `lib/actions/`:
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts` — inclui `markDepositPaid` (provider-only)
-- `proposal-templates.ts`
+- `proposal-templates.ts` — inclui `saveProposalAsTemplate` (salva a proposta em edição como modelo sem redirecionar)
 - `proposal-response.ts`
 - `auth.ts` (`registerUser`, `loginWithCredentials`, `confirmEmail`, `resendEmailVerification`, `requestPasswordReset`, `resetPassword`)
 

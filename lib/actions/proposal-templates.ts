@@ -94,6 +94,55 @@ export async function createProposalTemplate(
   redirect(templatesPath);
 }
 
+export type SaveAsTemplateState =
+  | { error: string }
+  | { saved: string }
+  | undefined;
+
+// Salva a proposta em edição como modelo sem sair da tela: retorna estado
+// (sucesso/erro) em vez de redirecionar, para o usuário continuar montando a
+// proposta. Reaproveita os mesmos campos do formulário de proposta.
+export async function saveProposalAsTemplate(
+  _prevState: SaveAsTemplateState,
+  formData: FormData
+): Promise<SaveAsTemplateState> {
+  const { profile } = await requireProviderProfile();
+
+  if (!profile) {
+    return { error: "Cadastre os dados do negócio antes de salvar um modelo." };
+  }
+
+  const parsed = parseTemplateForm(formData);
+  if (!parsed.success) {
+    return {
+      error:
+        "Para salvar como modelo, use itens detalhados e preencha o nome, o título e ao menos um item com descrição e valor.",
+    };
+  }
+
+  const templatesCount = await prisma.proposalTemplate.count({
+    where: { providerId: profile.id }
+  });
+  const limit = getPlanLimit(profile.plan, "proposalTemplates");
+  if (hasReachedLimit(templatesCount, limit)) {
+    return { error: LIMIT_ERROR_MESSAGES[PLAN_LIMIT_ERROR_CODES.proposalTemplates] };
+  }
+
+  await prisma.proposalTemplate.create({
+    data: {
+      providerId: profile.id,
+      name: parsed.data.name,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      items: { create: mapTemplateItems(parsed.data.items) }
+    }
+  });
+
+  revalidatePath(templatesPath);
+  revalidatePath("/dashboard/propostas/nova");
+  return { saved: parsed.data.name };
+}
+
 export async function updateProposalTemplate(
   _prevState: ActionResult,
   formData: FormData

@@ -147,7 +147,7 @@ Evidência `u-atelie-orcamento__360`. Form limpo, campos full-width, select nati
 ---
 
 ## 7. Arquitetura da informação
-Menu por domínio (Dashboard, Pedidos, Itens, Modelos, Assinatura, Perfil) é adequado. Ajustes: "Modelos" → "Modelos de proposta"; remover **caminhos redundantes** (cards da dashboard, P13); dashboard = decisão, não navegação; adicionar "Sair" (P14); orientação em sub-páginas (P5).
+Menu por domínio (Dashboard, Pedidos, Itens, Assinatura, Perfil) é adequado. "Modelos" saiu do menu e foi contextualizado no fluxo de proposta (proposta só existe para itens `CUSTOM`; ver PROJECT_OVERVIEW). Ajustes pendentes: remover **caminhos redundantes** (cards da dashboard, P13); dashboard = decisão, não navegação; adicionar "Sair" (P14); orientação em sub-páginas (P5).
 
 ## 8. Navegação
 Drawer mobile + rail desktop. Problemas: P1 (sem rótulo acessível — inclui tablet 768), P5 (ativo exato), P14 (sem logout), MF1 (abas de filtro cortadas). Positivo: telas públicas têm "← Voltar à vitrine"; `returnTo` preservado nas actions.

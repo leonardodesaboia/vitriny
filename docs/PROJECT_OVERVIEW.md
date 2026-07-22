@@ -102,7 +102,7 @@ Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e 
 - `/dashboard/servicos`: gerenciamento de itens da vitrine (rota técnica/legada).
 - `/dashboard/pedidos`: painel de pedidos recebidos.
 - `/dashboard/propostas/nova?requestId=...`: criação de proposta.
-- `/dashboard/propostas/templates`: gerenciamento de templates de proposta.
+- `/dashboard/propostas/templates`: gerenciamento de templates de proposta. Acessível pelo fluxo de proposta (link "Gerenciar/Criar modelo" em `propostas/nova`), não pelo menu lateral.
 - `/dashboard/billing`: plano, uso, assinatura, forma de pagamento e faturas.
 
 Route handlers autenticados ou server-to-server:
@@ -127,6 +127,7 @@ Route handlers autenticados ou server-to-server:
 - **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.
 - **Não existem dois produtos separados no banco**: Produto e Serviço são classificações do mesmo model `Service`. Não haverá separação em dois models distintos sem decisão explícita.
 - **Proposta existe apenas para itens sob consulta (`CUSTOM`)**: itens com preço fixo não passam pelo fluxo de proposta.
+- **Modelos de proposta são contextuais ao fluxo de proposta**: como proposta só existe para itens `CUSTOM`, a gestão de modelos foi tirada do menu lateral e passou a viver dentro de `propostas/nova` (aplicar modelo por chip, "Gerenciar/Criar modelo" e "Salvar esta proposta como modelo" no modo Itens detalhados). A página `/dashboard/propostas/templates` continua existindo, mas não é destino de navegação primária. Isso evita que negócios só de produto — que nunca enviam proposta — vejam a feature no menu.
 - Gateway de pagamento do cliente final, confirmação automática de Pix, carrinho, estoque, frete, variações, cupons, WhatsApp API, editor avançado de PDF, IA e marketplace estão fora do MVP e só serão considerados após validação de negócio.
 - Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de item `FIXED`. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
 - Stripe é usado exclusivamente para assinatura do usuário da Vitriny; nunca para pagamento do cliente final.

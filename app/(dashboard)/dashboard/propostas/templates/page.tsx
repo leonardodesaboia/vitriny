@@ -66,7 +66,16 @@ export default async function ProposalTemplatesPage({
 
   return (
     <div className="p-8">
-      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+      <Link
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-leaf transition hover:text-leaf-hover"
+        href="/dashboard/pedidos"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Voltar aos pedidos
+      </Link>
+      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-leaf">
         Modelos
       </p>
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">

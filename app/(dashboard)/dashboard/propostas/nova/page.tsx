@@ -109,36 +109,50 @@ export default async function NewProposalPage({ searchParams }: NewProposalPageP
           </p>
         ) : null}
 
-        {profile.proposalTemplates.length > 0 ? (
-          <div className="mt-6 border-y border-paper-soft py-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="mr-1 text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                Modelo
+        <div className="mt-6 border-y border-paper-soft py-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="mr-1 text-xs font-semibold uppercase tracking-widest text-ink-muted">
+              Modelo
+            </span>
+            {profile.proposalTemplates.length > 0 ? (
+              <>
+                {profile.proposalTemplates.map((template) => (
+                  <Link
+                    className={`inline-flex min-h-8 items-center justify-center rounded-md border px-3 text-xs font-semibold transition ${
+                      selectedTemplate?.id === template.id
+                        ? "border-leaf bg-mint text-leaf"
+                        : "border-paper-soft bg-white text-ink hover:border-leaf hover:text-leaf"
+                    }`}
+                    href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}&templateId=${template.id}`}
+                    key={template.id}
+                  >
+                    {template.name}
+                  </Link>
+                ))}
+                {selectedTemplate ? (
+                  <Link
+                    className="text-xs font-semibold text-ink-muted transition hover:text-ink"
+                    href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
+                  >
+                    Limpar
+                  </Link>
+                ) : null}
+              </>
+            ) : (
+              <span className="text-xs text-ink-muted">
+                Nenhum modelo salvo ainda.
               </span>
-              {profile.proposalTemplates.map((template) => (
-                <Link
-                  className={`inline-flex min-h-8 items-center justify-center rounded-md border px-3 text-xs font-semibold transition ${
-                    selectedTemplate?.id === template.id
-                      ? "border-leaf bg-mint text-leaf"
-                      : "border-paper-soft bg-white text-ink hover:border-leaf hover:text-leaf"
-                  }`}
-                  href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}&templateId=${template.id}`}
-                  key={template.id}
-                >
-                  {template.name}
-                </Link>
-              ))}
-              {selectedTemplate ? (
-                <Link
-                  className="text-xs font-semibold text-ink-muted transition hover:text-ink"
-                  href={`/dashboard/propostas/nova?requestId=${quoteRequest.id}`}
-                >
-                  Limpar
-                </Link>
-              ) : null}
-            </div>
+            )}
+            <Link
+              className="ml-auto inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-leaf transition hover:text-leaf-hover"
+              href="/dashboard/propostas/templates"
+            >
+              {profile.proposalTemplates.length > 0
+                ? "Gerenciar modelos"
+                : "Criar modelo"}
+            </Link>
           </div>
-        ) : null}
+        </div>
 
         <ProposalForm
           // Remonta o formulário ao trocar de modelo para reaplicar os

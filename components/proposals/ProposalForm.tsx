@@ -6,6 +6,10 @@ import { ProposalItemsFields } from "@/components/proposals/ProposalItemsFields"
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import { createProposal, type ProposalFormState } from "@/lib/actions/proposals";
+import {
+  saveProposalAsTemplate,
+  type SaveAsTemplateState,
+} from "@/lib/actions/proposal-templates";
 
 type PricingMode = "SIMPLE" | "ITEMIZED";
 
@@ -29,6 +33,11 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
     createProposal,
     undefined
   );
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateState, saveTemplateAction, isSavingTemplate] = useActionState<
+    SaveAsTemplateState,
+    FormData
+  >(saveProposalAsTemplate, undefined);
   const today = new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD no timezone do navegador
 
   const initialItems = initialValues?.items?.map((item) => ({
@@ -130,6 +139,76 @@ export function ProposalForm({ requestId, initialValues }: ProposalFormProps) {
           minItems={1}
         />
       )}
+
+      {mode === "ITEMIZED" ? (
+        showSaveTemplate ? (
+          <div className="grid gap-2 rounded-xl border border-paper-soft bg-paper p-4">
+            <p className="text-sm font-semibold text-ink">Salvar como modelo</p>
+            <p className="text-xs leading-5 text-ink-muted">
+              Um modelo guarda o <strong>título</strong>, a{" "}
+              <strong>mensagem</strong> e os <strong>itens</strong> desta
+              proposta — sem os dados do cliente. Da próxima vez que for
+              responder um pedido, você aplica o modelo com um clique e já começa
+              com tudo preenchido, ajustando só o que mudar. Isto{" "}
+              <strong>não envia</strong> a proposta agora, apenas salva o formato
+              para reusar.
+            </p>
+            <label
+              className="mt-1 text-sm font-semibold text-ink"
+              htmlFor="templateName"
+            >
+              Nome do modelo
+            </label>
+            <p className="text-xs leading-5 text-ink-muted">
+              Serve só para você identificar o modelo depois; o cliente não vê
+              este nome.
+            </p>
+            {templateState && "error" in templateState ? (
+              <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">
+                {templateState.error}
+              </p>
+            ) : null}
+            {templateState && "saved" in templateState ? (
+              <p className="rounded-md border border-leaf/30 bg-mint/30 px-3 py-2 text-xs font-semibold text-leaf">
+                Modelo &ldquo;{templateState.saved}&rdquo; salvo.
+              </p>
+            ) : null}
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                className="min-h-11 flex-1 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
+                id="templateName"
+                maxLength={120}
+                name="name"
+                placeholder="Ex: Pintura residencial padrão"
+                type="text"
+              />
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-leaf bg-white px-4 text-sm font-semibold text-leaf transition hover:bg-mint/40 disabled:opacity-50"
+                disabled={isSavingTemplate}
+                formAction={saveTemplateAction}
+                type="submit"
+              >
+                {isSavingTemplate ? "Salvando..." : "Salvar modelo"}
+              </button>
+              <button
+                className="inline-flex min-h-11 items-center justify-center rounded-md px-3 text-sm font-semibold text-ink-muted transition hover:text-ink"
+                onClick={() => setShowSaveTemplate(false)}
+                type="button"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            className="w-fit text-xs font-semibold text-leaf transition hover:text-leaf-hover"
+            onClick={() => setShowSaveTemplate(true)}
+            type="button"
+          >
+            + Salvar esta proposta como modelo
+          </button>
+        )
+      ) : null}
 
       <div className="border-t border-paper-soft pt-6">
         <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
