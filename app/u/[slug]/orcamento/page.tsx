@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { QuoteRequestForm } from "@/components/quote-request/QuoteRequestForm";
+import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
 import {
   CATALOG_ITEM_TYPE_BADGE,
   CATALOG_ITEM_TYPE_LABEL,
@@ -133,6 +134,9 @@ export default async function PublicQuoteRequestPage({
       className="min-h-screen bg-paper px-6 py-12 text-ink font-jakarta"
       data-brand-theme={theme.id}
     >
+      {selectedService ? (
+        <StorefrontViewBeacon slug={slug} serviceId={selectedService.id} />
+      ) : null}
       <div className="mx-auto max-w-5xl">
         {/* Back link */}
         <Link

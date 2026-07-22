@@ -2,12 +2,18 @@
 
 import { useEffect } from "react";
 
-// Dispara uma contagem de visita, no máximo uma vez por sessão de browser por
-// vitrine (dedupe via sessionStorage — sem cookie, sem PII). Erros são
-// silenciosos: a métrica nunca pode quebrar a vitrine.
-export function StorefrontViewBeacon({ slug }: { slug: string }) {
+// Conta uma visita (vitrine) ou uma view de item (quando serviceId é passado),
+// no máximo uma vez por sessão de browser por chave (dedupe via sessionStorage —
+// sem cookie, sem PII). Erros silenciosos: a métrica nunca quebra a página.
+export function StorefrontViewBeacon({
+  slug,
+  serviceId,
+}: {
+  slug: string;
+  serviceId?: string;
+}) {
   useEffect(() => {
-    const key = `sv-${slug}`;
+    const key = serviceId ? `sv-${slug}-item-${serviceId}` : `sv-${slug}`;
     try {
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");
@@ -18,10 +24,10 @@ export function StorefrontViewBeacon({ slug }: { slug: string }) {
     void fetch("/api/storefront-view", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ slug }),
+      body: JSON.stringify(serviceId ? { slug, serviceId } : { slug }),
       keepalive: true,
     }).catch(() => {});
-  }, [slug]);
+  }, [slug, serviceId]);
 
   return null;
 }
