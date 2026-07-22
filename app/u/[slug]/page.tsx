@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { OpenNowBadge } from "@/components/public/OpenNowBadge";
+import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { canUseServiceImages } from "@/lib/plan-limits";
 import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
@@ -191,6 +192,7 @@ export default async function PublicProviderProfilePage({
       className="min-h-screen bg-paper text-ink font-jakarta"
       data-brand-theme={theme.id}
     >
+      <StorefrontViewBeacon slug={slug} />
       {/* Hero */}
       <div className="grain relative bg-leaf px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-12">
         <div className="mx-auto max-w-4xl">
