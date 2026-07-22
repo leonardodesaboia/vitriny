@@ -160,4 +160,33 @@ describe("POST /api/storefront-view (integração)", () => {
     const rows = await testDb.itemView.findMany({});
     expect(rows.length).toBe(0);
   });
+
+  it("não conta item inativo da vitrine", async () => {
+    const service = await seedService(profileId, {
+      name: "Suspenso",
+      isActive: false,
+    });
+    // Auto-verificação: o item precisa ter sido criado realmente inativo,
+    // senão o teste passaria por engano.
+    expect(service.isActive).toBe(false);
+
+    const { POST } = await import("@/app/api/storefront-view/route");
+    await POST(makeRequest({ slug, serviceId: service.id }));
+
+    const rows = await testDb.itemView.findMany({});
+    expect(rows.length).toBe(0);
+  });
+
+  it("serviceId não-string cai no caminho da vitrine, não de item", async () => {
+    const { POST } = await import("@/app/api/storefront-view/route");
+    await POST(makeRequest({ slug, serviceId: 99999 }));
+
+    const itemRows = await testDb.itemView.findMany({});
+    expect(itemRows.length).toBe(0);
+
+    const storeRows = await testDb.storefrontView.findMany({
+      where: { providerId: profileId },
+    });
+    expect(storeRows.length).toBe(1);
+  });
 });
