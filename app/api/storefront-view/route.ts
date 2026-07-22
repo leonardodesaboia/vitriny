@@ -7,13 +7,18 @@ import { isCountableView, toDayBucket } from "@/lib/storefront-views";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
-  let slug: unknown;
+  let body: { slug?: unknown; serviceId?: unknown } | null;
   try {
-    const body = await request.json();
-    slug = (body as { slug?: unknown } | null)?.slug;
+    body = (await request.json()) as {
+      slug?: unknown;
+      serviceId?: unknown;
+    } | null;
   } catch {
     return new NextResponse(null, { status: 400 });
   }
+
+  const slug = body?.slug;
+  const serviceId = body?.serviceId;
 
   if (typeof slug !== "string" || slug.length === 0) {
     return new NextResponse(null, { status: 400 });
@@ -38,12 +43,28 @@ export async function POST(request: Request) {
   }
 
   const date = toDayBucket(new Date());
+
   try {
-    await prisma.storefrontView.upsert({
-      where: { providerId_date: { providerId: profile.id, date } },
-      create: { providerId: profile.id, date, count: 1 },
-      update: { count: { increment: 1 } },
-    });
+    if (typeof serviceId === "string" && serviceId.length > 0) {
+      // View de item: só conta se o item ativo pertence a ESTA vitrine.
+      const service = await prisma.service.findFirst({
+        where: { id: serviceId, providerId: profile.id, isActive: true },
+        select: { id: true },
+      });
+      if (service) {
+        await prisma.itemView.upsert({
+          where: { serviceId_date: { serviceId: service.id, date } },
+          create: { serviceId: service.id, date, count: 1 },
+          update: { count: { increment: 1 } },
+        });
+      }
+    } else {
+      await prisma.storefrontView.upsert({
+        where: { providerId_date: { providerId: profile.id, date } },
+        create: { providerId: profile.id, date, count: 1 },
+        update: { count: { increment: 1 } },
+      });
+    }
   } catch (error) {
     // A métrica nunca pode quebrar a vitrine; loga e segue.
     console.error("storefront-view upsert failed", error);

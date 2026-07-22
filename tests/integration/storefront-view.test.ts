@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 import { cleanDatabase, testDb } from "./setup";
-import { seedProfile, seedUser } from "./helpers";
+import { seedProfile, seedService, seedUser } from "./helpers";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
@@ -115,6 +115,49 @@ describe("POST /api/storefront-view (integração)", () => {
     const rows = await testDb.storefrontView.findMany({
       where: { providerId: profileId },
     });
+    expect(rows.length).toBe(0);
+  });
+
+  it("conta view de item para um item ativo da vitrine", async () => {
+    const service = await seedService(profileId, { name: "Pintura" });
+
+    const { POST } = await import("@/app/api/storefront-view/route");
+    await POST(makeRequest({ slug, serviceId: service.id }));
+    await POST(makeRequest({ slug, serviceId: service.id }));
+
+    const itemRows = await testDb.itemView.findMany({
+      where: { serviceId: service.id },
+    });
+    expect(itemRows.length).toBe(1);
+    expect(itemRows[0].count).toBe(2);
+
+    const storeRows = await testDb.storefrontView.findMany({
+      where: { providerId: profileId },
+    });
+    expect(storeRows.length).toBe(0);
+  });
+
+  it("não conta item de outra vitrine", async () => {
+    const otherUser = await seedUser("other@test.com");
+    const otherProfile = await seedProfile(otherUser.id);
+    const otherService = await seedService(otherProfile.id, { name: "Alheio" });
+
+    const { POST } = await import("@/app/api/storefront-view/route");
+    await POST(makeRequest({ slug, serviceId: otherService.id }));
+
+    const rows = await testDb.itemView.findMany({});
+    expect(rows.length).toBe(0);
+  });
+
+  it("não conta view de item quando o visitante é o dono", async () => {
+    const service = await seedService(profileId, { name: "Reforma" });
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValue({ user: { id: ownerId } } as never);
+
+    const { POST } = await import("@/app/api/storefront-view/route");
+    await POST(makeRequest({ slug, serviceId: service.id }));
+
+    const rows = await testDb.itemView.findMany({});
     expect(rows.length).toBe(0);
   });
 });
