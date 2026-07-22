@@ -7,6 +7,7 @@ import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { canUseServiceImages } from "@/lib/plan-limits";
 import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
+import { parseProfileLinks } from "@/lib/profile-links";
 import { normalizeSocialUrl, SOCIAL_LABELS } from "@/lib/social-links";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 import {
@@ -38,6 +39,7 @@ const getProfile = cache(async (slug: string) => {
       instagram: true,
       facebook: true,
       tiktok: true,
+      links: true,
       businessHours: true,
       isPublished: true,
       plan: true,
@@ -145,6 +147,8 @@ export default async function PublicProviderProfilePage({
     return href ? [{ network, label: SOCIAL_LABELS[network], href }] : [];
   });
 
+  const customLinks = parseProfileLinks(profile.links);
+
   const profilePhoneDisplay = formatPhoneBR(profile.phone);
   const whatsappNumber = profile.phone
     ? phoneToWhatsAppNumber(profile.phone)
@@ -241,8 +245,29 @@ export default async function PublicProviderProfilePage({
             </section>
           ) : null}
 
-          {contacts.length > 0 ? (
+          {customLinks.length > 0 ? (
             <section className={socialLinks.length > 0 ? "mt-8" : ""}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Links
+              </p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                {customLinks.map((link, index) => (
+                  <a
+                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    href={link.url}
+                    key={`${link.url}-${index}`}
+                    rel="noopener noreferrer nofollow"
+                    target="_blank"
+                  >
+                    {link.label} ↗
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {contacts.length > 0 ? (
+            <section className={socialLinks.length > 0 || customLinks.length > 0 ? "mt-8" : ""}>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
                 Contatos
               </p>
