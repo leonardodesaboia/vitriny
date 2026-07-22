@@ -63,19 +63,6 @@ export function PublicLinkCard({
       <div className="mt-4 rounded-lg border border-paper-soft bg-paper px-4 py-3">
         <p className="truncate text-sm font-medium text-ink">{url}</p>
       </div>
-
-      <div className="mt-4 border-t border-paper-soft pt-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-          Mensagens prontas para WhatsApp
-        </p>
-        <p className="mt-1 text-xs text-ink-muted">
-          Copie o texto abaixo e cole no WhatsApp para divulgar seu link de
-          pedido.
-        </p>
-        <div className="mt-2">
-          <WhatsAppButton label="Compartilhar link da vitrine" message={message} />
-        </div>
-      </div>
     </section>
   );
 }

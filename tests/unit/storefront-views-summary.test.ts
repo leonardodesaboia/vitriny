@@ -21,7 +21,7 @@ describe("buildStorefrontViewsSummary", () => {
     });
     expect(s.views7).toBe(12);
     expect(s.message).toBe(
-      "Muita gente viu — que tal revisar preço, foto ou o texto dos itens?"
+      "Sua vitrine está recebendo visitas — boas fotos e descrições ajudam a virar pedido."
     );
   });
 

@@ -239,7 +239,7 @@ export function buildStorefrontViewsSummary(input: {
     return {
       views7,
       message:
-        "Muita gente viu — que tal revisar preço, foto ou o texto dos itens?",
+        "Sua vitrine está recebendo visitas — boas fotos e descrições ajudam a virar pedido.",
     };
   }
 

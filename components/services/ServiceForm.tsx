@@ -223,22 +223,8 @@ export function ServiceForm({
         </p>
       ) : null}
 
-      {/* ── Prévia na vitrine ───────────────────── */}
-      <div className="mb-5 grid gap-2">
-        <SectionHeader>Prévia na vitrine</SectionHeader>
-        <ItemCardPreview
-          name={previewName}
-          description={previewDescription}
-          basePrice={previewPrice}
-          itemType={itemType}
-          saleMode={saleMode}
-        />
-      </div>
-
-      <SectionDivider />
-
       {/* ── Informações ─────────────────────────── */}
-      <div className="grid gap-4 py-5">
+      <div className="grid gap-4 pb-5">
         <SectionHeader>Informações</SectionHeader>
 
         <div className="grid gap-2">
