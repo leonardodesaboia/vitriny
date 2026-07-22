@@ -56,6 +56,7 @@ O Vitriny atende pequenos negócios que apresentam produtos e serviços. A inter
 - Painel de pedidos paginado (20/página, filtros no banco, card navega ao detalhe)
 - Reabrir reserva Pix expirada com novo prazo e aviso ao cliente
 - Modelos de proposta contextualizados no fluxo de proposta (fora do menu lateral) com "Salvar esta proposta como modelo"
+- Links customizados no perfil (até 10, FREE) exibidos na vitrine pública
 
 ## Próximos passos recomendados
 

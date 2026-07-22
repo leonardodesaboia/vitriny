@@ -75,6 +75,7 @@ Campos importantes:
 - `address`: endereço livre (rua, número, bairro) usado no link "Ver no mapa" da vitrine pública. Opcional.
 - `instagram`, `facebook`, `tiktok`: valor digitado pelo dono (`@handle`, handle ou URL); normalizado para URL na renderização por `lib/social-links.ts`. Opcionais.
 - `businessHours`: `Json?` — array de 7 posições (índice 0 = domingo), cada uma `{ open, close }` em `"HH:MM"` ou `null` (fechado). `close < open` significa fechamento após a meia-noite. Validado por Zod na escrita e `parseBusinessHours` na leitura. Opcional.
+- `links` (`Json?`): links livres do perfil, array de `{ label, url }`. Máximo 10; validado e cortado por `lib/profile-links.ts` (só esquemas `http`/`https`). Exibido na vitrine pública.
 
 Relaciona-se com:
 
