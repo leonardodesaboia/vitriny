@@ -54,7 +54,13 @@ describe("toDayBucket", () => {
 });
 
 describe("BOT_UA_PATTERN", () => {
-  it("é uma RegExp", () => {
-    expect(BOT_UA_PATTERN).toBeInstanceOf(RegExp);
+  it("casa agentes de bot e não casa navegador comum", () => {
+    expect(BOT_UA_PATTERN.test("Googlebot/2.1")).toBe(true);
+    expect(BOT_UA_PATTERN.test("facebookexternalhit/1.1")).toBe(true);
+    expect(
+      BOT_UA_PATTERN.test(
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/537.36 Safari/537.36"
+      )
+    ).toBe(false);
   });
 });

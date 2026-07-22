@@ -186,10 +186,16 @@ export default async function DashboardPage() {
       ])
     : [{ _sum: { count: null } }, { _sum: { count: null } }];
 
+  const recentOrdersCount = profile
+    ? await prisma.quoteRequest.count({
+        where: { providerId: profile.id, createdAt: { gte: viewsCutoff30 } },
+      })
+    : 0;
+
   const viewsSummary = buildStorefrontViewsSummary({
     views7: views7Agg._sum.count ?? 0,
     views30: views30Agg._sum.count ?? 0,
-    hasRecentOrders: monthlyQuoteRequests > 0,
+    hasRecentOrders: recentOrdersCount > 0,
   });
 
   const limits = profile ? getPlanLimits(profile.plan) : null;

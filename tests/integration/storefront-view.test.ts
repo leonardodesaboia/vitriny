@@ -88,6 +88,20 @@ describe("POST /api/storefront-view (integração)", () => {
     expect(rows.length).toBe(0);
   });
 
+  it("responde 400 para corpo que não é JSON válido", async () => {
+    const { POST } = await import("@/app/api/storefront-view/route");
+    const req = new Request("http://localhost/api/storefront-view", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "Mozilla/5.0",
+      },
+      body: "isto não é json",
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+  });
+
   it("não conta vitrine não publicada (204)", async () => {
     await testDb.providerProfile.update({
       where: { id: profileId },

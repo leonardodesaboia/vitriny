@@ -1,11 +1,11 @@
 import { Card } from "@/components/ui/Card";
 import type { StorefrontViewsSummary } from "@/lib/dashboard";
 
-export function DashboardViewsCard({
-  summary,
-}: {
+type DashboardViewsCardProps = {
   summary: StorefrontViewsSummary;
-}) {
+};
+
+export function DashboardViewsCard({ summary }: DashboardViewsCardProps) {
   return (
     <Card className="mt-8 p-5 sm:p-6">
       <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
