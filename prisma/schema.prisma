@@ -136,6 +136,7 @@ model ProviderProfile {
   quoteRequests     QuoteRequest[]
   proposals         Proposal[]
   proposalTemplates ProposalTemplate[]
+  storefrontViews   StorefrontView[]
 }
 
 model Service {
@@ -374,4 +375,15 @@ enum CatalogItemType {
 enum FixedServiceCheckoutMode {
   REQUEST_ONLY
   REQUIRE_PIX_PAYMENT
+}
+
+model StorefrontView {
+  providerId String
+  // Bucket de dia (só data). Uma linha por (vitrine, dia); count agrega os hits.
+  date       DateTime @db.Date
+  count      Int      @default(0)
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, date])
 }
