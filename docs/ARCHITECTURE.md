@@ -190,7 +190,7 @@ O plano é armazenado em `ProviderProfile.plan`, usando `PlanTier`:
 Limites `FREE`:
 
 - 3 itens ativos;
-- 10 pedidos de orçamento por mês;
+- 50 pedidos de orçamento por mês (teto anti-abuso, não gatilho de upgrade — quem bate é o cliente final);
 - 5 propostas por mês;
 - 1 template de proposta.
 

@@ -152,7 +152,7 @@ O plano fica em `ProviderProfile.plan` com enum `PlanTier`.
 
 Limites centralizados em `lib/plan-limits.ts`:
 
-- `FREE`: 3 itens ativos, 10 pedidos/mês, 5 propostas/mês, 1 template.
+- `FREE`: 3 itens ativos, 50 pedidos/mês (teto anti-abuso — o cliente final é quem bate; não é gatilho de upgrade), 5 propostas/mês, 1 template.
 - `PRO`: limites `null`, sem limite prático no MVP.
 
 Stripe é usado para assinatura do negócio (usuário da Vitriny). Para o cliente final, há Pix manual em proposta aprovada e pagamento antecipado obrigatório de item com preço fixo: o Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem recebe confirmação automática. Stripe não é usado para pagamento do cliente final.

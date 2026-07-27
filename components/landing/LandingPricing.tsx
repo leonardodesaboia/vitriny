@@ -12,7 +12,7 @@ const free = [
   "Vitrine pública com link próprio",
   "Até 3 itens ativos",
   "Foto em cada item",
-  "10 pedidos/mês",
+  "50 pedidos/mês",
   "5 propostas/mês",
   "1 template de proposta",
   "Aprovação online pelo cliente"

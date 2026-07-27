@@ -21,8 +21,8 @@ describe("PLAN_LIMITS", () => {
       expect(PLAN_LIMITS.FREE.activeServices).toBe(3);
     });
 
-    it("limita pedidos mensais a 10", () => {
-      expect(PLAN_LIMITS.FREE.monthlyQuoteRequests).toBe(10);
+    it("limita pedidos mensais a 50 (teto anti-abuso)", () => {
+      expect(PLAN_LIMITS.FREE.monthlyQuoteRequests).toBe(50);
     });
 
     it("limita propostas mensais a 5", () => {

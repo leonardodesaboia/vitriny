@@ -354,7 +354,7 @@ describe("createQuoteRequest", () => {
   });
 
   it("bloqueia pedido quando limite mensal FREE foi atingido", async () => {
-    db.quoteRequest.count.mockResolvedValue(10);
+    db.quoteRequest.count.mockResolvedValue(50);
 
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
 

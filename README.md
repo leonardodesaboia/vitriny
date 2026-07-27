@@ -94,7 +94,7 @@ Planos:
 Limites do plano `FREE`:
 
 - até 3 itens ativos;
-- até 10 pedidos por mês;
+- até 50 pedidos por mês;
 - até 5 propostas por mês;
 - até 1 template de proposta.
 
