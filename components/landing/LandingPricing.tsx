@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import { PLAN_PRICES } from "@/lib/plan-limits";
+
+// A landing exibe centavos em corpo menor; o preço vem da fonte única.
+const [proPriceMain, proPriceCents] = PLAN_PRICES.PRO.split(",");
+
 const free = [
-  "Perfil público com link próprio",
-  "Até 3 serviços ativos",
-  "10 pedidos de orçamento/mês",
+  "Vitrine pública com link próprio",
+  "Até 3 itens ativos",
+  "Foto em cada item",
+  "10 pedidos/mês",
   "5 propostas/mês",
   "1 template de proposta",
   "Aprovação online pelo cliente"
@@ -14,12 +20,11 @@ const free = [
 
 const pro = [
   "Tudo do plano Grátis",
-  "Serviços ilimitados",
+  "Itens da vitrine ilimitados",
   "Pedidos ilimitados",
   "Propostas ilimitadas",
   "Templates ilimitados",
-  "Notas internas por pedido",
-  "Histórico completo de status"
+  "Temas visuais para sua página"
 ];
 
 function CheckIcon({ muted = false }: { muted?: boolean }) {
@@ -37,7 +42,7 @@ function CheckIcon({ muted = false }: { muted?: boolean }) {
 
 export function LandingPricing() {
   return (
-    <section id="precos" className="bg-white px-6 py-24">
+    <section id="precos" className="scroll-mt-20 bg-white px-6 py-24">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -72,7 +77,7 @@ export function LandingPricing() {
               Grátis
             </p>
             <div className="mt-4 flex items-end gap-1">
-              <span className="font-fraunces text-5xl font-bold text-ink">R$ 0</span>
+              <span className="font-fraunces text-5xl font-bold text-ink">{PLAN_PRICES.FREE}</span>
               <span className="mb-1.5 text-sm text-ink-muted">/mês</span>
             </div>
             <p className="mt-2 text-sm text-ink-muted">
@@ -110,15 +115,15 @@ export function LandingPricing() {
           >
             {/* Badge */}
             <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-leaf px-4 py-1 text-xs font-semibold text-white">
-              Mais popular
+              Recomendado
             </span>
 
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
               PRO
             </p>
             <div className="mt-4 flex items-end gap-1">
-              <span className="font-fraunces text-5xl font-bold text-ink">R$ 19</span>
-              <span className="mb-2 font-fraunces text-2xl font-bold text-ink">,90</span>
+              <span className="font-fraunces text-5xl font-bold text-ink">{proPriceMain}</span>
+              <span className="mb-2 font-fraunces text-2xl font-bold text-ink">,{proPriceCents}</span>
               <span className="mb-1.5 text-sm text-ink-muted">/mês</span>
             </div>
             <p className="mt-2 text-sm text-ink-muted">
@@ -155,7 +160,7 @@ export function LandingPricing() {
           transition={{ delay: 0.3 }}
           className="mt-8 text-center text-xs text-ink-muted"
         >
-          Sem contrato. Cancele quando quiser. Cobrança via cartão ou Pix.
+          Sem contrato. Cancele quando quiser. Cobrança via cartão.
         </motion.p>
       </div>
     </section>

@@ -4,6 +4,8 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { prisma } from "@/lib/prisma";
 import { getPublicThemePreset } from "@/lib/theme-presets";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children
 }: {
@@ -11,6 +13,15 @@ export default async function DashboardLayout({
 }) {
   const session = await auth();
   if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  // Bloqueia contas excluídas mesmo com JWT residual em outro dispositivo.
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { deletedAt: true }
+  });
+  if (!user || user.deletedAt) {
     redirect("/login");
   }
 

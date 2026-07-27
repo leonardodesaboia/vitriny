@@ -20,9 +20,9 @@ const pains = [
       </svg>
     ),
     problem: "Pedido perdido no WhatsApp",
-    desc: "O cliente mandou mensagem, você respondeu, a conversa cresceu — e o orçamento ficou pra trás.",
+    desc: "O cliente mandou mensagem, você respondeu, a conversa cresceu — e o pedido ficou pra trás.",
     solution:
-      "Cada pedido chega no painel com nome, serviço e contato. Organizado, rastreado, nunca perdido.",
+      "Cada pedido chega no painel com nome, item e contato. Organizado, rastreado, nunca perdido.",
   },
   {
     icon: (
@@ -62,7 +62,7 @@ const pains = [
       </svg>
     ),
     problem: "Sem saber o que está pendente",
-    desc: "Quem pediu orçamento essa semana? Quem está esperando resposta? Você não lembra de cabeça.",
+    desc: "Quem fez um pedido esta semana? Quem está esperando resposta? Você não lembra de cabeça.",
     solution:
       "Painel com status em tempo real: Novo → Proposta enviada → Aprovado. Você vê tudo de relance.",
   },

@@ -1,7 +1,10 @@
 import type { Stripe } from "stripe";
-import type { PlanTier, SubscriptionStatus } from "@prisma/client";
+import type { SubscriptionStatus } from "@prisma/client";
 import { stripe } from "@/lib/stripe";
+import { resolvePlanFromSubscription } from "@/lib/stripe-plan";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -53,10 +56,13 @@ async function handleStripeEvent(event: Stripe.Event) {
     case "customer.subscription.updated": {
       const subscription = event.data.object as Stripe.Subscription;
       const customerId = subscription.customer as string;
-      const plan = resolvePlan(subscription.status);
+      const firstItem = subscription.items.data[0];
+      const plan = resolvePlanFromSubscription(
+        subscription.status,
+        firstItem?.price.id
+      );
       const status = mapStripeStatus(subscription.status);
 
-      const firstItem = subscription.items.data[0];
       await prisma.providerProfile.updateMany({
         where: { stripeCustomerId: customerId },
         data: {
@@ -105,18 +111,6 @@ async function handleStripeEvent(event: Stripe.Event) {
     default:
       break;
   }
-}
-
-function resolvePlan(stripeStatus: string): PlanTier | null {
-  if (stripeStatus === "active" || stripeStatus === "trialing") return "PRO";
-  if (
-    stripeStatus === "canceled" ||
-    stripeStatus === "unpaid" ||
-    stripeStatus === "incomplete_expired" ||
-    stripeStatus === "paused"
-  )
-    return "FREE";
-  return null;
 }
 
 function mapStripeStatus(stripeStatus: string): SubscriptionStatus {

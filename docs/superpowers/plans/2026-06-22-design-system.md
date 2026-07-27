@@ -1726,10 +1726,10 @@ export default async function PublicQuoteRequestPage({
         {query.success ? (
           <div className="mt-8 rounded-xl border border-mint bg-mint/30 p-6">
             <h2 className="font-fraunces text-xl font-bold text-leaf">
-              Pedido enviado!
+              Solicitação enviada!
             </h2>
             <p className="mt-2 text-sm leading-6 text-ink-muted">
-              Seu pedido foi registrado. O prestador irá avaliar as informações
+              Sua solicitação foi registrada. O prestador irá avaliar as informações
               e retornar pelo contato informado.
             </p>
           </div>

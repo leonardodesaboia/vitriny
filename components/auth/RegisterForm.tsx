@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { registerUser } from "@/lib/actions/auth";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 type RegisterFormProps = {
   errorCode?: string;
@@ -19,11 +22,20 @@ export function RegisterForm({ errorCode }: RegisterFormProps) {
   return (
     <form action={registerUser} className="mt-6 grid gap-4">
       {errorCode ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
             {errorMessages[errorCode] ?? "Não foi possível criar a conta."}
           </p>
         </div>
+      ) : null}
+
+      {errorCode === "email-exists" ? (
+        <Link
+          className="text-sm font-semibold text-leaf hover:text-leaf-hover"
+          href="/verifique-seu-email"
+        >
+          Ainda não confirmou? Reenviar confirmação
+        </Link>
       ) : null}
 
       <div className="grid gap-2">
@@ -33,6 +45,7 @@ export function RegisterForm({ errorCode }: RegisterFormProps) {
         <input
           className={inputClass}
           id="name"
+          maxLength={120}
           name="name"
           placeholder="Seu nome completo"
           required
@@ -47,6 +60,7 @@ export function RegisterForm({ errorCode }: RegisterFormProps) {
         <input
           className={inputClass}
           id="email"
+          maxLength={160}
           name="email"
           placeholder="seu@email.com"
           required
@@ -58,34 +72,37 @@ export function RegisterForm({ errorCode }: RegisterFormProps) {
         <label className={labelClass} htmlFor="password">
           Senha
         </label>
-        <input
+        <PasswordInput
           className={inputClass}
           id="password"
           minLength={8}
+          maxLength={72}
           name="password"
-          placeholder="Pelo menos 8 caracteres"
+          placeholder="Sua senha"
           required
-          type="password"
+          autoComplete="new-password"
         />
+        <p className="text-xs text-ink-muted">Use pelo menos 8 caracteres.</p>
       </div>
 
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="confirmPassword">
           Confirmar senha
         </label>
-        <input
+        <PasswordInput
           className={inputClass}
           id="confirmPassword"
           minLength={8}
+          maxLength={72}
           name="confirmPassword"
           placeholder="Repita a senha"
           required
-          type="password"
+          autoComplete="new-password"
         />
       </div>
 
       <button
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-ink px-5 text-sm font-semibold text-white transition hover:bg-ink/80"
+        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         type="submit"
       >
         Criar conta

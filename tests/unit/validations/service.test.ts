@@ -7,9 +7,50 @@ describe("serviceSchema", () => {
     name: "Pintura residencial",
     description: "",
     basePrice: "",
+    itemType: "SERVICE",
     pricingType: "CUSTOM",
     isActive: true
   };
+
+  it.each([
+    ["SERVICE", "CUSTOM", ""],
+    ["SERVICE", "FIXED", "200.00"],
+    ["PRODUCT", "CUSTOM", ""],
+    ["PRODUCT", "FIXED", "200.00"]
+  ] as const)(
+    "aceita itemType %s com pricingType %s",
+    (itemType, pricingType, basePrice) => {
+      const result = serviceSchema.safeParse({
+        ...valid,
+        itemType,
+        pricingType,
+        basePrice
+      });
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.data.itemType).toBe(itemType);
+    }
+  );
+
+  it("usa SERVICE como padrão quando itemType não é informado", () => {
+    const withoutItemType = {
+      name: valid.name,
+      description: valid.description,
+      basePrice: valid.basePrice,
+      pricingType: valid.pricingType,
+      isActive: valid.isActive
+    };
+    const result = serviceSchema.safeParse(withoutItemType);
+
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.itemType).toBe("SERVICE");
+  });
+
+  it("rejeita itemType inválido", () => {
+    expect(
+      serviceSchema.safeParse({ ...valid, itemType: "KIT" }).success
+    ).toBe(false);
+  });
 
   it("aceita dados válidos sem preço e sem descrição (CUSTOM)", () => {
     const result = serviceSchema.safeParse(valid);

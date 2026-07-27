@@ -66,6 +66,7 @@ export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
 type QuoteRequestServiceRules = {
   pricingType: "FIXED" | "CUSTOM";
   requiresSchedulingDetails: boolean;
+  requiresLocation: boolean;
 } | null;
 
 export function validateQuoteRequestForService(
@@ -73,8 +74,14 @@ export function validateQuoteRequestForService(
   service: QuoteRequestServiceRules,
   referenceDate = new Date()
 ) {
-  if (service?.pricingType !== "FIXED" && !input.description) {
-    return "Descreva o que você precisa para solicitar um orçamento.";
+  // Pedido genérico (sem item) não é permitido: toda solicitação parte de
+  // um item cadastrado na vitrine.
+  if (!service) {
+    return "Selecione um item da vitrine para enviar a solicitação.";
+  }
+
+  if (service.pricingType !== "FIXED" && !input.description) {
+    return "Descreva o que você precisa para enviar a solicitação.";
   }
 
   if (
@@ -84,10 +91,16 @@ export function validateQuoteRequestForService(
     return "Escolha uma data de atendimento que não esteja no passado.";
   }
 
-  if (service?.requiresSchedulingDetails) {
-    if (!input.desiredDate || !input.desiredTime || !input.location) {
-      return "Informe data, horário e local para este serviço.";
+  // Data/horário e local são exigências independentes: um produto pode
+  // pedir só o endereço de entrega, um serviço pode pedir só o agendamento.
+  if (service.requiresSchedulingDetails) {
+    if (!input.desiredDate || !input.desiredTime) {
+      return "Informe data e horário para este item.";
     }
+  }
+
+  if (service.requiresLocation && !input.location) {
+    return "Informe o local para este item.";
   }
 
   return null;

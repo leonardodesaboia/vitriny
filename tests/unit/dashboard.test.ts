@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildMonthlyRevenueSummary,
   buildRecentDashboardActivity,
   buildOnboardingOutcomeStep,
+  dashboardRequestViewWhere,
   matchesDashboardRequestView,
   parseDashboardRequestView
 } from "@/lib/dashboard";
@@ -137,7 +139,7 @@ describe("buildOnboardingOutcomeStep", () => {
     ).toMatchObject({
       done: true,
       id: "fixed-request",
-      label: "Receber primeiro pedido de serviço"
+      label: "Receber primeiro pedido"
     });
   });
 
@@ -180,6 +182,7 @@ describe("matchesDashboardRequestView", () => {
   };
   const request = {
     createdAt: new Date("2026-06-15T12:00:00.000Z"),
+    pixReservationClientPaidAt: null,
     pixReservationPaidAt: null,
     pixReservationRequestedAt: null,
     proposal: null,
@@ -219,6 +222,34 @@ describe("matchesDashboardRequestView", () => {
     ).toBe(false);
   });
 
+  it("exclui pagamento Pix expirado das pendências", () => {
+    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
+
+    expect(
+      matchesDashboardRequestView(
+        { ...request, pixReservationRequestedAt: expiredRequestedAt },
+        "PIX_RESERVATION",
+        month
+      )
+    ).toBe(false);
+  });
+
+  it("inclui reserva expirada quando o cliente informou pagamento", () => {
+    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
+
+    expect(
+      matchesDashboardRequestView(
+        {
+          ...request,
+          pixReservationRequestedAt: expiredRequestedAt,
+          pixReservationClientPaidAt: new Date()
+        },
+        "PIX_RESERVATION",
+        month
+      )
+    ).toBe(true);
+  });
+
   it("identifica entrada aprovada ainda não confirmada", () => {
     expect(
       matchesDashboardRequestView(
@@ -255,3 +286,90 @@ describe("matchesDashboardRequestView", () => {
     ).toBe(true);
   });
 });
+
+describe("dashboardRequestViewWhere", () => {
+  const monthRange = {
+    start: new Date("2026-07-01T00:00:00Z"),
+    end: new Date("2026-08-01T00:00:00Z")
+  };
+  const now = new Date("2026-07-09T12:00:00Z");
+
+  it("MONTH filtra por createdAt no mês", () => {
+    expect(dashboardRequestViewWhere("MONTH", monthRange, now)).toEqual({
+      createdAt: { gte: monthRange.start, lt: monthRange.end }
+    });
+  });
+
+  it("OPEN exclui fechados", () => {
+    expect(dashboardRequestViewWhere("OPEN", monthRange, now)).toEqual({
+      status: { not: "CLOSED" }
+    });
+  });
+
+  it("PIX_RESERVATION espelha a regra de expiração + informado", () => {
+    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+    expect(
+      dashboardRequestViewWhere("PIX_RESERVATION", monthRange, now)
+    ).toEqual({
+      pixReservationRequestedAt: { not: null },
+      pixReservationPaidAt: null,
+      OR: [
+        { pixReservationRequestedAt: { gte: cutoff } },
+        { pixReservationClientPaidAt: { not: null } }
+      ]
+    });
+  });
+
+  it("DEPOSIT espelha entrada aprovada não recebida", () => {
+    expect(dashboardRequestViewWhere("DEPOSIT", monthRange, now)).toEqual({
+      proposal: {
+        is: {
+          status: "APPROVED",
+          depositAmount: { gt: 0 },
+          depositPaidAt: null
+        }
+      }
+    });
+  });
+
+  it("APPROVED_MONTH espelha aprovadas pelo respondedAt", () => {
+    expect(
+      dashboardRequestViewWhere("APPROVED_MONTH", monthRange, now)
+    ).toEqual({
+      proposal: {
+        is: {
+          status: "APPROVED",
+          respondedAt: { gte: monthRange.start, lt: monthRange.end }
+        }
+      }
+    });
+  });
+});
+
+describe("buildMonthlyRevenueSummary", () => {
+  // Moeda pt-BR usa espaço não separável — comparar com o mesmo formatador.
+  const brl = (value: number) =>
+    new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL"
+    }).format(value);
+
+  it("soma propostas aprovadas e pedidos Pix confirmados", () => {
+    expect(buildMonthlyRevenueSummary("1500.5", "249.5")).toEqual({
+      approved: brl(1500.5),
+      pixConfirmed: brl(249.5),
+      total: brl(1750)
+    });
+  });
+
+  it("trata somas nulas como zero", () => {
+    expect(buildMonthlyRevenueSummary(null, null)).toEqual({
+      approved: brl(0),
+      pixConfirmed: brl(0),
+      total: brl(0)
+    });
+  });
+});
+
+// A ordenação "informados primeiro" da view PIX_RESERVATION vive no orderBy
+// da query paginada (pixReservationClientPaidAt desc nulls last).

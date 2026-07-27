@@ -5,15 +5,18 @@ import { useActionState, useState } from "react";
 import { createQuoteRequest, type QuoteRequestFormState } from "@/lib/actions/quote-requests";
 import { DateInput } from "@/components/ui/DateInput";
 import { PhoneInput } from "@/components/ui/PhoneInput";
+import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
 import type { ServiceSummary } from "@/types";
 
 type SelectedService = {
   id: string;
   name: string;
   description: string | null;
+  itemType: "SERVICE" | "PRODUCT";
   pricingType: "FIXED" | "CUSTOM";
   basePrice: string | null;
   requiresSchedulingDetails: boolean;
+  requiresLocation: boolean;
 };
 
 type QuoteRequestFormProps = {
@@ -53,14 +56,25 @@ export function QuoteRequestForm({
     selectedServiceId ?? ""
   );
 
-  const activeService: SelectedService | null =
-    selectedService ??
-    (currentServiceId
-      ? (services.find((s) => s.id === currentServiceId) as SelectedService | undefined) ?? null
-      : null);
+  const dropdownService = currentServiceId
+    ? (services.find((s) => s.id === currentServiceId) ?? null)
+    : null;
+
+  const activeService = selectedService ?? dropdownService;
 
   const isFixed = activeService?.pricingType === "FIXED";
   const showScheduling = activeService?.requiresSchedulingDetails === true;
+  const showLocation = activeService?.requiresLocation === true;
+  // Vocabulário por tipo: produto fala de entrega/retirada, serviço de
+  // agendamento e local de atendimento.
+  const isProduct = activeService?.itemType === "PRODUCT";
+
+  // O item escolhido no dropdown também pode exigir pagamento Pix; o aviso
+  // precisa aparecer antes do envio, não só quando o item vem da URL.
+  const willRequirePixPayment =
+    requiresPixPayment ||
+    (dropdownService?.pricingType === "FIXED" &&
+      dropdownService.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT");
 
   return (
     <form action={formAction} className="mt-8 grid gap-5">
@@ -72,38 +86,22 @@ export function QuoteRequestForm({
           {state.error}
         </p>
       ) : null}
-      {requiresPixPayment && selectedService?.basePrice ? (
+      {/* Quando o item vem da URL, o card da página já mostra nome, descrição
+          e preço — o formulário guarda apenas o vínculo. */}
+      {selectedService ? (
+        <input name="serviceId" type="hidden" value={selectedService.id} />
+      ) : null}
+      {!selectedService && willRequirePixPayment && activeService?.basePrice ? (
         <div className="rounded-xl border border-leaf/30 bg-mint/30 p-4">
           <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Valor da reserva
+            Valor do pedido
           </p>
           <p className="mt-1 font-fraunces text-3xl font-bold text-ink">
-            {formatMoney(selectedService.basePrice)}
+            {formatMoney(activeService.basePrice)}
           </p>
           <p className="mt-1 text-xs text-ink-muted">
             Você realizará o pagamento via Pix após preencher seus dados.
           </p>
-        </div>
-      ) : null}
-      {selectedService ? (
-        <div className="min-w-0 overflow-hidden rounded-xl border border-paper-soft bg-white p-4">
-          <input name="serviceId" type="hidden" value={selectedService.id} />
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-            Serviço selecionado
-          </p>
-          <p className="mt-1 break-words font-fraunces text-lg font-bold text-ink">
-            {selectedService.name}
-          </p>
-          {selectedService.description ? (
-            <p className="mt-2 break-words text-sm leading-6 text-ink-muted">
-              {selectedService.description}
-            </p>
-          ) : null}
-          {isFixed && selectedService.basePrice ? (
-            <p className="mt-1 text-sm font-semibold text-leaf">
-              {formatMoney(selectedService.basePrice)}
-            </p>
-          ) : null}
         </div>
       ) : null}
 
@@ -114,6 +112,7 @@ export function QuoteRequestForm({
         <input
           className={inputClass}
           id="customerName"
+          maxLength={120}
           name="customerName"
           placeholder="Seu nome completo"
           required
@@ -129,6 +128,7 @@ export function QuoteRequestForm({
           <input
             className={inputClass}
             id="customerEmail"
+            maxLength={120}
             name="customerEmail"
             placeholder="seu@email.com"
             type="email"
@@ -146,11 +146,14 @@ export function QuoteRequestForm({
           />
         </div>
       </div>
+      <p className="-mt-3 text-xs text-ink-muted">
+        Informe ao menos um: e-mail ou telefone.
+      </p>
 
       {!selectedService && services.length > 0 ? (
         <div className="grid gap-2">
           <label className={labelClass} htmlFor="serviceId">
-            Serviço
+            Item *
           </label>
           <select
             className={inputClass}
@@ -158,8 +161,11 @@ export function QuoteRequestForm({
             id="serviceId"
             name="serviceId"
             onChange={(e) => setCurrentServiceId(e.target.value)}
+            required
           >
-            <option value="">Não sei informar / Outro</option>
+            <option disabled value="">
+              Selecione um item
+            </option>
             {services.map((service) => (
               <option key={service.id} value={service.id}>
                 {service.name}
@@ -170,69 +176,76 @@ export function QuoteRequestForm({
       ) : null}
 
       {showScheduling ? (
-        <>
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <label className={labelClass} htmlFor="desiredDate">
-                Data desejada *
-              </label>
-              <DateInput
-                className={inputClass}
-                id="desiredDate"
-                name="desiredDate"
-                required
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <label className={labelClass} htmlFor="desiredTime">
-                Horário ou período desejado *
-              </label>
-              <input
-                className={inputClass}
-                id="desiredTime"
-                name="desiredTime"
-                placeholder="Ex: manhã, 14h, tarde"
-                required
-                type="text"
-                maxLength={100}
-              />
-            </div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <label className={labelClass} htmlFor="desiredDate">
+              {isProduct ? "Data de entrega ou retirada *" : "Data desejada *"}
+            </label>
+            <DateInput
+              className={inputClass}
+              id="desiredDate"
+              name="desiredDate"
+              required
+            />
           </div>
 
           <div className="grid gap-2">
-            <label className={labelClass} htmlFor="location">
-              Local, bairro ou cidade *
+            <label className={labelClass} htmlFor="desiredTime">
+              {isProduct ? "Período *" : "Horário ou período desejado *"}
             </label>
             <input
               className={inputClass}
-              id="location"
-              name="location"
-              placeholder="Ex: Centro, São Paulo"
+              id="desiredTime"
+              name="desiredTime"
+              placeholder={
+                isProduct ? "Ex: manhã, até as 14h" : "Ex: manhã, 14h, tarde"
+              }
               required
               type="text"
-              maxLength={200}
+              maxLength={100}
             />
           </div>
-        </>
+        </div>
+      ) : null}
+
+      {showLocation ? (
+        <div className="grid gap-2">
+          <label className={labelClass} htmlFor="location">
+            {isProduct
+              ? "Endereço de entrega ou retirada *"
+              : "Local, bairro ou cidade *"}
+          </label>
+          <input
+            className={inputClass}
+            id="location"
+            name="location"
+            placeholder={
+              isProduct ? "Ex: Rua, número e bairro" : "Ex: Centro, São Paulo"
+            }
+            required
+            type="text"
+            maxLength={200}
+          />
+        </div>
       ) : null}
 
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="description">
-          {isFixed
-            ? "Observações adicionais"
-            : "Descreva o que você precisa *"}
+          {activeService?.pricingType === "CUSTOM"
+            ? "Descreva o que você precisa *"
+            : "Observações adicionais"}
         </label>
-        <textarea
+        <CharCountTextarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
           id="description"
+          maxLength={1200}
           name="description"
           placeholder={
-            isFixed
-              ? "Alguma observação sobre data, local ou preferências? (opcional)"
-              : "Conte um pouco mais sobre o que você precisa, prazo, tamanho do projeto..."
+            activeService?.pricingType === "CUSTOM"
+              ? "Conte um pouco mais sobre o que você precisa, prazo, tamanho do projeto..."
+              : "Alguma observação sobre data, local ou preferências? (opcional)"
           }
-          required={!isFixed}
+          required={activeService?.pricingType === "CUSTOM"}
         />
       </div>
 
@@ -243,10 +256,10 @@ export function QuoteRequestForm({
       >
         {isPending
           ? "Enviando..."
-          : requiresPixPayment
-            ? "Continuar para pagamento Pix →"
+          : willRequirePixPayment
+            ? "Continuar para pagar com Pix →"
             : isFixed
-              ? "Solicitar serviço"
+              ? "Solicitar"
               : "Enviar pedido"}
       </button>
     </form>

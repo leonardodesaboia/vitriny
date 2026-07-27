@@ -15,7 +15,7 @@ type ProposalTemplatesPageProps = {
 
 const errorMessages: Record<string, string> = {
   invalid: "Revise os dados do modelo.",
-  profile: "Crie o perfil do prestador antes de criar modelos.",
+  profile: "Cadastre os dados do negócio antes de criar modelos.",
   "not-found": "Modelo não encontrado.",
   "limit-proposal-templates":
     LIMIT_ERROR_MESSAGES["limit-proposal-templates"]
@@ -66,15 +66,24 @@ export default async function ProposalTemplatesPage({
 
   return (
     <div className="p-8">
-      <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+      <Link
+        className="inline-flex items-center gap-1.5 text-sm font-semibold text-leaf transition hover:text-leaf-hover"
+        href="/dashboard/pedidos"
+      >
+        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+        </svg>
+        Voltar aos pedidos
+      </Link>
+      <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-leaf">
         Modelos
       </p>
       <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
         Templates de proposta
       </h1>
       <p className="mt-2 max-w-xl text-sm leading-6 text-ink-muted">
-        Use modelos para serviços sob demanda, quando o valor depende do pedido e você precisa
-        montar uma proposta personalizada. Serviços com preço fixo não precisam de template.
+        Use modelos para itens sob consulta, quando o valor depende do pedido e você precisa
+        montar uma proposta personalizada. Itens com preço fixo não precisam de template.
       </p>
 
       {params.error ? (
@@ -86,23 +95,23 @@ export default async function ProposalTemplatesPage({
       {!profile ? (
         <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
           <h2 className="font-fraunces text-xl font-bold text-ink">
-            Crie seu perfil primeiro
+            Cadastre seu negócio primeiro
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Templates de serviços sob demanda ficam vinculados ao perfil do prestador.
+            Os templates ficam vinculados aos dados do negócio.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
-            Criar perfil
+            Cadastrar negócio
           </Link>
         </div>
       ) : (
         <div className="mt-8 grid gap-8">
           <section>
             <h2 className="font-fraunces text-2xl font-bold text-ink">
-              Novo modelo para serviço sob demanda
+              Novo modelo para item sob consulta
             </h2>
             <div className="mt-4">
               <ProposalTemplateForm />

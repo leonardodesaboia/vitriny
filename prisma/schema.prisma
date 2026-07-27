@@ -16,12 +16,21 @@ model User {
   password      String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  // Soft delete: a conta é anonimizada, mas o histórico de pedidos e
+  // propostas permanece para a futura tela administrativa.
+  deletedAt        DateTime?
+  // SHA-256 do e-mail original: detecta recorrência (ex.: excluir e recriar
+  // conta para zerar limites) sem armazenar o dado pessoal.
+  deletedEmailHash String?
 
-  providerProfile     ProviderProfile?
-  accounts            Account[]
-  sessions            Session[]
-  internalNotes       QuoteRequestInternalNote[]
-  passwordResetTokens PasswordResetToken[]
+  providerProfile        ProviderProfile?
+  accounts               Account[]
+  sessions               Session[]
+  internalNotes          QuoteRequestInternalNote[]
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationToken EmailVerificationToken?
+
+  @@index([deletedEmailHash])
 }
 
 model Account {
@@ -65,13 +74,23 @@ model VerificationToken {
 model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique
+  tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ProviderProfile {
@@ -96,6 +115,18 @@ model ProviderProfile {
   pixKeyType    String?
   pixHolderName String?
   pixCity       String?
+  businessType BusinessType @default(SERVICES)
+  address       String?
+  instagram     String?
+  facebook      String?
+  tiktok        String?
+  // Horário de funcionamento: array JSON de 7 posições (0 = domingo),
+  // cada uma { open, close } em "HH:MM" ou null (fechado). Validado por Zod
+  // na escrita e por parseBusinessHours na leitura.
+  businessHours Json?
+  // Links livres do perfil: array JSON de { label, url }. Validado e cortado
+  // em MAX_PROFILE_LINKS por lib/profile-links.ts na escrita e na leitura.
+  links Json?
   isPublished  Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -105,6 +136,7 @@ model ProviderProfile {
   quoteRequests     QuoteRequest[]
   proposals         Proposal[]
   proposalTemplates ProposalTemplate[]
+  storefrontViews   StorefrontView[]
 }
 
 model Service {
@@ -112,11 +144,15 @@ model Service {
   providerId                String
   name                      String
   description               String?
+  itemType                  CatalogItemType          @default(SERVICE)
   basePrice                 Decimal?           @db.Decimal(10, 2)
   isActive                  Boolean            @default(true)
   pricingType               ServicePricingType       @default(CUSTOM)
   fixedServiceCheckoutMode  FixedServiceCheckoutMode @default(REQUEST_ONLY)
+  // Campos do formulário público, independentes entre si:
+  // requiresSchedulingDetails = data + horário; requiresLocation = local.
   requiresSchedulingDetails Boolean                  @default(false)
+  requiresLocation          Boolean                  @default(false)
   imageUrl                  String?
   imageStorageKey           String?
   createdAt                 DateTime           @default(now())
@@ -124,6 +160,7 @@ model Service {
 
   provider      ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
   quoteRequests QuoteRequest[]
+  views         ItemView[]
 }
 
 model QuoteRequest {
@@ -138,9 +175,15 @@ model QuoteRequest {
   desiredTime               String?
   location                  String?
   status                    QuoteRequestStatus @default(NEW)
+  // Snapshot do nome do item na criação: preserva o histórico mesmo se o
+  // item for renomeado ou excluído (serviceId vira null via SetNull).
+  serviceNameSnapshot       String?
   fixedServiceAmount        Decimal?           @db.Decimal(10, 2)
   pixReservationRequestedAt DateTime?
   pixReservationPaidAt      DateTime?
+  // Sinal do cliente ("Já fiz o pagamento"); a confirmação continua manual
+  // pelo negócio via pixReservationPaidAt.
+  pixReservationClientPaidAt DateTime?
   createdAt                 DateTime           @default(now())
   updatedAt                 DateTime           @updatedAt
 
@@ -289,6 +332,12 @@ enum ProposalPricingMode {
   ITEMIZED
 }
 
+enum BusinessType {
+  PRODUCTS
+  SERVICES
+  BOTH
+}
+
 enum PlanTier {
   FREE
   PRO
@@ -319,7 +368,34 @@ enum ServicePricingType {
   CUSTOM
 }
 
+enum CatalogItemType {
+  SERVICE
+  PRODUCT
+}
+
 enum FixedServiceCheckoutMode {
   REQUEST_ONLY
   REQUIRE_PIX_PAYMENT
+}
+
+model StorefrontView {
+  providerId String
+  // Bucket de dia (só data). Uma linha por (vitrine, dia); count agrega os hits.
+  date       DateTime @db.Date
+  count      Int      @default(0)
+
+  provider ProviderProfile @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@id([providerId, date])
+}
+
+model ItemView {
+  serviceId String
+  // Bucket de dia. Uma linha por (item, dia); count agrega os hits de interesse.
+  date      DateTime @db.Date
+  count     Int      @default(0)
+
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([serviceId, date])
 }

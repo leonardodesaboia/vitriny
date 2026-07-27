@@ -3,19 +3,45 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { after } from "next/server";
 import { AuthError, CredentialsSignin } from "next-auth";
+import { Prisma } from "@prisma/client";
 
 import { signIn } from "@/auth";
+import {
+  createEmailVerificationToken,
+  getEmailVerificationUrl,
+  hashEmailVerificationToken,
+  PENDING_VERIFICATION_EMAIL_COOKIE,
+  PENDING_VERIFICATION_EMAIL_MAX_AGE,
+} from "@/lib/auth/email-verification";
+import { hashToken } from "@/lib/auth/tokens";
 import { prisma } from "@/lib/prisma";
-import { sendPasswordResetEmail } from "@/lib/email";
+import {
+  sendEmailVerificationEmail,
+  sendPasswordResetEmail,
+} from "@/lib/email";
 import {
   registerSchema,
   loginSchema,
   forgotPasswordSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
+  verificationTokenSchema,
 } from "@/lib/validations/auth";
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+async function rememberPendingVerificationEmail(email: string) {
+  const cookieStore = await cookies();
+  cookieStore.set(PENDING_VERIFICATION_EMAIL_COOKIE, email, {
+    httpOnly: true,
+    maxAge: PENDING_VERIFICATION_EMAIL_MAX_AGE,
+    path: "/",
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+}
 
 async function signInWithCredentials(
   email: string,
@@ -61,16 +87,58 @@ export async function registerUser(formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const verification = createEmailVerificationToken();
+  let user: { id: string; email: string | null };
 
-  await prisma.user.create({
-    data: {
-      name: parsed.data.name,
-      email: parsed.data.email,
-      password: passwordHash
+  try {
+    user = await prisma.$transaction(async (tx) => {
+      const createdUser = await tx.user.create({
+        data: {
+          name: parsed.data.name,
+          email: parsed.data.email,
+          emailVerified: null,
+          password: passwordHash,
+        },
+      });
+
+      await tx.emailVerificationToken.create({
+        data: {
+          userId: createdUser.id,
+          tokenHash: verification.tokenHash,
+          expiresAt: verification.expiresAt,
+        },
+      });
+
+      return createdUser;
+    });
+  } catch (error) {
+    // Corrida com outro cadastro do mesmo e-mail entre o find e o create.
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2002"
+    ) {
+      redirect("/cadastro?error=email-exists");
     }
-  });
+    throw error;
+  }
 
-  await signInWithCredentials(parsed.data.email, parsed.data.password, "/cadastro");
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+  await rememberPendingVerificationEmail(user.email ?? parsed.data.email);
+
+  try {
+    await sendEmailVerificationEmail(
+      user.email ?? parsed.data.email,
+      getEmailVerificationUrl(appUrl, verification.token),
+    );
+  } catch (error) {
+    console.error("Falha ao enviar e-mail de confirmação de cadastro.", {
+      error,
+      userId: user.id,
+    });
+    redirect("/verifique-seu-email?error=delivery");
+  }
+
+  redirect("/verifique-seu-email?sent=1");
 }
 
 export async function loginWithCredentials(formData: FormData) {
@@ -97,10 +165,10 @@ export async function requestPasswordReset(formData: FormData) {
 
   const user = await prisma.user.findUnique({
     where: { email: parsed.data.email },
-    select: { id: true, password: true }
+    select: { id: true, password: true, emailVerified: true }
   });
 
-  if (user?.password) {
+  if (user?.password && user.emailVerified) {
     const token = crypto.randomBytes(32).toString("hex");
 
     await prisma.$transaction([
@@ -108,20 +176,127 @@ export async function requestPasswordReset(formData: FormData) {
       prisma.passwordResetToken.create({
         data: {
           userId: user.id,
-          token,
+          // Só o hash vai ao banco; o token puro vive apenas no link enviado.
+          tokenHash: hashToken(token),
           expiresAt: new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS)
         }
       })
     ]);
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
-    await sendPasswordResetEmail(
-      parsed.data.email,
-      `${appUrl.replace(/\/$/, "")}/redefinir-senha/${token}`
-    );
+    const resetUrl = `${appUrl.replace(/\/$/, "")}/redefinir-senha/${token}`;
+
+    // Envio fora do caminho de resposta: iguala o tempo de resposta entre conta
+    // existente e inexistente (não enumera por timing) e não trava a UI. A
+    // resposta é idêntica em todos os casos; falha de envio nunca vira erro visível.
+    after(async () => {
+      try {
+        await sendPasswordResetEmail(parsed.data.email, resetUrl);
+      } catch (error) {
+        console.error("Falha ao enviar e-mail de redefinição de senha.", {
+          error
+        });
+      }
+    });
   }
 
   redirect("/esqueci-senha?sent=1");
+}
+
+export async function confirmEmail(formData: FormData) {
+  const parsed = verificationTokenSchema.safeParse(formData.get("token"));
+
+  if (!parsed.success) {
+    redirect("/verifique-seu-email?error=invalid");
+  }
+
+  const tokenHash = hashEmailVerificationToken(parsed.data);
+  const confirmed = await prisma.$transaction(async (tx) => {
+    const verification = await tx.emailVerificationToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (!verification || verification.expiresAt <= new Date()) {
+      return false;
+    }
+
+    await tx.user.update({
+      where: { id: verification.userId },
+      data: { emailVerified: new Date() },
+    });
+    await tx.emailVerificationToken.deleteMany({
+      where: { userId: verification.userId },
+    });
+
+    return true;
+  });
+
+  if (!confirmed) {
+    redirect("/verifique-seu-email?error=invalid");
+  }
+
+  const cookieStore = await cookies();
+  cookieStore.delete(PENDING_VERIFICATION_EMAIL_COOKIE);
+  redirect("/login?verified=1");
+}
+
+export async function resendEmailVerification(formData: FormData) {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: formData.get("email"),
+  });
+
+  if (!parsed.success) {
+    redirect("/verifique-seu-email?sent=1");
+  }
+
+  await rememberPendingVerificationEmail(parsed.data.email);
+
+  const user = await prisma.user.findUnique({
+    where: { email: parsed.data.email },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      emailVerified: true,
+    },
+  });
+
+  if (user?.password && !user.emailVerified && user.email) {
+    const verification = createEmailVerificationToken();
+
+    await prisma.emailVerificationToken.upsert({
+      where: { userId: user.id },
+      update: {
+        tokenHash: verification.tokenHash,
+        expiresAt: verification.expiresAt,
+      },
+      create: {
+        userId: user.id,
+        tokenHash: verification.tokenHash,
+        expiresAt: verification.expiresAt,
+      },
+    });
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
+    const email = user.email;
+    const verificationUrl = getEmailVerificationUrl(appUrl, verification.token);
+    const userId = user.id;
+
+    // Envio fora do caminho de resposta: iguala o tempo de resposta e não trava
+    // a UI. Resposta idêntica para conta pendente, inexistente ou já verificada.
+    after(async () => {
+      try {
+        await sendEmailVerificationEmail(email, verificationUrl);
+      } catch (error) {
+        console.error("Falha ao reenviar confirmação de cadastro.", {
+          error,
+          userId,
+        });
+      }
+    });
+  }
+
+  redirect("/verifique-seu-email?sent=1");
 }
 
 export async function resetPassword(formData: FormData) {
@@ -132,12 +307,12 @@ export async function resetPassword(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const token = String(formData.get("token") ?? "");
+    const token = encodeURIComponent(String(formData.get("token") ?? ""));
     redirect(`/redefinir-senha/${token}?error=invalid`);
   }
 
   const resetToken = await prisma.passwordResetToken.findUnique({
-    where: { token: parsed.data.token }
+    where: { tokenHash: hashToken(parsed.data.token) }
   });
 
   if (!resetToken || resetToken.expiresAt < new Date()) {

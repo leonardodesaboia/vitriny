@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 
+import { getFixedCatalogItemType } from "@/lib/catalog-item-type";
+import { deleteFromStorage } from "@/lib/storage";
 import {
   getPlanLimit,
   hasReachedLimit,
@@ -15,19 +17,24 @@ import { serviceSchema } from "@/lib/validations/service";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
 import type { ActionResult } from "@/types";
 
-function parseServiceForm(formData: FormData) {
+function parseServiceForm(
+  formData: FormData,
+  fixedItemType?: "SERVICE" | "PRODUCT" | null,
+) {
   const pricingType = formData.get("pricingType");
   return serviceSchema.safeParse({
     name: formData.get("name"),
     description: formData.get("description"),
     basePrice: formData.get("basePrice"),
     isActive: formData.get("isActive") === "on",
+    itemType: fixedItemType ?? formData.get("itemType") ?? "SERVICE",
     pricingType,
     fixedServiceCheckoutMode:
       pricingType === "FIXED"
         ? (formData.get("fixedServiceCheckoutMode") ?? "REQUEST_ONLY")
         : "REQUEST_ONLY",
-    requiresSchedulingDetails: formData.get("requiresSchedulingDetails") === "on"
+    requiresSchedulingDetails: formData.get("requiresSchedulingDetails") === "on",
+    requiresLocation: formData.get("requiresLocation") === "on"
   });
 }
 
@@ -45,7 +52,10 @@ export async function createService(
     redirect("/dashboard/servicos?error=profile");
   }
 
-  const parsed = parseServiceForm(formData);
+  const parsed = parseServiceForm(
+    formData,
+    getFixedCatalogItemType(profile.businessType),
+  );
   if (!parsed.success) {
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
@@ -63,7 +73,7 @@ export async function createService(
     if (!pixConfigured) {
       return {
         error:
-          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+          "Configure sua chave Pix, nome do titular e cidade nos dados do negócio antes de ativar pagamento via Pix."
       };
     }
   }
@@ -83,11 +93,13 @@ export async function createService(
       providerId: profile.id,
       name: parsed.data.name,
       description: parsed.data.description,
+      itemType: parsed.data.itemType,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,
       fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
-      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails,
+      requiresLocation: parsed.data.requiresLocation
     },
     select: { id: true }
   });
@@ -111,7 +123,12 @@ export async function updateService(
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
 
-  const parsed = parseServiceForm(formData);
+  // Mesma regra do cadastro: só perfis que oferecem ambos podem definir o
+  // tipo; perfis só-produtos/só-serviços têm o tipo travado pelo negócio.
+  const parsed = parseServiceForm(
+    formData,
+    getFixedCatalogItemType(profile.businessType),
+  );
   if (!parsed.success) {
     return { error: "Dados inválidos. Revise os campos e tente novamente." };
   }
@@ -129,7 +146,7 @@ export async function updateService(
     if (!pixConfigured) {
       return {
         error:
-          "Configure sua chave Pix, nome do titular e cidade no perfil antes de ativar pagamento via Pix."
+          "Configure sua chave Pix, nome do titular e cidade nos dados do negócio antes de ativar pagamento via Pix."
       };
     }
   }
@@ -158,11 +175,13 @@ export async function updateService(
     data: {
       name: parsed.data.name,
       description: parsed.data.description,
+      itemType: parsed.data.itemType,
       basePrice: toDecimal(parsed.data.basePrice),
       isActive: parsed.data.isActive,
       pricingType: parsed.data.pricingType,
       fixedServiceCheckoutMode: parsed.data.fixedServiceCheckoutMode,
-      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails
+      requiresSchedulingDetails: parsed.data.requiresSchedulingDetails,
+      requiresLocation: parsed.data.requiresLocation
     }
   });
 
@@ -180,7 +199,7 @@ export async function deleteService(formData: FormData) {
 
   const service = await prisma.service.findFirst({
     where: { id: serviceId, providerId: profile.id },
-    select: { id: true }
+    select: { id: true, imageStorageKey: true }
   });
 
   if (!service) {
@@ -188,6 +207,19 @@ export async function deleteService(formData: FormData) {
   }
 
   await prisma.service.delete({ where: { id: service.id } });
+
+  // A imagem não pode virar objeto órfão no bucket; mas uma falha no storage
+  // não deve impedir a exclusão do item, que já foi concluída no banco.
+  if (service.imageStorageKey) {
+    try {
+      await deleteFromStorage(service.imageStorageKey);
+    } catch (error) {
+      console.error("Falha ao remover imagem do item excluído.", {
+        key: service.imageStorageKey,
+        error
+      });
+    }
+  }
 
   revalidatePath("/dashboard/servicos");
   redirect("/dashboard/servicos");

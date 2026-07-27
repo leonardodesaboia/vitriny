@@ -4,6 +4,8 @@
 
 O banco usa PostgreSQL com Prisma. O schema fica em `prisma/schema.prisma`.
 
+A linguagem da interface não altera o schema: `Service` é exibido como item da vitrine, `ProviderProfile` como vitrine pública e `QuoteRequest` como pedido ou solicitação. Os nomes abaixo permanecem técnicos e canônicos no código.
+
 ## Models
 
 ### User
@@ -20,6 +22,7 @@ Relaciona-se com:
 - `Account`
 - `Session`
 - `PasswordResetToken`
+- `EmailVerificationToken`
 
 ### Account
 
@@ -45,6 +48,18 @@ Campos importantes:
 
 Apagado (junto com qualquer outro token do mesmo usuário) ao ser usado com sucesso em `resetPassword`. Relação com `User` tem `onDelete: Cascade`.
 
+### EmailVerificationToken
+
+Token de uso único para ativar contas criadas com e-mail/senha.
+
+Campos importantes:
+
+- `userId`: único; cada conta pendente mantém no máximo um token ativo.
+- `tokenHash`: SHA-256 único do token enviado por e-mail; o valor original não é persistido.
+- `expiresAt`: expira 24 horas após a criação.
+
+Ao confirmar, uma transação preenche `User.emailVerified` e remove o token. A relação usa `onDelete: Cascade`. A migration inicial marca contas Credentials preexistentes como verificadas para evitar lockout.
+
 ### ProviderProfile
 
 Perfil do prestador.
@@ -57,6 +72,10 @@ Campos importantes:
 - `isPublished`: controla se o perfil aparece publicamente.
 - `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
 - `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para entrada de proposta e pagamento antecipado de serviço fixo.
+- `address`: endereço livre (rua, número, bairro) usado no link "Ver no mapa" da vitrine pública. Opcional.
+- `instagram`, `facebook`, `tiktok`: valor digitado pelo dono (`@handle`, handle ou URL); normalizado para URL na renderização por `lib/social-links.ts`. Opcionais.
+- `businessHours`: `Json?` — array de 7 posições (índice 0 = domingo), cada uma `{ open, close }` em `"HH:MM"` ou `null` (fechado). `close < open` significa fechamento após a meia-noite. Validado por Zod na escrita e `parseBusinessHours` na leitura. Opcional.
+- `links` (`Json?`): links livres do perfil, array de `{ label, url }`. Máximo 10; validado e cortado por `lib/profile-links.ts` (só esquemas `http`/`https`). Exibido na vitrine pública.
 
 Relaciona-se com:
 
@@ -70,16 +89,49 @@ O default de `plan` é `FREE`. A assinatura Stripe atualiza o plano e os campos 
 
 ### Service
 
-Serviço oferecido pelo prestador.
+Item da vitrine. Pode ser classificado visualmente como Produto ou Serviço via `itemType`. Na interface, `Service` é apresentado como "item da vitrine"; o nome do model não muda.
 
 Campos importantes:
 
+- `itemType`: natureza do item (`SERVICE` ou `PRODUCT`). Default `SERVICE`. Não altera regras de preço, proposta ou Pix.
 - `basePrice`: `Decimal? @db.Decimal(10, 2)`.
 - `isActive`: controla se aparece publicamente.
 - `pricingType`: tipo de precificação (`FIXED` ou `CUSTOM`). Default `CUSTOM`. Controla se o serviço tem preço fixo exibido publicamente ou se está sob orçamento.
 - `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. `REQUEST_ONLY` = apenas pedido normal; `REQUIRE_PIX_PAYMENT` = o cliente precisa pagar via Pix para concluir a solicitação.
 - `requiresSchedulingDetails`: quando `true`, formulário público exibe campos de data, horário e local.
-- `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente apenas quando `plan === "PRO"`.
+- `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente em qualquer plano (foto por item é FREE).
+
+### StorefrontView
+
+Contagem de visitas da vitrine pública agregada por dia.
+
+Campos importantes:
+
+- `providerId`: prestador dono da vitrine. Relação com `ProviderProfile`, `onDelete: Cascade`.
+- `date`: dia da contagem (`@db.Date`), bucket de 24h em UTC.
+- `count`: `Int` — número de visitantes únicos dedupados por sessão do navegador no dia.
+
+Chave primária composta: `(providerId, date)` — um registro por dia por prestador.
+
+Escrita: via `upsert` em `POST /api/storefront-view`, acionado por beacon client no carregamento de `/u/[slug]`. O endpoint filtra o dono logado e user agents de bot antes de contar.
+
+Leitura: agregação `_sum` de `count` para janelas de 7 dias (últimos 7) e 30 dias (últimos 30) na dashboard (`app/(dashboard)/dashboard/page.tsx`).
+
+### ItemView
+
+Contagem de interesse por item agregada por dia (abertura da página de orçamento do item).
+
+Campos importantes:
+
+- `serviceId`: item dono da contagem. Relação com `Service`, `onDelete: Cascade`.
+- `date`: dia da contagem (`@db.Date`), bucket de 24h em UTC.
+- `count`: `Int` — número de vezes que o item foi visualizado no dia.
+
+Chave primária composta: `(serviceId, date)` — um registro por dia por item.
+
+Escrita: via `upsert` em `POST /api/storefront-view` (com `serviceId` enviado junto), acionado por beacon client no carregamento de `/u/[slug]/orcamento?serviceId=X`. O endpoint filtra o dono logado e user agents de bot antes de contar.
+
+Leitura: agregação `groupBy` de `count` agrupando por `serviceId`, ordenado decrescente, limitado a top 5 com janela de 30 dias na dashboard; exibição condicionada a PRO via `canUseStorefrontAnalytics`. FREE vê um card de upsell.
 
 ### QuoteRequest
 
@@ -179,6 +231,7 @@ Ambos usam Decimal.
 - `QuoteRequest` 1:N `QuoteRequestInternalNote`
 - `User` 1:N `QuoteRequestInternalNote`
 - `User` 1:N `PasswordResetToken`
+- `User` 1:0..1 `EmailVerificationToken`
 - `Proposal` 1:N `ProposalItem`
 - `Proposal` 1:N `ProposalStatusHistory`
 - `ProposalTemplate` 1:N `ProposalTemplateItem`
@@ -232,6 +285,13 @@ O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o
 - `FIXED`: serviço com preço fixo. `basePrice` é obrigatório e exibido publicamente.
 - `CUSTOM`: serviço sob orçamento. `basePrice` é opcional.
 
+### CatalogItemType
+
+- `SERVICE`: atendimento, consultoria, trabalho personalizado ou serviço prestado.
+- `PRODUCT`: item físico ou digital, kit, encomenda ou produto da vitrine.
+
+`CatalogItemType` é apenas classificatório. Todas as combinações com `ServicePricingType` são válidas.
+
 ### FixedServiceCheckoutMode
 
 Controla o fluxo de conversão de serviços com `pricingType = FIXED`.
@@ -271,11 +331,13 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Senha de usuário sempre armazenada como hash bcrypt, nunca texto puro.
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).
 - Serviços antigos sem `pricingType` explícito ficam como `CUSTOM` pelo default.
+- Itens antigos ficam como `SERVICE` pelo default de `itemType`.
 - `QuoteRequest.description` é nullable; pedidos de serviços FIXED não exigem descrição do cliente.
 - `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento em que o pagamento antecipado é criado. Nunca atualizar após criação do pedido.
 - `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.
 - Pedidos antigos têm `fixedServiceAmount`, `pixReservationRequestedAt` e `pixReservationPaidAt` todos `null` — retrocompatibilidade garantida.
 - `fixedServiceCheckoutMode` é forçado como `REQUEST_ONLY` para serviços `CUSTOM` na action, independente do que o formulário enviar.
+- `itemType` é visual e organizacional. Não altera regras de preço, Pix, proposta, pedido nem limites de plano.
 
 ## Dinheiro e Decimal
 

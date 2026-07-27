@@ -14,12 +14,25 @@ interface RateLimitRule {
 }
 
 const RATE_LIMIT_RULES: Record<string, RateLimitRule> = {
-  // Login por credenciais
+  // Login por credenciais (POST direto no callback do Auth.js)
   "/api/auth/callback/credentials": { limit: 10, windowMs: 60_000 },
+  // Login pela UI: a Server Action posta em /login e o signIn() roda
+  // in-process, sem passar pelo callback acima — precisa de regra própria.
+  "/login": { limit: 10, windowMs: 60_000 },
   // Requisição de reset de senha (Server Action em /esqueci-senha)
   "/esqueci-senha": { limit: 5, windowMs: 300_000 },
+  // Submissão da nova senha (Server Action em /redefinir-senha/[token]) — evita
+  // abuso de bcrypt e brute force do token.
+  "/redefinir-senha": { limit: 5, windowMs: 300_000 },
+  // Criação de conta (Server Action em /cadastro)
+  "/cadastro": { limit: 5, windowMs: 300_000 },
+  // Reenvio e confirmação de e-mail
+  "/verifique-seu-email": { limit: 5, windowMs: 300_000 },
+  "/verificar-email": { limit: 10, windowMs: 300_000 },
   // Formulário público de pedido (Server Action em /u/*/orcamento)
   "/u/orcamento": { limit: 20, windowMs: 60_000 },
+  // Botão público "Já fiz o pagamento" (Server Action em /u/*/reserva/*)
+  "/u/reserva": { limit: 10, windowMs: 60_000 },
 };
 
 function getClientIp(request: NextRequest): string {
@@ -52,6 +65,11 @@ function matchRateLimitRule(pathname: string, method: string): RateLimitRule | n
     if (pattern === "/u/orcamento") {
       // Matches /u/[slug]/orcamento
       if (/^\/u\/[^/]+\/orcamento/.test(pathname)) return rule;
+      continue;
+    }
+    if (pattern === "/u/reserva") {
+      // Matches /u/[slug]/reserva/[requestId]
+      if (/^\/u\/[^/]+\/reserva\//.test(pathname)) return rule;
       continue;
     }
     if (pathname === pattern || pathname.startsWith(pattern + "/")) return rule;
@@ -90,7 +108,13 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/api/auth/callback/credentials",
+    "/login",
     "/esqueci-senha",
+    "/cadastro",
+    "/verifique-seu-email",
+    "/verificar-email/:path*",
+    "/redefinir-senha/:path*",
     "/u/:slug/orcamento",
+    "/u/:slug/reserva/:requestId",
   ],
 };

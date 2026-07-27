@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { useCurrencyInput } from "@/hooks/useCurrencyInput";
 
 type CurrencyInputProps = {
@@ -8,10 +10,15 @@ type CurrencyInputProps = {
   defaultValue?: string;
   className?: string;
   required?: boolean;
+  onValueChange?: (decimalValue: string) => void;
 };
 
-export function CurrencyInput({ name, id, defaultValue, className, required }: CurrencyInputProps) {
+export function CurrencyInput({ name, id, defaultValue, className, required, onValueChange }: CurrencyInputProps) {
   const { inputProps, submitValue } = useCurrencyInput(defaultValue);
+
+  useEffect(() => {
+    onValueChange?.(submitValue);
+  }, [submitValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <>

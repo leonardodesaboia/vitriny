@@ -2,8 +2,11 @@ import { randomUUID } from "crypto";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "@/auth";
+import { canUseServiceImages } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { uploadToStorage, deleteFromStorage } from "@/lib/storage";
+
+export const dynamic = "force-dynamic";
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024;
 
@@ -49,10 +52,10 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   const { profile, service } = await resolveService(session.user.id, serviceId);
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
-  if (profile.plan !== "PRO") {
+  if (!canUseServiceImages(profile.plan)) {
     return NextResponse.json(
       { error: "Recurso disponível apenas no plano PRO." },
       { status: 403 }
@@ -60,7 +63,7 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   if (!service) {
-    return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
   }
 
   let formData: FormData;
@@ -92,25 +95,20 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     );
   }
 
-  if (service.imageStorageKey) {
-    try {
-      await deleteFromStorage(service.imageStorageKey);
-    } catch (err) {
-      console.error("Falha ao deletar imagem anterior.", {
-        key: service.imageStorageKey,
-        err
-      });
-    }
-  }
-
   const ext = detectedMime === "image/jpeg" ? "jpg" : detectedMime === "image/png" ? "png" : "webp";
   const storageKey = `services/${serviceId}/${randomUUID()}.${ext}`;
 
+  // Sobe a nova imagem antes de apagar a antiga: se o upload falhar,
+  // o item continua com a imagem atual em vez de apontar para um objeto morto.
   let imageUrl: string;
   try {
     imageUrl = await uploadToStorage(storageKey, buffer, detectedMime);
   } catch (err) {
-    console.error("Falha ao enviar imagem para o storage.", { err });
+    // name/message são não-enumeráveis nos erros do SDK; logar explícito.
+    console.error("Falha ao enviar imagem para o storage.", {
+      name: err instanceof Error ? err.name : "unknown",
+      message: err instanceof Error ? err.message : String(err)
+    });
     return NextResponse.json(
       { error: "Falha ao enviar imagem. Tente novamente." },
       { status: 500 }
@@ -121,6 +119,18 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
     where: { id: service.id },
     data: { imageUrl, imageStorageKey: storageKey }
   });
+
+  if (service.imageStorageKey) {
+    try {
+      await deleteFromStorage(service.imageStorageKey);
+    } catch (err) {
+      console.error("Falha ao deletar imagem anterior.", {
+        key: service.imageStorageKey,
+        name: err instanceof Error ? err.name : "unknown",
+        message: err instanceof Error ? err.message : String(err)
+      });
+    }
+  }
 
   return NextResponse.json({ imageUrl });
 }
@@ -136,10 +146,10 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   const { profile, service } = await resolveService(session.user.id, serviceId);
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
-  if (profile.plan !== "PRO") {
+  if (!canUseServiceImages(profile.plan)) {
     return NextResponse.json(
       { error: "Recurso disponível apenas no plano PRO." },
       { status: 403 }
@@ -147,11 +157,11 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   }
 
   if (!service) {
-    return NextResponse.json({ error: "Serviço não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Item não encontrado." }, { status: 404 });
   }
 
   if (!service.imageStorageKey) {
-    return NextResponse.json({ error: "Este serviço não tem imagem." }, { status: 404 });
+    return NextResponse.json({ error: "Este item não tem imagem." }, { status: 404 });
   }
 
   try {
@@ -159,7 +169,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteContext) {
   } catch (err) {
     console.error("Falha ao deletar imagem do storage.", {
       key: service.imageStorageKey,
-      err
+      name: err instanceof Error ? err.name : "unknown",
+      message: err instanceof Error ? err.message : String(err)
     });
     return NextResponse.json(
       { error: "Falha ao remover imagem. Tente novamente." },
