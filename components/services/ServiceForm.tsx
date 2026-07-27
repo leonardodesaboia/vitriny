@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createService, updateService } from "@/lib/actions/services";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { CharCountTextarea } from "@/components/ui/CharCountTextarea";
-import { ItemCardPreview } from "@/components/services/ItemCardPreview";
 import {
   getServiceSaleMode,
   getTechnicalSaleMode,
@@ -76,10 +75,8 @@ export function ServiceForm({
     service?.requiresLocation ?? false,
   );
 
-  // Preview state — tracks form fields for the live card preview
+  // Tracks the item name to pass back through the onSaved callback
   const [previewName, setPreviewName] = useState(service?.name ?? "");
-  const [previewDescription, setPreviewDescription] = useState(service?.description ?? "");
-  const [previewPrice, setPreviewPrice] = useState(service?.basePrice ?? "");
 
   const [imageUrl, setImageUrl] = useState<string | null>(service?.imageUrl ?? null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -259,7 +256,6 @@ export function ServiceForm({
             id={`description-${service?.id ?? "new"}`}
             maxLength={600}
             name="description"
-            onChange={(e) => setPreviewDescription(e.target.value)}
             placeholder="Descreva o item, o que está incluso e seus diferenciais…"
           />
         </div>
@@ -348,7 +344,6 @@ export function ServiceForm({
             defaultValue={service?.basePrice ?? ""}
             id={`basePrice-${service?.id ?? "new"}`}
             name="basePrice"
-            onValueChange={setPreviewPrice}
           />
           <p className="text-xs text-ink-muted">
             {saleMode !== "CUSTOM"

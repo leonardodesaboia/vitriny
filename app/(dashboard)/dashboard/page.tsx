@@ -16,7 +16,6 @@ import {
   type OnboardingStep
 } from "@/components/onboarding/OnboardingChecklist";
 import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
-import { profileLinkMessage } from "@/lib/whatsapp-messages";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import {
   buildMonthlyRevenueSummary,
@@ -363,9 +362,6 @@ export default async function DashboardPage() {
 
       {profile?.isPublished && profile.slug ? (
         <PublicLinkCard
-          message={profileLinkMessage(
-            `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`
-          )}
           storageScope={session.user.id}
           url={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`}
         />

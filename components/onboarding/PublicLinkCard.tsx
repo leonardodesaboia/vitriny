@@ -3,16 +3,13 @@
 import { useState } from "react";
 
 import { markPublicLinkUsed } from "@/components/onboarding/onboarding-storage";
-import { WhatsAppButton } from "@/components/whatsapp/WhatsAppButton";
 
 type PublicLinkCardProps = {
-  message: string;
   storageScope: string;
   url: string;
 };
 
 export function PublicLinkCard({
-  message,
   storageScope,
   url
 }: PublicLinkCardProps) {
