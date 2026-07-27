@@ -93,7 +93,6 @@ Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e 
 - `/u/[slug]`: vitrine pública do negócio.
 - `/u/[slug]/orcamento`: formulário público de pedido, com seleção implícita do serviço quando a URL vem de um card do perfil. Serviços configurados com `REQUIRE_PIX_PAYMENT` informam o pagamento obrigatório antes do envio.
 - `/u/[slug]/reserva/[requestId]`: página de pagamento antecipado Pix com QR Code e código copia e cola. Acessível sem login; exige que o pedido tenha `pixReservationRequestedAt` preenchido.
-- `/u/[slug]/pagamento/[requestId]`: compatibilidade para links de pagamento direto criados antes de `REQUIRE_PIX_PAYMENT`; não é usado por novos pedidos.
 - `/proposta/[publicToken]`: página pública da proposta.
 - `/api/auth/[...nextauth]`: rota Auth.js.
 

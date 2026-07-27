@@ -66,7 +66,6 @@ Rotas públicas:
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
 - `app/u/[slug]/reserva/[requestId]/page.tsx` — página de pagamento antecipado obrigatório: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e Pix configurado.
-- `app/u/[slug]/pagamento/[requestId]/page.tsx` — compatibilidade para links legados de pagamento direto; novos pedidos não usam esta rota.
 - `app/proposta/[publicToken]/page.tsx`
 
 Rotas autenticadas:

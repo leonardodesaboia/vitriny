@@ -115,7 +115,6 @@ Funciona hoje:
 - exclusão de item com confirmação (`deleteService`);
 - lista de itens colapsável — accordion idêntico ao padrão do painel de pedidos;
 - **pagamento Pix obrigatório para itens FIXED**: `fixedServiceCheckoutMode` enum (`REQUEST_ONLY` | `REQUIRE_PIX_PAYMENT`); quando obrigatório, existe um único CTA "Pagar com Pix", o servidor impede bypass e redireciona para `/u/[slug]/reserva/[requestId]`; `fixedServiceAmount` é snapshot imutável e a confirmação é manual pelo negócio via `markPixReservationPaid`;
-- **compatibilidade de pagamento legado**: `/u/[slug]/pagamento/[requestId]` permanece disponível para pedidos antigos, mas novos pedidos não são enviados para essa rota;
 - vitrine pública `/u/[slug]`;
 - pedido público exige ao menos e-mail ou telefone; `CUSTOM` e pedidos genéricos exigem descrição; `desiredDate`, `desiredTime` e `location` são condicionais ao item e exibidos no painel quando presentes;
 - painel de pedidos;
@@ -253,11 +252,6 @@ Priorize:
   - `fixedServiceCheckoutMode = REQUEST_ONLY` para serviços CUSTOM — forçado na action.
   - `REQUIRE_PIX_PAYMENT` não oferece alternativa sem pagamento e é validado novamente no servidor.
   - Pedidos antigos ficam com campos Pix `null` — retrocompatibilidade obrigatória.
-- Pagamento Pix direto legado — restrições de produto:
-  - a rota `/u/[slug]/pagamento/[requestId]` atende apenas links antigos;
-  - exige item `FIXED`, `fixedServiceAmount` e dados Pix válidos;
-  - não exige `pixReservationRequestedAt` e não usa `markPixReservationPaid`;
-  - nunca recalcular o valor a partir de `Service.basePrice`.
 - Rate limiting — restrições:
   - o store in-memory em `proxy.ts` não é compartilhado entre processos; substituir por Redis/Upstash antes de escalar horizontalmente;
   - não reduzir os limites sem medir impacto em produção (formulário público: 20 req/min por IP).
@@ -297,7 +291,6 @@ Priorize:
 - Dinheiro: manter `Decimal`, não usar `Float`.
 - Reset de senha: token de uso único, expira em 1 hora, apagado (junto com qualquer outro do mesmo usuário) após uso.
 - Pagamento Pix obrigatório — página `/u/[slug]/reserva/[requestId]`: verificar que o pedido existe, pertence ao `ProviderProfile` do slug, tem `service.pricingType === "FIXED"`, tem `pixReservationRequestedAt` preenchido e tem `fixedServiceAmount` preenchido. Retornar 404 em qualquer falha.
-- Pagamento Pix direto legado — página `/u/[slug]/pagamento/[requestId]`: verificar pedido, slug, perfil publicado, item `FIXED`, `fixedServiceAmount` e dados Pix; retornar 404 em qualquer falha.
 - `fixedServiceAmount`: nunca recalcular; usar sempre o snapshot do banco. A página de reserva não busca `service.basePrice`.
 - `markPixReservationPaid`: validar ownership pelo perfil autenticado; checar `pixReservationRequestedAt !== null`; checar que `pixReservationPaidAt` ainda está `null` (idempotência).
 - Webhook Stripe: `customer.subscription.created` e `customer.subscription.updated` usam o mesmo handler via fall-through — não separar sem motivo.

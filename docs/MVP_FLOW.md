@@ -30,12 +30,6 @@ Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
 9f. Negócio acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
 9g. `pixReservationPaidAt` é preenchido e o painel exibe badge "Pagamento Pix confirmado".
 
-Compatibilidade legada — Pagamento Pix direto:
-
-- `/u/[slug]/pagamento/[requestId]` continua abrindo links criados pelo fluxo antigo.
-- Novos pedidos nunca são redirecionados para essa rota.
-- A página informa que o pagamento é manual e não oferece um estado de confirmação inexistente.
-
 ## Passo a passo manual
 
 ### 1. Login
