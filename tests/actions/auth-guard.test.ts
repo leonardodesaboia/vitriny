@@ -9,18 +9,39 @@ async function setup() {
   const prismaModule = await import("@/lib/prisma");
   const db = makePrismaMock();
   Object.assign(prismaModule.prisma, db);
+  // requireAuth verifica soft delete; conta ativa por padrão nos testes.
+  db.user.findUnique.mockResolvedValue({ deletedAt: null });
   return { auth: vi.mocked(auth), db };
 }
 
 describe("requireAuth", () => {
   it("retorna o userId quando a sessão é válida", async () => {
-    const { auth } = await setup();
+    const { auth, db } = await setup();
     auth.mockResolvedValue(makeSession("user-abc") as never);
+    db.user.findUnique.mockResolvedValue({ deletedAt: null });
 
     const { requireAuth } = await import("@/lib/actions/auth-guard");
     const userId = await requireAuth();
 
     expect(userId).toBe("user-abc");
+  });
+
+  it("redireciona para /login quando a conta foi excluída (soft delete)", async () => {
+    const { auth, db } = await setup();
+    auth.mockResolvedValue(makeSession("user-abc") as never);
+    db.user.findUnique.mockResolvedValue({ deletedAt: new Date() });
+
+    const { requireAuth } = await import("@/lib/actions/auth-guard");
+    await expect(requireAuth()).rejects.toThrow("/login");
+  });
+
+  it("redireciona para /login quando o usuário da sessão não existe mais", async () => {
+    const { auth, db } = await setup();
+    auth.mockResolvedValue(makeSession("user-abc") as never);
+    db.user.findUnique.mockResolvedValue(null);
+
+    const { requireAuth } = await import("@/lib/actions/auth-guard");
+    await expect(requireAuth()).rejects.toThrow("/login");
   });
 
   it("redireciona para /login quando não há sessão", async () => {

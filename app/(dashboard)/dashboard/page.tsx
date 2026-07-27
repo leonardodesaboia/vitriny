@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { LogoutButton } from "@/components/auth/LogoutButton";
@@ -9,16 +8,26 @@ import {
 } from "@/components/dashboard/DashboardMetricGrid";
 import { DashboardPendingActions } from "@/components/dashboard/DashboardPendingActions";
 import { DashboardRecentActivity } from "@/components/dashboard/DashboardRecentActivity";
+import { DashboardRevenueCard } from "@/components/dashboard/DashboardRevenueCard";
+import { DashboardTopItemsCard } from "@/components/dashboard/DashboardTopItemsCard";
+import { DashboardViewsCard } from "@/components/dashboard/DashboardViewsCard";
 import {
   OnboardingChecklist,
   type OnboardingStep
 } from "@/components/onboarding/OnboardingChecklist";
 import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { profileLinkMessage } from "@/lib/whatsapp-messages";
-import { Card } from "@/components/ui/Card";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
-import { buildOnboardingOutcomeStep } from "@/lib/dashboard";
-import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
+import {
+  buildMonthlyRevenueSummary,
+  buildOnboardingOutcomeStep,
+  buildStorefrontViewsSummary,
+  mergeItemViewRanking,
+  type TopItem
+} from "@/lib/dashboard";
+import { toDayBucket } from "@/lib/storefront-views";
+import { canUseStorefrontAnalytics, getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
+import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -28,6 +37,8 @@ export default async function DashboardPage() {
   }
 
   const monthRange = getCurrentMonthRange();
+  // Reservas Pix além deste corte já expiraram e saem das pendências.
+  const pixExpiryCutoff = pixPaymentExpiryCutoff();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     select: {
@@ -38,6 +49,7 @@ export default async function DashboardPage() {
         }
       },
       businessName: true,
+      businessType: true,
       id: true,
       isPublished: true,
       plan: true,
@@ -59,8 +71,11 @@ export default async function DashboardPage() {
     approvedProposalsThisMonth,
     monthlyProposals,
     pendingPixReservations,
+    clientInformedPixReservations,
     pendingProposalDeposits,
-    fixedRequestCount
+    fixedRequestCount,
+    approvedRevenue,
+    pixRevenue
   ] = profile
     ? await prisma.$transaction([
         prisma.quoteRequest.count({
@@ -97,7 +112,19 @@ export default async function DashboardPage() {
         prisma.quoteRequest.count({
           where: {
             pixReservationPaidAt: null,
-            pixReservationRequestedAt: { not: null },
+            providerId: profile.id,
+            // Consistente com a view PIX_RESERVATION: expiradas só contam
+            // quando o cliente informou o pagamento.
+            OR: [
+              { pixReservationRequestedAt: { gte: pixExpiryCutoff } },
+              { pixReservationClientPaidAt: { not: null } }
+            ]
+          }
+        }),
+        prisma.quoteRequest.count({
+          where: {
+            pixReservationPaidAt: null,
+            pixReservationClientPaidAt: { not: null },
             providerId: profile.id
           }
         }),
@@ -114,13 +141,88 @@ export default async function DashboardPage() {
             providerId: profile.id,
             service: { pricingType: "FIXED" }
           }
+        }),
+        prisma.proposal.aggregate({
+          _sum: { totalAmount: true },
+          where: {
+            providerId: profile.id,
+            respondedAt: { gte: monthRange.start, lt: monthRange.end },
+            status: "APPROVED"
+          }
+        }),
+        prisma.quoteRequest.aggregate({
+          _sum: { fixedServiceAmount: true },
+          where: {
+            providerId: profile.id,
+            pixReservationPaidAt: { gte: monthRange.start, lt: monthRange.end }
+          }
         })
       ])
-    : [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null];
 
   const recentActivity = profile
     ? await getRecentDashboardActivity(profile.id)
     : [];
+
+  // Decimal → string na fronteira; o resumo sai pronto em BRL.
+  const revenueSummary = buildMonthlyRevenueSummary(
+    approvedRevenue?._sum.totalAmount?.toString() ?? null,
+    pixRevenue?._sum.fixedServiceAmount?.toString() ?? null
+  );
+
+  const today = toDayBucket(new Date());
+  const viewsCutoff7 = new Date(today);
+  viewsCutoff7.setUTCDate(viewsCutoff7.getUTCDate() - 6); // janela de 7 dias incl. hoje
+  const viewsCutoff30 = new Date(today);
+  viewsCutoff30.setUTCDate(viewsCutoff30.getUTCDate() - 29);
+
+  const [views7Agg, views30Agg] = profile
+    ? await Promise.all([
+        prisma.storefrontView.aggregate({
+          _sum: { count: true },
+          where: { providerId: profile.id, date: { gte: viewsCutoff7 } },
+        }),
+        prisma.storefrontView.aggregate({
+          _sum: { count: true },
+          where: { providerId: profile.id, date: { gte: viewsCutoff30 } },
+        }),
+      ])
+    : [{ _sum: { count: null } }, { _sum: { count: null } }];
+
+  const recentOrdersCount = profile
+    ? await prisma.quoteRequest.count({
+        where: { providerId: profile.id, createdAt: { gte: viewsCutoff30 } },
+      })
+    : 0;
+
+  const viewsSummary = buildStorefrontViewsSummary({
+    views7: views7Agg._sum.count ?? 0,
+    views30: views30Agg._sum.count ?? 0,
+    hasRecentOrders: recentOrdersCount > 0,
+  });
+
+  const canSeeItemViews = profile
+    ? canUseStorefrontAnalytics(profile.plan)
+    : false;
+
+  let topItems: TopItem[] = [];
+  if (profile && canSeeItemViews) {
+    const itemViewGroups = await prisma.itemView.groupBy({
+      by: ["serviceId"],
+      where: {
+        service: { providerId: profile.id },
+        date: { gte: viewsCutoff30 },
+      },
+      _sum: { count: true },
+      orderBy: { _sum: { count: "desc" } },
+      take: 5,
+    });
+    const itemNames = await prisma.service.findMany({
+      where: { id: { in: itemViewGroups.map((g) => g.serviceId) } },
+      select: { id: true, name: true },
+    });
+    topItems = mergeItemViewRanking(itemViewGroups, itemNames);
+  }
 
   const limits = profile ? getPlanLimits(profile.plan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
@@ -139,35 +241,45 @@ export default async function DashboardPage() {
   const onboardingSteps: OnboardingStep[] = [
     {
       id: "profile",
-      label: "Criar perfil do prestador",
+      label: "Cadastrar dados do negócio",
       description:
         "Adicione o nome do seu negócio, descrição e informações de contato.",
       done: !!profile,
       href: "/dashboard/perfil",
-      actionLabel: "Criar perfil"
+      actionLabel: "Cadastrar negócio"
     },
     {
       id: "publish",
-      label: "Publicar perfil",
-      description: "Ative seu perfil público para que clientes encontrem você.",
+      label: "Publicar vitrine",
+      description: "Ative sua vitrine pública para que clientes encontrem seu negócio.",
       done: profile?.isPublished ?? false,
       href: "/dashboard/perfil",
-      actionLabel: "Publicar perfil"
+      actionLabel: "Publicar vitrine"
     },
     {
       id: "service",
-      label: "Cadastrar pelo menos 1 serviço ativo",
+      label:
+        profile?.businessType === "PRODUCTS"
+          ? "Cadastrar pelo menos 1 produto ativo"
+          : profile?.businessType === "SERVICES"
+            ? "Cadastrar pelo menos 1 serviço ativo"
+            : "Cadastrar pelo menos 1 item ativo",
       description:
-        "Serviços aparecem na página pública e ajudam clientes a entender o que você oferece.",
+        "Os itens aparecem na vitrine pública e ajudam clientes a entender o que você oferece.",
       done: activeServicesCount > 0,
       href: "/dashboard/servicos",
-      actionLabel: "Cadastrar serviço"
+      actionLabel:
+        profile?.businessType === "PRODUCTS"
+          ? "Cadastrar produto"
+          : profile?.businessType === "SERVICES"
+            ? "Cadastrar serviço"
+            : "Cadastrar item"
     },
     {
       id: "link",
       label: "Copiar ou acessar link público",
       description:
-        "Compartilhe o link do seu perfil com clientes para receber pedidos.",
+        "Compartilhe o link da sua vitrine com clientes para receber pedidos.",
       done: false,
       isCopyStep: true,
       actionLabel: "Copiar link"
@@ -217,7 +329,10 @@ export default async function DashboardPage() {
     },
     {
       count: pendingPixReservations,
-      description: "Confirme os recebimentos informados pelos clientes.",
+      description:
+        clientInformedPixReservations > 0
+          ? `${clientInformedPixReservations} pagamento${clientInformedPixReservations > 1 ? "s" : ""} informado${clientInformedPixReservations > 1 ? "s" : ""} pelo cliente aguardando sua confirmação.`
+          : "Confirme os recebimentos informados pelos clientes.",
       href: "/dashboard/pedidos?view=PIX_RESERVATION",
       label: "Pagamentos Pix para confirmar"
     },
@@ -240,7 +355,7 @@ export default async function DashboardPage() {
             Olá, {session.user.name?.split(" ")[0]}
           </h1>
           <p className="mt-2 text-sm text-ink-muted">
-            Gerencie seu perfil, serviços e pedidos em um único painel.
+            Gerencie sua vitrine, seus itens e pedidos em um único painel.
           </p>
         </div>
         <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf" />
@@ -263,6 +378,13 @@ export default async function DashboardPage() {
       />
 
       <DashboardPendingActions actions={pendingActions} />
+
+      <DashboardViewsCard summary={viewsSummary} />
+      <DashboardTopItemsCard
+        canViewAnalytics={canSeeItemViews}
+        topItems={topItems}
+      />
+      <DashboardRevenueCard summary={revenueSummary} />
 
       <DashboardMetricGrid metrics={metrics} />
 
@@ -295,66 +417,6 @@ export default async function DashboardPage() {
           ]}
         />
       ) : null}
-
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Perfil
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            {profile ? profile.businessName : "Criar perfil"}
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            {profile
-              ? profile.isPublished
-                ? `Publicado em /u/${profile.slug}`
-                : "Perfil criado, mas não publicado"
-              : "Você ainda não criou seu perfil público."}
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
-            href="/dashboard/perfil"
-          >
-            {profile ? "Editar perfil" : "Criar perfil"}
-          </Link>
-        </Card>
-
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Serviços
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            Seus serviços
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            Cadastre os serviços que você oferece para exibir no perfil público.
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-            href="/dashboard/servicos"
-          >
-            Gerenciar serviços
-          </Link>
-        </Card>
-
-        <Card hoverable className="p-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Pedidos
-          </p>
-          <h2 className="mt-2 font-fraunces text-xl font-bold text-ink">
-            Pedidos recebidos
-          </h2>
-          <p className="mt-2 text-sm text-ink-muted">
-            Veja os pedidos enviados pelo formulário público e crie propostas.
-          </p>
-          <Link
-            className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-            href="/dashboard/pedidos"
-          >
-            Ver pedidos
-          </Link>
-        </Card>
-      </div>
     </div>
   );
 }

@@ -7,7 +7,7 @@ describe("getHowItWorksContent", () => {
     expect(title).toBe("Simples e rápido");
     expect(steps).toHaveLength(3);
     expect(steps[0].title).toBe("Preencha o formulário");
-    expect(steps[1].title).toBe("Prestador avalia");
+    expect(steps[1].title).toBe("O negócio avalia");
     expect(steps[2].title).toBe("Receba a proposta");
   });
 
@@ -26,8 +26,8 @@ describe("getHowItWorksContent", () => {
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps).toHaveLength(3);
-    expect(steps[0].title).toBe("Escolha o serviço");
-    expect(steps[2].title).toBe("Prestador entra em contato");
+    expect(steps[0].title).toBe("Escolha o item");
+    expect(steps[2].title).toBe("O negócio entra em contato");
   });
 
   it("retorna fluxo PIX quando há apenas FIXED/REQUIRE_PIX_PAYMENT", () => {
@@ -46,7 +46,7 @@ describe("getHowItWorksContent", () => {
       { pricingType: "CUSTOM", fixedServiceCheckoutMode: null },
       { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUEST_ONLY" }
     ]);
-    expect(title).toBe("Serviços fixos e sob orçamento");
+    expect(title).toBe("Itens com preço fixo e sob consulta");
     expect(steps).toHaveLength(3);
     expect(steps[0].title).toBe("Escolha ou descreva");
     expect(steps[2].title).toBe("Receba o retorno");
@@ -59,6 +59,6 @@ describe("getHowItWorksContent", () => {
     ]);
     expect(title).toBe("Simples e rápido");
     expect(steps).toHaveLength(3);
-    expect(steps[0].title).toBe("Escolha o serviço");
+    expect(steps[0].title).toBe("Escolha o item");
   });
 });

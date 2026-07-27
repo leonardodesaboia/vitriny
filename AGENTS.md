@@ -58,6 +58,21 @@ Além deste arquivo, consulte:
 
 Ao alterar rotas, schema, Auth, variáveis de ambiente ou fluxo do MVP, atualizar a documentação correspondente.
 
+## Uso do Graphify pela IA
+
+Quando `graphify-out/graph.json` existir, usar o Graphify como mapa do codebase antes de mudanças que envolvam arquitetura, fluxo do MVP, refatoração, autenticação, banco, rotas, componentes compartilhados ou investigação de impacto.
+
+Fluxo recomendado:
+
+1. Para entender uma área antes de editar, rodar `graphify query "<pergunta>"`.
+2. Para avaliar impacto antes de refatorar ou alterar helpers compartilhados, rodar `graphify affected "<nó>"`.
+3. Para investigar dependência entre dois pontos, rodar `graphify path "<origem>" "<destino>"`.
+4. Para entender um nó central, rodar `graphify explain "<nó>"`.
+5. Depois de mudanças relevantes em código, rodar `graphify update .` quando possível.
+6. Depois de mudanças relevantes em documentação, schema ou fluxos descritos, considerar uma reconstrução completa com `$graphify .`.
+
+Não usar o Graphify como única fonte de verdade: confirmar a conclusão lendo os arquivos citados pelo grafo antes de editar. Se o health check do grafo indicar arestas pendentes ou colapsadas, tratar o resultado como guia de navegação, não como prova definitiva.
+
 ## Fora do MVP
 
 Não implementar ainda:

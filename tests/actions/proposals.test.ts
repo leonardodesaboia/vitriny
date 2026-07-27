@@ -17,6 +17,8 @@ beforeEach(async () => {
   const prismaModule = await import("@/lib/prisma");
   db = makePrismaMock();
   Object.assign(prismaModule.prisma, db);
+  // requireAuth verifica soft delete; conta ativa por padrão nos testes.
+  db.user.findUnique.mockResolvedValue({ deletedAt: null });
   vi.mocked(auth).mockResolvedValue(makeSession() as never);
   db.providerProfile.findUnique.mockResolvedValue(makeProfile());
   db.quoteRequest.findFirst.mockResolvedValue({
@@ -46,6 +48,30 @@ describe("createProposal", () => {
   it("cria proposta e redireciona para /dashboard/pedidos em caso de sucesso", async () => {
     const { createProposal } = await import("@/lib/actions/proposals");
     await expect(createProposal(undefined, validProposalForm())).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.proposal.create).toHaveBeenCalledOnce();
+  });
+
+  it("rejeita entrada maior que o total da proposta", async () => {
+    const form = validProposalForm();
+    // total = 2 × 150,00 = 300,00; entrada de 400,00 deve ser rejeitada
+    form.set("depositAmount", "400,00");
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    const result = await createProposal(undefined, form);
+
+    expect(result).toEqual({
+      error: "O valor de entrada não pode ser maior que o total da proposta."
+    });
+    expect(db.proposal.create).not.toHaveBeenCalled();
+  });
+
+  it("aceita entrada igual ao total da proposta", async () => {
+    const form = validProposalForm();
+    form.set("depositAmount", "300,00");
+
+    const { createProposal } = await import("@/lib/actions/proposals");
+    await expect(createProposal(undefined, form)).rejects.toThrow("/dashboard/pedidos");
 
     expect(db.proposal.create).toHaveBeenCalledOnce();
   });

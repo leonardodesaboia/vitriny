@@ -1558,7 +1558,7 @@ Esperado: todos os testes passando (unit + actions).
 - [ ] **12.5 — Replicar migration no banco de teste**
 
 ```bash
-DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/orcafacil_test" npx prisma db push
+DATABASE_URL="postgresql://vitriny:vitriny@localhost:5432/vitriny_test" npx prisma db push
 ```
 
 Esperado: banco de teste atualizado.

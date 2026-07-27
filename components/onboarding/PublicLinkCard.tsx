@@ -38,7 +38,7 @@ export function PublicLinkCard({
             Seu link público
           </p>
           <p className="mt-1 text-sm text-ink-muted">
-            Compartilhe com clientes para receber pedidos de orçamento.
+            Compartilhe com clientes para receber pedidos.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
@@ -62,19 +62,6 @@ export function PublicLinkCard({
       </div>
       <div className="mt-4 rounded-lg border border-paper-soft bg-paper px-4 py-3">
         <p className="truncate text-sm font-medium text-ink">{url}</p>
-      </div>
-
-      <div className="mt-4 border-t border-paper-soft pt-4">
-        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-          Mensagens prontas para WhatsApp
-        </p>
-        <p className="mt-1 text-xs text-ink-muted">
-          Copie o texto abaixo e cole no WhatsApp para divulgar seu link de
-          orçamento.
-        </p>
-        <div className="mt-2">
-          <WhatsAppButton label="Compartilhar link de orçamento" message={message} />
-        </div>
       </div>
     </section>
   );

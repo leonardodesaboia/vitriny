@@ -7,7 +7,15 @@ vi.mock("@/lib/actions/auth-guard", () => ({
 }));
 vi.mock("@/lib/email", () => ({
   sendQuoteRequestReceivedEmail: vi.fn(),
-  sendQuoteRequestConfirmationToCustomerEmail: vi.fn()
+  sendQuoteRequestConfirmationToCustomerEmail: vi.fn(),
+  sendPixReservationClientPaidEmail: vi.fn(),
+  sendPixReservationReopenedEmail: vi.fn()
+}));
+// after() exige request scope do Next; nos testes executa o callback direto.
+vi.mock("next/server", () => ({
+  after: (callback: () => unknown) => {
+    void callback();
+  }
 }));
 
 let db: PrismaMock;
@@ -79,7 +87,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Descreva o que você precisa para solicitar um orçamento."
+      error: "Descreva o que você precisa para enviar a solicitação."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -106,7 +114,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Informe data, horário e local para este serviço."
+      error: "Informe data e horário para este item."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -210,7 +218,7 @@ describe("createQuoteRequest", () => {
         businessName: "Vitriny Serviços",
         customerName: "Maria",
         serviceName: "Pintura",
-        dashboardUrl: expect.stringContaining("/dashboard/pedidos")
+        dashboardUrl: expect.stringContaining("/dashboard/pedidos/request-1")
       })
     );
   });
@@ -357,6 +365,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Maria",
           customerEmail: "maria@example.com",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -376,6 +385,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Carlos",
           customerEmail: "carlos@example.com",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -401,6 +411,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Carlos",
           customerPhone: "11999999999",
+          serviceId,
           description: "Preciso pintar a sala."
         })
       )
@@ -408,13 +419,55 @@ describe("createQuoteRequest", () => {
 
     expect(sendQuoteRequestConfirmationToCustomerEmail).not.toHaveBeenCalled();
   });
+
+  it("grava o snapshot do nome do item para preservar o histórico", async () => {
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    await expect(
+      createQuoteRequest(
+        "vitriny",
+        undefined,
+        makeFormData({
+          customerName: "Maria",
+          customerEmail: "maria@example.com",
+          serviceId,
+          description: "Preciso pintar a sala."
+        })
+      )
+    ).rejects.toThrow("/u/vitriny/orcamento?success=1");
+
+    expect(db.quoteRequest.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ serviceNameSnapshot: "Pintura" })
+      })
+    );
+  });
+
+  it("rejeita pedido sem item selecionado", async () => {
+    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
+
+    const result = await createQuoteRequest(
+      "vitriny",
+      undefined,
+      makeFormData({
+        customerName: "Maria",
+        customerEmail: "maria@example.com",
+        description: "Preciso de um orçamento."
+      })
+    );
+
+    expect(result).toEqual({
+      error: "Selecione um item da vitrine para enviar a solicitação."
+    });
+    expect(db.quoteRequest.create).not.toHaveBeenCalled();
+  });
 });
 
 describe("markPixReservationPaid", () => {
   it("confirma o Pix manualmente para o pedido do prestador", async () => {
     const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
     vi.mocked(requireProviderProfile).mockResolvedValue({
-      profile: { id: "profile-1", plan: "FREE" },
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
       userId: "user-1"
     });
     db.quoteRequest.findFirst.mockResolvedValue({
@@ -437,13 +490,303 @@ describe("markPixReservationPaid", () => {
       where: { id: "request-1" }
     });
   });
+
+  it("ignora returnTo fora da área de pedidos", async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+
+    const { markPixReservationPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationPaid(
+        makeFormData({ requestId: "request-1", returnTo: "https://evil.com" })
+      )
+    ).rejects.toThrow("/dashboard/pedidos");
+  });
+
+  it("respeita returnTo da página de detalhe", async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+
+    const { markPixReservationPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationPaid(
+        makeFormData({
+          requestId: "request-1",
+          returnTo: "/dashboard/pedidos/request-1"
+        })
+      )
+    ).rejects.toThrow("/dashboard/pedidos/request-1");
+  });
+});
+
+describe("reopenPixReservation", () => {
+  function setup(overrides: Record<string, unknown> = {}) {
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      customerName: "Maria",
+      customerEmail: "maria@example.com",
+      serviceNameSnapshot: "Pintura",
+      fixedServiceAmount: { toString: () => "500" },
+      pixReservationRequestedAt: new Date(Date.now() - 72 * 60 * 60 * 1000),
+      pixReservationPaidAt: null,
+      provider: { slug: "vitriny", businessName: "Vitriny Serviços" },
+      ...overrides
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+  }
+
+  beforeEach(async () => {
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    vi.mocked(requireProviderProfile).mockResolvedValue({
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      userId: "user-1"
+    });
+  });
+
+  it("reabre reserva expirada com novo prazo e avisa o cliente", async () => {
+    setup();
+    const { sendPixReservationReopenedEmail } = await import("@/lib/email");
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: {
+        pixReservationRequestedAt: expect.any(Date),
+        pixReservationClientPaidAt: null
+      },
+      where: { id: "request-1" }
+    });
+    expect(sendPixReservationReopenedEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "maria@example.com",
+        customerName: "Maria",
+        reservaUrl: expect.stringContaining("/u/vitriny/reserva/request-1")
+      })
+    );
+  });
+
+  it("limpa o sinal 'já paguei' da janela anterior ao reabrir", async () => {
+    setup({ pixReservationClientPaidAt: new Date(Date.now() - 60 * 60 * 1000) });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: {
+        pixReservationRequestedAt: expect.any(Date),
+        pixReservationClientPaidAt: null
+      },
+      where: { id: "request-1" }
+    });
+  });
+
+  it("não reabre reserva dentro do prazo", async () => {
+    setup({ pixReservationRequestedAt: new Date() });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não reabre reserva já paga", async () => {
+    setup({ pixReservationPaidAt: new Date() });
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "request-1" }))
+    ).rejects.toThrow("/dashboard/pedidos");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita pedido de outro provider", async () => {
+    db.quoteRequest.findFirst.mockResolvedValue(null);
+    const { reopenPixReservation } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      reopenPixReservation(makeFormData({ requestId: "alheio" }))
+    ).rejects.toThrow("/dashboard/pedidos?error=not-found");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("markPixReservationClientPaid", () => {
+  function mockReservation(overrides: Record<string, unknown> = {}) {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Vitriny Serviços",
+      email: "perfil@example.com",
+      user: { email: "conta@example.com" }
+    });
+    db.quoteRequest.findFirst.mockResolvedValue({
+      id: "request-1",
+      customerName: "Maria",
+      serviceNameSnapshot: "Pintura",
+      fixedServiceAmount: { toString: () => "500" },
+      pixReservationRequestedAt: new Date(),
+      pixReservationPaidAt: null,
+      pixReservationClientPaidAt: null,
+      service: { name: "Pintura" },
+      ...overrides
+    });
+    db.quoteRequest.update.mockResolvedValue({});
+  }
+
+  it("grava o sinal e envia e-mail quando a reserva está pendente", async () => {
+    mockReservation();
+    const { sendPixReservationClientPaidEmail } = await import("@/lib/email");
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).toHaveBeenCalledWith({
+      data: { pixReservationClientPaidAt: expect.any(Date) },
+      where: { id: "request-1" }
+    });
+    expect(sendPixReservationClientPaidEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "perfil@example.com",
+        businessName: "Vitriny Serviços",
+        customerName: "Maria",
+        serviceName: "Pintura",
+        // Moeda pt-BR usa espaço não separável — gerar o esperado com o
+        // mesmo formatador em vez de string literal.
+        amount: new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: "BRL"
+        }).format(500),
+        dashboardUrl: expect.stringContaining("/dashboard/pedidos/request-1")
+      })
+    );
+  });
+
+  it("é idempotente: segundo clique não regrava nem erra", async () => {
+    mockReservation({ pixReservationClientPaidAt: new Date() });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não grava quando o negócio já confirmou o pagamento", async () => {
+    mockReservation({ pixReservationPaidAt: new Date() });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("não grava quando a reserva expirou", async () => {
+    const threeDaysAgo = new Date(Date.now() - 72 * 60 * 60 * 1000);
+    mockReservation({ pixReservationRequestedAt: threeDaysAgo });
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-1" })
+      )
+    ).rejects.toThrow("/u/vitriny/reserva/request-1");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
+
+  it("rejeita pedido que não pertence ao perfil do slug", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Vitriny Serviços",
+      email: "perfil@example.com",
+      user: { email: "conta@example.com" }
+    });
+    db.quoteRequest.findFirst.mockResolvedValue(null);
+    const { markPixReservationClientPaid } = await import(
+      "@/lib/actions/quote-requests"
+    );
+
+    await expect(
+      markPixReservationClientPaid(
+        "vitriny",
+        makeFormData({ requestId: "request-de-outro" })
+      )
+    ).rejects.toThrow("/u/vitriny");
+
+    expect(db.quoteRequest.update).not.toHaveBeenCalled();
+  });
 });
 
 describe("updateQuoteRequestDescription", () => {
   it("atualiza a observação de um pedido do próprio prestador", async () => {
     const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
     vi.mocked(requireProviderProfile).mockResolvedValue({
-      profile: { id: "profile-1", plan: "FREE" },
+      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
       userId: "user-1"
     });
     db.quoteRequest.findFirst.mockResolvedValue({ id: "request-1" });

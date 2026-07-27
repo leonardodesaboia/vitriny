@@ -73,6 +73,37 @@ describe("sendPasswordResetEmail", () => {
   });
 });
 
+describe("sendEmailVerificationEmail", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    sendEmail.mockResolvedValue({ error: null });
+    process.env = {
+      ...process.env,
+      RESEND_API_KEY: "re_test",
+      EMAIL_FROM: "Vitriny <contato@vitriny.com>"
+    };
+  });
+
+  it("envia link de confirmação com instrução de expiração", async () => {
+    const { sendEmailVerificationEmail } = await import("@/lib/email");
+
+    await sendEmailVerificationEmail(
+      "cliente@example.com",
+      "https://app.test/verificar-email/token"
+    );
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "cliente@example.com",
+        subject: "Confirme seu e-mail — Vitriny",
+        html: expect.stringContaining("https://app.test/verificar-email/token")
+      })
+    );
+    const html = sendEmail.mock.calls[0]?.[0]?.html as string;
+    expect(html).toContain("24 horas");
+  });
+});
+
 describe("notificações da aplicação", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -98,7 +129,7 @@ describe("notificações da aplicação", () => {
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         to: "prestador@example.com",
-        subject: "Novo pedido de orçamento — Vitriny",
+        subject: "Novo pedido — Vitriny",
         html: expect.stringContaining("Pintura")
       })
     );

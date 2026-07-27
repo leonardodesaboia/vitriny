@@ -15,6 +15,15 @@ type QuoteRequestReceivedEmailInput = {
   dashboardUrl: string;
 };
 
+type PixReservationClientPaidEmailInput = {
+  to: string;
+  businessName: string;
+  customerName: string;
+  serviceName?: string | null;
+  amount: string;
+  dashboardUrl: string;
+};
+
 type ProposalSentEmailInput = {
   to: string;
   businessName: string;
@@ -162,6 +171,27 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   });
 }
 
+export async function sendEmailVerificationEmail(
+  to: string,
+  verificationUrl: string,
+) {
+  await sendAppEmail({
+    to,
+    subject: "Confirme seu e-mail — Vitriny",
+    preview: "Confirme seu e-mail para ativar sua conta no Vitriny.",
+    html: [
+      paragraph("Recebemos um cadastro usando este endereço de e-mail."),
+      paragraph(
+        "Abra o link e confirme seu e-mail para ativar a conta. Nenhum acesso será liberado antes dessa confirmação.",
+      ),
+      emailButton("Confirmar meu e-mail", verificationUrl),
+      paragraph(
+        "O link expira em 24 horas. Se você não fez este cadastro, ignore este e-mail.",
+      ),
+    ].join(""),
+  });
+}
+
 export async function sendQuoteRequestReceivedEmail({
   to,
   businessName,
@@ -171,16 +201,76 @@ export async function sendQuoteRequestReceivedEmail({
 }: QuoteRequestReceivedEmailInput) {
   await sendAppEmail({
     to,
-    subject: "Novo pedido de orçamento — Vitriny",
-    preview: `${customerName} enviou um novo pedido de orçamento.`,
+    subject: "Novo pedido — Vitriny",
+    preview: `${customerName} enviou um novo pedido.`,
     html: [
       paragraph(`Olá, ${businessName}.`),
       paragraph(
         serviceName
-          ? `${customerName} enviou um novo pedido para o serviço ${serviceName}.`
-          : `${customerName} enviou um novo pedido de orçamento.`
+          ? `${customerName} enviou um novo pedido para o item ${serviceName}.`
+          : `${customerName} enviou um novo pedido.`
       ),
       emailButton("Ver pedido no painel", dashboardUrl)
+    ].join("")
+  });
+}
+
+export async function sendPixReservationClientPaidEmail({
+  to,
+  businessName,
+  customerName,
+  serviceName,
+  amount,
+  dashboardUrl
+}: PixReservationClientPaidEmailInput) {
+  await sendAppEmail({
+    to,
+    subject: "Cliente informou pagamento Pix — Vitriny",
+    preview: `${customerName} informou o pagamento de ${amount}.`,
+    html: [
+      paragraph(`Olá, ${businessName}.`),
+      paragraph(
+        serviceName
+          ? `${customerName} informou o pagamento Pix de ${amount} referente ao item ${serviceName}.`
+          : `${customerName} informou o pagamento Pix de ${amount}.`
+      ),
+      paragraph(
+        "Confirme o recebimento no seu banco antes de dar o pedido como pago."
+      ),
+      emailButton("Confirmar no painel", dashboardUrl)
+    ].join("")
+  });
+}
+
+type PixReservationReopenedEmailInput = {
+  to: string;
+  customerName: string;
+  businessName: string;
+  serviceName?: string | null;
+  amount: string;
+  reservaUrl: string;
+};
+
+export async function sendPixReservationReopenedEmail({
+  to,
+  customerName,
+  businessName,
+  serviceName,
+  amount,
+  reservaUrl
+}: PixReservationReopenedEmailInput) {
+  await sendAppEmail({
+    to,
+    subject: "Prazo de pagamento renovado — Vitriny",
+    preview: `${businessName} renovou o prazo do seu pagamento Pix.`,
+    html: [
+      paragraph(`Olá, ${customerName}.`),
+      paragraph(
+        serviceName
+          ? `${businessName} renovou o prazo do pagamento Pix de ${amount} referente ao item ${serviceName}. Você tem mais 48 horas.`
+          : `${businessName} renovou o prazo do seu pagamento Pix de ${amount}. Você tem mais 48 horas.`
+      ),
+      emailButton("Pagar agora", reservaUrl)
     ].join("")
   });
 }
@@ -213,22 +303,22 @@ export async function sendQuoteRequestConfirmationToCustomerEmail({
   profileUrl,
   pixReservaUrl
 }: QuoteRequestConfirmationEmailInput) {
-  const serviceLabel = serviceName ? ` para o serviço ${serviceName}` : "";
+  const serviceLabel = serviceName ? ` para o item ${serviceName}` : "";
 
   const body = isPixPayment
     ? [
         paragraph(`Olá, ${customerName}.`),
         paragraph(
-          `Sua solicitação${serviceLabel} foi registrada por ${businessName}. Complete o pagamento Pix para confirmar sua reserva.`
+          `Sua solicitação${serviceLabel} foi registrada por ${businessName}. Complete o pagamento Pix para confirmar seu pedido.`
         ),
         pixReservaUrl ? emailButton("Completar pagamento Pix", pixReservaUrl) : ""
       ].join("")
     : [
         paragraph(`Olá, ${customerName}.`),
         paragraph(
-          `Sua solicitação${serviceLabel} foi recebida por ${businessName}. O prestador avaliará em breve e retornará pelo contato informado.`
+          `Sua solicitação${serviceLabel} foi recebida por ${businessName}. O negócio avaliará em breve e retornará pelo contato informado.`
         ),
-        emailButton("Ver perfil do prestador", profileUrl)
+        emailButton("Ver vitrine do negócio", profileUrl)
       ].join("");
 
   await sendAppEmail({

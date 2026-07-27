@@ -1,7 +1,16 @@
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
 
 export function profileLinkMessage(profileUrl: string): string {
-  return `Oi! Para eu te passar um orçamento certinho, preenche esse link rapidinho:\n${profileUrl}\nAssim consigo organizar as informações e te responder melhor 😊`;
+  return `Oi! Conheça minha vitrine e envie seu pedido por este link:\n${profileUrl}\nAssim consigo organizar as informações e te responder melhor 😊`;
+}
+
+export function itemShareMessage(
+  name: string,
+  price: string | null,
+  url: string
+): string {
+  const pricePart = price ? ` — ${price}` : "";
+  return `Olá! Veja ${name} na minha vitrine${pricePart}:\n${url}`;
 }
 
 export function proposalReadyMessage(
@@ -25,7 +34,7 @@ export function pixDepositMessage(
   pixKey: string,
   pixHolderName: string
 ): string {
-  return `Oi, ${customerName}! Sua proposta foi aprovada 😊\n\nPara confirmar a reserva, você pode pagar o valor de entrada de ${depositAmount} via Pix:\n\nChave Pix: ${pixKey}\nTitular: ${pixHolderName}\n\nApós o pagamento, envie o comprovante por aqui.`;
+  return `Oi, ${customerName}! Sua proposta foi aprovada 😊\n\nPara confirmar a contratação, você pode pagar o valor de entrada de ${depositAmount} via Pix:\n\nChave Pix: ${pixKey}\nTitular: ${pixHolderName}\n\nApós o pagamento, envie o comprovante por aqui.`;
 }
 
 // Remove non-digits and build a wa.me URL.

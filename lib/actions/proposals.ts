@@ -84,7 +84,10 @@ export async function createProposal(
   const parsed = parseProposalForm(formData);
 
   if (!parsed.success) {
-    return { error: "Revise os campos e tente novamente." };
+    return {
+      error:
+        parsed.error.issues[0]?.message ?? "Revise os campos e tente novamente."
+    };
   }
 
   const profile = await prisma.providerProfile.findUnique({
@@ -136,6 +139,15 @@ export async function createProposal(
       (sum, item) => sum.plus(item.totalPrice),
       new Prisma.Decimal(0)
     );
+  }
+
+  if (
+    parsed.data.depositAmount &&
+    decimalFromString(parsed.data.depositAmount).greaterThan(totalAmount)
+  ) {
+    return {
+      error: "O valor de entrada não pode ser maior que o total da proposta."
+    };
   }
 
   const monthRange = getCurrentMonthRange();
@@ -258,4 +270,5 @@ export async function markDepositPaid(formData: FormData) {
   });
 
   revalidatePath("/dashboard/pedidos");
+  revalidatePath("/dashboard/pedidos/[id]", "page");
 }

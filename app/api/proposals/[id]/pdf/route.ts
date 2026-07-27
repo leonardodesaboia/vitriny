@@ -10,6 +10,8 @@ import { ProposalPdf, type ProposalPdfData } from "@/components/proposals/Propos
 
 type RouteContext = { params: Promise<{ id: string }> };
 
+export const dynamic = "force-dynamic";
+
 export async function GET(_req: NextRequest, { params }: RouteContext) {
   const { id } = await params;
 
@@ -24,7 +26,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   });
 
   if (!profile) {
-    return NextResponse.json({ error: "Perfil não encontrado." }, { status: 404 });
+    return NextResponse.json({ error: "Dados do negócio não encontrados." }, { status: 404 });
   }
 
   const proposal = await prisma.proposal.findFirst({
@@ -78,7 +80,10 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
       desiredDate: proposal.quoteRequest.desiredDate,
       desiredTime: proposal.quoteRequest.desiredTime,
       location: proposal.quoteRequest.location,
-      service: proposal.quoteRequest.service,
+      // Snapshot primeiro: o histórico conta a verdade da época do pedido.
+      service: proposal.quoteRequest.serviceNameSnapshot
+        ? { name: proposal.quoteRequest.serviceNameSnapshot }
+        : proposal.quoteRequest.service,
     },
     items: proposal.items.map((item) => ({
       description: item.description,

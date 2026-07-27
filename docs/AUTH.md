@@ -20,13 +20,21 @@ Providers configurados:
 - **Google** (OAuth)
 - **Credentials** (e-mail/senha)
 
-Não há mais GitHub. Não há login por magic link/e-mail mágico (`VerificationToken` continua no schema como model padrão do Auth.js, mas sem uso real).
+Não há mais GitHub. Não há login por magic link/e-mail mágico (`VerificationToken` continua no schema como model padrão do Auth.js, mas sem uso real). A confirmação do cadastro Credentials usa o model próprio `EmailVerificationToken`.
 
 ## Cadastro e login com e-mail/senha
 
-- Cadastro: `/cadastro`, action `registerUser` em `lib/actions/auth.ts`. Cria `User` com `password` hasheado (`bcrypt.hash`, custo 10) e já loga automaticamente.
-- Login: `/login`, action `loginWithCredentials` em `lib/actions/auth.ts`. O provider `Credentials` (`auth.ts`) valida e-mail/senha com `loginSchema` e `bcrypt.compare`.
-- Sem verificação de e-mail no cadastro (decisão de produto para esta etapa).
+- Cadastro: `/cadastro`, action `registerUser` em `lib/actions/auth.ts`. Cria `User` pendente com `password` hasheado (`bcrypt.hash`, custo 10), `emailVerified = null` e um `EmailVerificationToken`.
+- Confirmação: o e-mail leva a `/verificar-email/[token]`. A página exige clique explícito que envia `POST` para `confirmEmail`; isso evita confirmação acidental por scanners que abrem links automaticamente.
+- Token: 32 bytes aleatórios, somente o hash SHA-256 é persistido, validade de 24 horas e uso único. Tokens anteriores são removidos no reenvio.
+- Após confirmar, `emailVerified` recebe a data atual e o usuário é direcionado para `/login?verified=1`. O cadastro não faz login automático.
+- Login: `/login`, action `loginWithCredentials`. O provider `Credentials` valida e-mail/senha com `loginSchema` e `bcrypt.compare`; somente depois de validar a senha retorna `email-not-verified` para contas pendentes.
+- Reenvio: `/verifique-seu-email`, action `resendEmailVerification`. Após o cadastro, o e-mail fica por 24 horas em cookie temporário `HttpOnly`, evitando que o usuário precise digitá-lo novamente. Sem esse contexto, a tela oferece o campo manual. A resposta é idêntica para e-mail ausente, já verificado ou pendente, evitando enumeração.
+- Google OAuth não depende desse bloqueio de Credentials e continua com o fluxo próprio do Auth.js.
+
+### Compatibilidade com contas existentes
+
+A migration `20260702140000_add_email_verification` preenche `emailVerified` nas contas Credentials criadas antes desta funcionalidade. Essas contas são consideradas verificadas e continuam entrando sem passar pelo novo fluxo, evitando lockout no rollout. A confirmação é obrigatória somente para contas por senha criadas depois da migration. Alterar essa política exige uma migration separada e bloqueará usuários existentes até que solicitem e concluam a confirmação.
 
 ### Bloqueio de e-mail duplicado entre métodos
 
@@ -40,13 +48,14 @@ Não há mais GitHub. Não há login por magic link/e-mail mágico (`Verificatio
 - `/redefinir-senha/[token]`: formulário de nova senha, action `resetPassword`.
 - Modelo de dados: `PasswordResetToken` (`id`, `userId`, `token` único, `expiresAt`, `createdAt`), separado do `VerificationToken` padrão do Auth.js.
 - Token gerado com `crypto.randomBytes(32).toString("hex")`, expira em 1 hora, apagado após uso (e qualquer outro token do mesmo usuário, via `$transaction`).
-- **Proteção contra enumeração de e-mail:** `requestPasswordReset` sempre redireciona para `/esqueci-senha?sent=1` com a mesma mensagem de sucesso, independentemente de o e-mail existir ou ser conta Google-only. O e-mail só é efetivamente enviado quando existe um `User` com `password` definido para aquele e-mail.
+- **Proteção contra enumeração de e-mail:** `requestPasswordReset` sempre redireciona para `/esqueci-senha?sent=1` com a mesma mensagem de sucesso, independentemente de o e-mail existir ou ser conta Google-only. O e-mail só é efetivamente enviado quando existe um `User` com `password` definido e `emailVerified` preenchido.
 - Envio de e-mail via Resend (`lib/email.ts`, função `sendPasswordResetEmail`). O remetente vem de `EMAIL_FROM`; em produção, usar um domínio verificado no Resend. Falhas de configuração ou envio (`{ error }` retornado pela API do Resend) lançam exceção em vez de falhar silenciosamente.
 
 ## E-mails transacionais
 
 Além da recuperação de senha, `lib/email.ts` envia notificações para pontos críticos do MVP:
 
+- confirmação do cadastro por senha;
 - novo pedido público: e-mail para o prestador (`ProviderProfile.email` ou, se ausente, `User.email`);
 - proposta criada: e-mail para o cliente quando `QuoteRequest.customerEmail` existe;
 - proposta aprovada/recusada: e-mail para o prestador (`ProviderProfile.email` ou `User.email`).
@@ -55,17 +64,21 @@ Falhas nesses e-mails são registradas no servidor com `console.error`, mas não
 
 ## Arquivos envolvidos
 
-- `auth.ts` — configuração central (providers, sessão, callbacks, erros customizados)
-- `lib/actions/auth.ts` — `registerUser`, `loginWithCredentials`, `requestPasswordReset`, `resetPassword`
-- `lib/validations/auth.ts` — `registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`
+- `auth.ts` — configuração central de providers e sessão
+- `lib/auth/credentials.ts` — autorização Credentials e erros customizados
+- `lib/auth/email-verification.ts` — geração, hash, validade e URL do token
+- `lib/actions/auth.ts` — cadastro, login, confirmação, reenvio e redefinição de senha
+- `lib/validations/auth.ts` — schemas dos formulários e do token de confirmação
 - `lib/email.ts` — wrapper do Resend e templates de e-mails transacionais
 - `app/api/auth/[...nextauth]/route.ts`
 - `proxy.ts`
-- `app/(auth)/layout.tsx` — layout compartilhado (painel decorativo) das 4 páginas de auth
+- `app/(auth)/layout.tsx` — layout compartilhado das páginas de autenticação
 - `app/(auth)/login/page.tsx`
 - `app/(auth)/cadastro/page.tsx`
 - `app/(auth)/esqueci-senha/page.tsx`
 - `app/(auth)/redefinir-senha/[token]/page.tsx`
+- `app/(auth)/verifique-seu-email/page.tsx`
+- `app/(auth)/verificar-email/[token]/page.tsx`
 - `components/auth/AuthButton.tsx`
 - `components/auth/GoogleButton.tsx`
 - `components/auth/LoginForm.tsx`
@@ -129,9 +142,10 @@ As páginas internas também checam `auth()` e redirecionam para `/login` quando
 1. Configure Google OAuth (Google Cloud Console) e/ou use e-mail/senha.
 2. Rode `npm run dev`.
 3. Acesse `/login`.
-4. Clique em `Entrar com Google`, ou cadastre-se em `/cadastro` e entre com e-mail/senha.
-5. Confirme redirecionamento para `/dashboard`.
-6. Clique em `Sair`.
+4. Clique em `Entrar com Google`, ou cadastre-se em `/cadastro`.
+5. No cadastro por senha, abra o e-mail, acesse o link, clique em `Confirmar meu e-mail` e entre.
+6. Confirme redirecionamento para `/dashboard`.
+7. Clique em `Sair`.
 
 ## Produção
 
@@ -148,6 +162,7 @@ Cuidados:
 - Conferir `AUTH_URL`.
 - Conferir o redirect URI do Google.
 - Configurar `EMAIL_FROM` com remetente de domínio verificado no Resend.
+- Configurar `NEXT_PUBLIC_APP_URL` ou `AUTH_URL` com a URL pública usada nos links de confirmação.
 - Rodar `npx prisma migrate deploy` antes de testar login em produção.
 
 ## Observações Auth.js v5
@@ -159,6 +174,5 @@ Este projeto usa esse padrão, com sessão `jwt` (não `database`) por exigênci
 ## Riscos conhecidos
 
 - Sessão JWT não é invalidável manualmente antes de expirar (diferente da sessão em banco usada antes).
-- Sem verificação de e-mail no cadastro por senha.
 - Sem vínculo automático de conta entre Google e e-mail/senha (decisão deliberada, não falha).
-- Sem rate limit nos formulários de auth (mesmo risco já existente nos outros formulários públicos do projeto).
+- Rate limiting usa memória local e não é compartilhado entre múltiplas instâncias; produção distribuída exige Redis/Upstash.

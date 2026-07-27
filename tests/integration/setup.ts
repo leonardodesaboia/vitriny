@@ -14,9 +14,12 @@ export async function cleanDatabase() {
   await testDb.quoteRequestStatusHistory.deleteMany({});
   await testDb.proposal.deleteMany({});
   await testDb.quoteRequest.deleteMany({});
+  await testDb.itemView.deleteMany({});
   await testDb.service.deleteMany({});
   await testDb.proposalTemplate.deleteMany({});
+  await testDb.storefrontView.deleteMany({});
   await testDb.providerProfile.deleteMany({});
+  await testDb.emailVerificationToken.deleteMany({});
   await testDb.passwordResetToken.deleteMany({});
   await testDb.session.deleteMany({});
   await testDb.account.deleteMany({});

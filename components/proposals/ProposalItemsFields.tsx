@@ -11,6 +11,7 @@ type ProposalItemRow = {
 };
 
 type ProposalItemsFieldsProps = {
+  compact?: boolean;
   initialItems?: Array<{
     description: string;
     quantity: number;
@@ -28,7 +29,11 @@ function createEmptyRow(index: number): ProposalItemRow {
   };
 }
 
-export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItemsFieldsProps) {
+export function ProposalItemsFields({
+  compact = false,
+  initialItems,
+  minItems = 0,
+}: ProposalItemsFieldsProps) {
   const [rows, setRows] = useState<ProposalItemRow[]>(
     initialItems && initialItems.length > 0
       ? initialItems.map((item, index) => ({
@@ -55,14 +60,22 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
   }
 
   return (
-    <section className="rounded-xl border border-paper-soft bg-paper p-5">
+    <section
+      className={
+        compact
+          ? "grid gap-4"
+          : "rounded-xl border border-paper-soft bg-paper p-5"
+      }
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-sm font-semibold text-ink">Itens da proposta</h2>
+          <h2 className="text-sm font-semibold text-ink">
+            {compact ? "Itens e valores" : "Itens da proposta"}
+          </h2>
           <p className="mt-0.5 text-xs text-ink-muted">
             {minItems >= 1
-              ? "Obrigatório — pelo menos 1 item com valor."
-              : "Opcional — adicione serviços, materiais ou etapas com valores."}
+              ? "Adicione pelo menos um item."
+              : "Adicione produtos, serviços, materiais ou etapas."}
           </p>
         </div>
         <button
@@ -70,7 +83,7 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
           onClick={addRow}
           type="button"
         >
-          + Adicionar item
+          {compact ? "Adicionar item" : "+ Adicionar item"}
         </button>
       </div>
 
@@ -79,7 +92,7 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
           Nenhum item adicionado. A proposta pode ser enviada sem itens.
         </p>
       ) : (
-        <div className="mt-4 grid gap-3">
+        <div className={`${compact ? "" : "mt-4"} grid gap-3`}>
           {rows.map((row) => (
             <div
               className="grid gap-3 rounded-lg border border-paper-soft bg-white p-4 md:grid-cols-[1fr_100px_140px_auto]"
@@ -95,6 +108,7 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
                 <input
                   className="min-h-10 rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
                   id={`itemDescription-${row.key}`}
+                  maxLength={200}
                   name="itemDescription"
                   onChange={(e) => updateRow(row.key, "description", e.target.value)}
                   placeholder="Ex: Mão de obra, Tinta, Visita técnica…"
@@ -115,6 +129,7 @@ export function ProposalItemsFields({ initialItems, minItems = 0 }: ProposalItem
                   className="min-h-10 w-full rounded-md border border-paper-soft bg-white px-3 text-sm outline-none focus:border-leaf"
                   id={`itemQuantity-${row.key}`}
                   min="1"
+                  max="999"
                   name="itemQuantity"
                   onChange={(e) => updateRow(row.key, "quantity", e.target.value)}
                   required

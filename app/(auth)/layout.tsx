@@ -23,10 +23,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         <blockquote>
           <p className="font-fraunces text-2xl font-medium leading-snug text-white/90">
-            &ldquo;Transforme pedidos soltos em propostas profissionais.&rdquo;
+            &ldquo;Apresente seus produtos e serviços e organize cada pedido.&rdquo;
           </p>
           <p className="mt-4 text-sm font-medium text-white/60">
-            Feito para prestadores de serviço
+            Feito para pequenos negócios
           </p>
         </blockquote>
       </div>

@@ -1,14 +1,19 @@
 # Roadmap
 
+## Direção de produto
+
+O Vitriny atende pequenos negócios que apresentam produtos e serviços. A interface usa “itens da vitrine”, “vitrine pública” e “pedidos”, enquanto models, enums e rotas mantêm a nomenclatura técnica original.
+
 ## Concluído
 
 - Base Next.js + TypeScript + Tailwind
 - PostgreSQL + Prisma
 - Auth.js / NextAuth
 - Dashboard protegido
-- Perfil do prestador
-- Cadastro de serviços
-- Página pública do prestador
+- Dados do negócio
+- Cadastro de itens da vitrine
+- Classificação visual de itens como Produto ou Serviço
+- Vitrine pública do negócio
 - Pedido público de orçamento
 - Painel de pedidos recebidos
 - Criação de proposta
@@ -23,21 +28,37 @@
 - Planos e limites de uso
 - Login com Google OAuth e cadastro/login por e-mail e senha (substituindo GitHub OAuth)
 - Recuperação de senha por e-mail (Resend)
+- Verificação obrigatória para novos cadastros por senha, com token de uso único e reenvio; contas Credentials anteriores foram preservadas por backfill
 - Polimento visual, validações e preparação para deploy
 - Assinatura mensal PRO via Stripe Checkout embutido, gestão de pagamento, portal, faturas e webhook
 - Testes automatizados unitários, de actions, integração com banco real e E2E com Playwright
-- Tipos de preço de serviço: FIXED (preço exibido publicamente) e CUSTOM (sob orçamento)
-- Exclusão de serviço com confirmação
+- Tipos de preço de item: `FIXED` (preço exibido publicamente) e `CUSTOM` (sob consulta)
+- Exclusão de item com confirmação
 - Edição de nota do cliente diretamente no card do pedido
-- Lista de serviços colapsável com padrão accordion (expandir ao clicar)
-- Pagamento antecipado Pix obrigatório para serviços fixos, com confirmação manual
+- Lista de itens colapsável com padrão accordion (expandir ao clicar)
+- Pagamento Pix obrigatório para itens com preço fixo, com confirmação manual
 - Entrada Pix em proposta aprovada
-- Imagem por serviço para usuários PRO
+- Imagem por item (disponível em todos os planos)
 - Geração autenticada de PDF de proposta
 - Temas globais de cores e fontes para usuários PRO
 - Filtro de pedidos por status
-- Responsividade da página de serviços em telas mobile
-- Dashboard operacional com onboarding por tipo de serviço, métricas mensais, atalhos para pendências e atividade recente
+- Responsividade da tela de itens da vitrine em mobile
+- Dashboard operacional com onboarding por tipo de item, métricas mensais, atalhos para pendências e atividade recente
+- Modos de venda na UI: Sob consulta, Preço fixo solicitar primeiro, Preço fixo pagar via Pix (`lib/service-sale-mode.ts`)
+- Documentação canônica atualizada: posicionamento como vitrine online, glossário técnico↔UI, guardrails anti-e-commerce
+- Botão "Já paguei" na reserva Pix (sinal do cliente + badge, e-mail e pendência na dashboard)
+- Página de detalhe do pedido (`/dashboard/pedidos/[id]`) com actions que respeitam a página de origem
+- Compartilhar item no WhatsApp e copiar link de venda por item
+- Card "Movimentado no mês" na dashboard (propostas aprovadas + Pix confirmados)
+- Refactor de planos: capacidades em `PLAN_FEATURES`, webhook Stripe por `priceId`, preço da landing em constante
+- Snapshot do nome do item como fonte primária do histórico
+- Token de reset de senha armazenado como hash (SHA-256)
+- Painel de pedidos paginado (20/página, filtros no banco, card navega ao detalhe)
+- Reabrir reserva Pix expirada com novo prazo e aviso ao cliente
+- Modelos de proposta contextualizados no fluxo de proposta (fora do menu lateral) com "Salvar esta proposta como modelo"
+- Links customizados no perfil (até 10, FREE) exibidos na vitrine pública
+- Estatísticas de visitas da vitrine na dashboard (últimos 7/30 dias, FREE, sem PII)
+- Itens mais vistos na dashboard (ranking top 5, PRO) — fase 2 das estatísticas de visitas
 
 ## Próximos passos recomendados
 
@@ -48,11 +69,11 @@
 
 ## Melhorias de curto prazo
 
-- Criar página de detalhe do pedido.
+O detalhamento técnico de cada item abaixo (como implementar, arquivos, esforço e riscos) está em `BACKLOG_TECNICO.md`.
+
 - Melhorar mensagens de erro por campo.
-- Adicionar página de configurações do prestador.
+- Adicionar página de configurações do negócio.
 - Criar página de detalhe da proposta.
-- Verificação de e-mail no cadastro por senha (não implementado nesta etapa).
 - Vínculo de contas entre Google e e-mail/senha quando o e-mail coincide (hoje bloqueado deliberadamente, sem auto-merge).
 - Trocar remetente do Resend de `onboarding@resend.dev` (sandbox) para domínio verificado.
 
@@ -61,23 +82,30 @@
 - Ampliar cobertura E2E dos fluxos de billing, Pix e personalização.
 - Expiração/limpeza de pagamentos Pix obrigatórios abandonados.
 
-## Futuro, somente após validação
+## Futuro distante — somente após validação de negócio
 
+Estas features não fazem parte do MVP e não devem ser iniciadas sem uma decisão explícita de produto. O Vitriny não é e-commerce completo nesta etapa.
+
+**Extensões de vitrine (candidatos a curto prazo, se validados):**
+- Domínio próprio para a vitrine.
+- Página de detalhe público de item.
+- Cupons ou desconto simples.
+
+**E-commerce progressivo (médio prazo, requer validação):**
+- Controle de estoque básico por item.
+- Variações de produto (cor, tamanho, modelo).
+- Carrinho de compras.
+- Cálculo de frete/entrega.
 - Gateway Pix com confirmação automática.
 - Pagamento online do cliente final por cartão.
-- WhatsApp API.
-- Editor avançado de PDF.
+
+**Infraestrutura e integrações (longo prazo):**
+- WhatsApp API (notificações automáticas).
 - Assinatura digital.
-- IA para sugerir preço.
-- Marketplace.
-- Multiempresa complexo.
+- Editor avançado de PDF.
+- IA para sugerir preço ou descrever item.
 - Aplicativo mobile.
 
-## Não implementar ainda sem validação
-
-- Cobrança do cliente final dentro da plataforma.
-- Automação de WhatsApp.
-- Gerador avançado de PDF.
-- IA de precificação.
-- Marketplace.
+**Escala (hipóteses distantes, alta condicionalidade):**
+- Marketplace de múltiplos vendedores.
 - Multiempresa com permissões complexas.

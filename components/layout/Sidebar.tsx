@@ -46,7 +46,7 @@ const navItems = [
   },
   {
     href: "/dashboard/servicos",
-    label: "Serviços",
+    label: "Itens da vitrine",
     icon: (
       <svg
         className="h-4 w-4"
@@ -65,25 +65,6 @@ const navItems = [
           strokeLinejoin="round"
           strokeWidth={2}
           d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-        />
-      </svg>
-    ),
-  },
-  {
-    href: "/dashboard/propostas/templates",
-    label: "Modelos",
-    icon: (
-      <svg
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M9 12h6m-6 4h6M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
         />
       </svg>
     ),
@@ -130,7 +111,9 @@ const navItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const [expanded, setExpanded] = useState(false);
+  // Expandido por padrão para novos usuários (rótulos visíveis); a preferência
+  // persiste em localStorage. Ver docs/UX_UI_AUDIT.md P1.
+  const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
@@ -263,11 +246,18 @@ export function Sidebar() {
 
         <nav className="flex flex-col gap-1 px-2 py-2">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.href === "/dashboard"
+                ? pathname === "/dashboard"
+                : pathname === item.href ||
+                  pathname.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-label={item.label}
+                title={item.label}
+                aria-current={active ? "page" : undefined}
                 className={[
                   "relative flex min-h-10 items-center gap-3 rounded-md px-2",
                   "text-sm font-medium transition-colors",
@@ -276,7 +266,10 @@ export function Sidebar() {
                     : "text-ink-muted hover:bg-paper hover:text-ink",
                 ].join(" ")}
               >
-                <span className="flex w-5 shrink-0 items-center justify-center">
+                <span
+                  aria-hidden="true"
+                  className="flex w-5 shrink-0 items-center justify-center"
+                >
                   {item.icon}
                 </span>
                 <AnimatePresence>

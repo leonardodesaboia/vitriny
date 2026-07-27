@@ -22,3 +22,8 @@ pnpm-debug.log*
 playwright-report/
 test-results/
 tests/e2e/.auth/user.json
+
+# Graphify local/runtime files
+graphify-out/.graphify_*
+graphify-out/cache/
+graphify-out/cost.json

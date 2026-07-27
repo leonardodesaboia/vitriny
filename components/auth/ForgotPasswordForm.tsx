@@ -17,7 +17,7 @@ export function ForgotPasswordForm({ errorCode }: ForgotPasswordFormProps) {
   return (
     <form action={requestPasswordReset} className="mt-6 grid gap-4">
       {errorCode ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
             {errorMessages[errorCode] ?? "Não foi possível processar o pedido."}
           </p>
@@ -39,7 +39,7 @@ export function ForgotPasswordForm({ errorCode }: ForgotPasswordFormProps) {
       </div>
 
       <button
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-ink px-5 text-sm font-semibold text-white transition hover:bg-ink/80"
+        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         type="submit"
       >
         Enviar link de redefinição

@@ -78,16 +78,16 @@ export default async function BillingPage({
       {!profile || !limits ? (
         <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
           <h2 className="font-fraunces text-xl font-bold text-ink">
-            Crie seu perfil primeiro
+            Cadastre seu negócio primeiro
           </h2>
           <p className="mt-2 text-sm text-ink-muted">
-            Assinatura e limites ficam vinculados ao perfil do prestador.
+            Assinatura e limites ficam vinculados aos dados do negócio.
           </p>
           <Link
             className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-4 text-xs font-semibold text-white transition hover:bg-leaf-hover"
             href="/dashboard/perfil"
           >
-            Criar perfil
+            Cadastrar negócio
           </Link>
         </div>
       ) : (
@@ -105,6 +105,7 @@ export default async function BillingPage({
 
           <PlanUsageCard
             plan={profile.plan}
+            showPlanHeader={false}
             usage={[
               {
                 current: profile.services.filter((s) => s.isActive).length,

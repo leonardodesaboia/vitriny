@@ -6,11 +6,13 @@ import { GoogleButton } from "@/components/auth/GoogleButton";
 import { LoginForm } from "@/components/auth/LoginForm";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; reset?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string; verified?: string }>;
 };
 
 const googleButtonClassName =
   "mt-8 inline-flex min-h-11 w-full items-center justify-center gap-3 rounded-md border border-stone-300 px-5 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf";
+
+export const dynamic = "force-dynamic";
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const session = await auth();
@@ -24,13 +26,21 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
     <>
       <p className="font-fraunces text-3xl font-bold text-ink">Entrar</p>
       <p className="mt-3 text-sm leading-6 text-ink-muted">
-        Acesse o painel do prestador.
+        Acesse o painel do seu negócio.
       </p>
 
       {query.reset ? (
         <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3">
           <p className="text-sm font-semibold text-leaf">
             Senha redefinida. Entre com sua nova senha.
+          </p>
+        </div>
+      ) : null}
+
+      {query.verified ? (
+        <div className="mt-6 rounded-lg border border-mint bg-mint/40 px-4 py-3">
+          <p className="text-sm font-semibold text-leaf">
+            E-mail confirmado. Agora você pode entrar.
           </p>
         </div>
       ) : null}

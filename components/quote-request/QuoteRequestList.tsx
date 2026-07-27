@@ -1,15 +1,24 @@
-import { QuoteRequestCard, type SerializedQuoteRequest } from "@/components/quote-request/QuoteRequestCard";
-import type { QuoteRequestWithRelations, ServiceSummary } from "@/types";
+import {
+  QuoteRequestCard,
+  type QuoteRequestSummary
+} from "@/components/quote-request/QuoteRequestCard";
+import {
+  serializeQuoteRequest,
+  type SerializableQuoteRequest
+} from "@/components/quote-request/serialize";
+
+type QuoteRequestListRow = SerializableQuoteRequest &
+  Omit<QuoteRequestSummary, "service">;
 
 type QuoteRequestListProps = {
-  quoteRequests: QuoteRequestWithRelations[];
-  services: ServiceSummary[];
+  quoteRequests: QuoteRequestListRow[];
+  services: { id: string; name: string }[];
   emptyDescription?: string;
   emptyTitle?: string;
 };
 
 export function QuoteRequestList({
-  emptyDescription = "Quando um cliente preencher o formulário do seu perfil, os pedidos aparecerão aqui.",
+  emptyDescription = "Quando um cliente preencher o formulário da sua vitrine, os pedidos aparecerão aqui.",
   emptyTitle = "Nenhum pedido ainda",
   quoteRequests,
   services
@@ -38,31 +47,13 @@ export function QuoteRequestList({
 
   return (
     <div className="grid gap-3">
-      {quoteRequests.map((quoteRequest) => {
-        const serialized: SerializedQuoteRequest = {
-          ...quoteRequest,
-          fixedServiceAmount: quoteRequest.fixedServiceAmount?.toString() ?? null,
-          service: quoteRequest.service
-            ? {
-                ...quoteRequest.service,
-                basePrice: quoteRequest.service.basePrice?.toString() ?? null
-              }
-            : null,
-          proposal: quoteRequest.proposal
-            ? {
-                ...quoteRequest.proposal,
-                depositAmount: quoteRequest.proposal.depositAmount?.toString() ?? null
-              }
-            : null
-        };
-        return (
-          <QuoteRequestCard
-            key={quoteRequest.id}
-            quoteRequest={serialized}
-            serviceNamesById={serviceNamesById}
-          />
-        );
-      })}
+      {quoteRequests.map((quoteRequest) => (
+        <QuoteRequestCard
+          key={quoteRequest.id}
+          quoteRequest={serializeQuoteRequest(quoteRequest)}
+          serviceNamesById={serviceNamesById}
+        />
+      ))}
     </div>
   );
 }

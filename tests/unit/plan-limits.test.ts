@@ -1,13 +1,18 @@
 import { describe, it, expect } from "vitest";
 import {
+  canUseServiceImages,
+  canUseThemePresets,
+  canUseStorefrontAnalytics,
   getPlanLimits,
   getPlanLimit,
   hasReachedLimit,
   isNearLimit,
+  isPaidPlan,
   formatUsage,
   getCurrentMonthRange,
   PLAN_LIMITS,
-  PLAN_LIMIT_ERROR_CODES
+  PLAN_LIMIT_ERROR_CODES,
+  PLAN_PRICES
 } from "@/lib/plan-limits";
 
 describe("PLAN_LIMITS", () => {
@@ -147,6 +152,31 @@ describe("getCurrentMonthRange", () => {
   it("start deve ser anterior a end", () => {
     const { start, end } = getCurrentMonthRange();
     expect(start.getTime()).toBeLessThan(end.getTime());
+  });
+});
+
+describe("capacidades por plano", () => {
+  it("FREE tem imagens mas não temas; PRO tem ambos", () => {
+    expect(canUseServiceImages("FREE")).toBe(true);
+    expect(canUseThemePresets("FREE")).toBe(false);
+    expect(canUseServiceImages("PRO")).toBe(true);
+    expect(canUseThemePresets("PRO")).toBe(true);
+  });
+
+  it("isPaidPlan distingue FREE de planos pagos", () => {
+    expect(isPaidPlan("FREE")).toBe(false);
+    expect(isPaidPlan("PRO")).toBe(true);
+  });
+
+  it("expõe o preço de cada plano", () => {
+    expect(PLAN_PRICES.PRO).toBe("R$ 19,90");
+  });
+});
+
+describe("canUseStorefrontAnalytics", () => {
+  it("é PRO-only", () => {
+    expect(canUseStorefrontAnalytics("FREE")).toBe(false);
+    expect(canUseStorefrontAnalytics("PRO")).toBe(true);
   });
 });
 

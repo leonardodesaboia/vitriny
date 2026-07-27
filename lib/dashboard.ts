@@ -1,4 +1,6 @@
-import type { ProposalStatus, QuoteRequestStatus } from "@prisma/client";
+import type { Prisma, ProposalStatus, QuoteRequestStatus } from "@prisma/client";
+
+import { isPixPaymentExpired, pixPaymentExpiryCutoff } from "@/lib/utils/date";
 
 export type DashboardActivityType =
   | "PIX_RESERVATION_PAID"
@@ -99,6 +101,7 @@ type MonthRange = {
 
 type DashboardRequest = {
   createdAt: Date;
+  pixReservationClientPaidAt: Date | null;
   pixReservationPaidAt: Date | null;
   pixReservationRequestedAt: Date | null;
   proposal: {
@@ -155,11 +158,11 @@ export function buildOnboardingOutcomeStep({
     return {
       actionLabel: "Ver pedidos",
       description:
-        "Quando um cliente solicitar um serviço com preço fixo, o pedido aparecerá no painel.",
+        "Quando um cliente solicitar um item com preço fixo, o pedido aparecerá no painel.",
       done: fixedRequestCount > 0,
       href: "/dashboard/pedidos",
       id: "fixed-request",
-      label: "Receber primeiro pedido de serviço"
+      label: "Receber primeiro pedido"
     };
   }
 
@@ -178,12 +181,129 @@ export function buildOnboardingOutcomeStep({
   return {
     actionLabel: "Ir para pedidos",
     description:
-      "Atenda um pedido de preço fixo ou envie uma proposta para um serviço sob orçamento.",
+      "Atenda um pedido de preço fixo ou envie uma proposta para um item sob consulta.",
     done: fixedRequestCount > 0 || proposalCount > 0,
     href: "/dashboard/pedidos",
     id: "first-service",
     label: "Concluir primeiro atendimento"
   };
+}
+
+const formatBRL = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL"
+  }).format(value);
+
+export type MonthlyRevenueSummary = {
+  approved: string;
+  pixConfirmed: string;
+  total: string;
+};
+
+// Somas Decimal chegam como string (fronteira server→client) e saem
+// formatadas em BRL, prontas para renderizar.
+export function buildMonthlyRevenueSummary(
+  approvedSum: string | null,
+  pixConfirmedSum: string | null
+): MonthlyRevenueSummary {
+  const approved = Number(approvedSum ?? 0);
+  const pixConfirmed = Number(pixConfirmedSum ?? 0);
+
+  return {
+    approved: formatBRL(approved),
+    pixConfirmed: formatBRL(pixConfirmed),
+    total: formatBRL(approved + pixConfirmed)
+  };
+}
+
+export type StorefrontViewsSummary = {
+  views7: number;
+  message: string;
+};
+
+// View model do card de visitas. O framing evita desânimo: nunca acusa
+// "views sem pedido", vira dica acionável.
+export function buildStorefrontViewsSummary(input: {
+  views7: number;
+  views30: number;
+  hasRecentOrders: boolean;
+}): StorefrontViewsSummary {
+  const { views7, views30, hasRecentOrders } = input;
+
+  if (views30 === 0) {
+    return { views7, message: "Comece a divulgar o link da sua vitrine." };
+  }
+
+  if (views7 > 0 && !hasRecentOrders) {
+    return {
+      views7,
+      message:
+        "Sua vitrine está recebendo visitas — boas fotos e descrições ajudam a virar pedido.",
+    };
+  }
+
+  return { views7, message: `${views30} nos últimos 30 dias` };
+}
+
+// Espelho Prisma de matchesDashboardRequestView (fonte de verdade testada):
+// permite filtrar no banco para paginar sem carregar tudo.
+export function dashboardRequestViewWhere(
+  view: DashboardRequestView,
+  monthRange: MonthRange,
+  now = new Date()
+): Prisma.QuoteRequestWhereInput {
+  switch (view) {
+    case "MONTH":
+      return { createdAt: { gte: monthRange.start, lt: monthRange.end } };
+    case "OPEN":
+      return { status: { not: "CLOSED" } };
+    case "PIX_RESERVATION":
+      return {
+        pixReservationRequestedAt: { not: null },
+        pixReservationPaidAt: null,
+        OR: [
+          { pixReservationRequestedAt: { gte: pixPaymentExpiryCutoff(now) } },
+          { pixReservationClientPaidAt: { not: null } }
+        ]
+      };
+    case "DEPOSIT":
+      return {
+        proposal: {
+          is: {
+            status: "APPROVED",
+            depositAmount: { gt: 0 },
+            depositPaidAt: null
+          }
+        }
+      };
+    case "APPROVED_MONTH":
+      return {
+        proposal: {
+          is: {
+            status: "APPROVED",
+            respondedAt: { gte: monthRange.start, lt: monthRange.end }
+          }
+        }
+      };
+  }
+}
+
+export type TopItem = { serviceId: string; name: string; count: number };
+
+// Junta o resultado do groupBy com os nomes, preservando a ordem do ranking
+// (o groupBy já vem ordenado por count desc) e descartando itens sem nome
+// (removidos entre a agregação e a leitura).
+export function mergeItemViewRanking(
+  groups: Array<{ serviceId: string; _sum: { count: number | null } }>,
+  names: Array<{ id: string; name: string }>
+): TopItem[] {
+  const nameById = new Map(names.map((n) => [n.id, n.name]));
+  return groups.flatMap((group) => {
+    const name = nameById.get(group.serviceId);
+    if (name === undefined) return [];
+    return [{ serviceId: group.serviceId, name, count: group._sum.count ?? 0 }];
+  });
 }
 
 export function parseDashboardRequestView(
@@ -209,9 +329,13 @@ export function matchesDashboardRequestView(
     case "OPEN":
       return request.status !== "CLOSED";
     case "PIX_RESERVATION":
+      // Reservas expiradas não são acionáveis — exceto quando o cliente
+      // informou o pagamento: aí a bola está com o negócio.
       return (
         request.pixReservationRequestedAt !== null &&
-        request.pixReservationPaidAt === null
+        request.pixReservationPaidAt === null &&
+        (!isPixPaymentExpired(request.pixReservationRequestedAt) ||
+          request.pixReservationClientPaidAt !== null)
       );
     case "DEPOSIT":
       return (

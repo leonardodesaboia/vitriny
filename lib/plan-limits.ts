@@ -22,7 +22,7 @@ export const PLAN_LIMIT_ERROR_CODES: Record<LimitedResource, PlanLimitCode> = {
 };
 
 export const PLAN_LIMIT_LABELS: Record<LimitedResource, string> = {
-  activeServices: "Serviços ativos",
+  activeServices: "Itens ativos",
   monthlyQuoteRequests: "Pedidos no mês",
   monthlyProposals: "Propostas no mês",
   proposalTemplates: "Templates de proposta"
@@ -48,9 +48,38 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
   PRO: "Pro"
 };
 
+// Capacidades por plano: um plano novo entra aqui e nos limites — nunca em
+// checagens `plan === "PRO"` espalhadas.
+export const PLAN_FEATURES: Record<
+  PlanTier,
+  { serviceImages: boolean; themePresets: boolean; storefrontAnalytics: boolean }
+> = {
+  // Foto por item é FREE (o limite de 3 itens já limita a 3 fotos); o gatilho
+  // PRO fica em itens/propostas ilimitados, temas visuais e analytics detalhado.
+  FREE: { serviceImages: true, themePresets: false, storefrontAnalytics: false },
+  PRO: { serviceImages: true, themePresets: true, storefrontAnalytics: true }
+};
+
+export const canUseServiceImages = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].serviceImages;
+
+export const canUseThemePresets = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].themePresets;
+
+export const canUseStorefrontAnalytics = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].storefrontAnalytics;
+
+export const isPaidPlan = (plan: PlanTier) => plan !== "FREE";
+
+// Fonte única do preço exibido na landing (o preço real vive no Stripe).
+export const PLAN_PRICES: Record<PlanTier, string> = {
+  FREE: "R$ 0",
+  PRO: "R$ 19,90"
+};
+
 export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   "limit-active-services":
-    "Limite de serviços ativos atingido para o plano atual.",
+    "Limite de itens ativos atingido para o plano atual.",
   "limit-monthly-quote-requests":
     "Limite mensal de pedidos atingido para o plano atual.",
   "limit-monthly-proposals":
@@ -62,7 +91,7 @@ export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
 export const PUBLIC_LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   ...LIMIT_ERROR_MESSAGES,
   "limit-monthly-quote-requests":
-    "Este prestador atingiu o limite mensal de pedidos no plano atual. Tente falar diretamente com ele pelos canais disponíveis."
+    "Este negócio atingiu o limite mensal de pedidos no plano atual. Tente entrar em contato pelos canais disponíveis."
 };
 
 export function getPlanLimits(plan: PlanTier): PlanLimits {

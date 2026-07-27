@@ -1,12 +1,16 @@
 import { cache } from "react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { OpenNowBadge } from "@/components/public/OpenNowBadge";
+import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
+import { canUseServiceImages } from "@/lib/plan-limits";
+import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
+import { parseProfileLinks } from "@/lib/profile-links";
+import { normalizeSocialUrl, SOCIAL_LABELS } from "@/lib/social-links";
 import { getPublicThemePreset } from "@/lib/theme-presets";
-import { getHowItWorksContent } from "@/lib/utils/how-it-works";
 import {
   formatPhoneBR,
   phoneToTelHref,
@@ -19,16 +23,25 @@ type PublicProviderProfilePageProps = {
   }>;
 };
 
+export const dynamic = "force-dynamic";
+
 const getProfile = cache(async (slug: string) => {
   return prisma.providerProfile.findUnique({
     where: { slug },
     select: {
       businessName: true,
+      businessType: true,
       description: true,
       phone: true,
       email: true,
       city: true,
       state: true,
+      address: true,
+      instagram: true,
+      facebook: true,
+      tiktok: true,
+      links: true,
+      businessHours: true,
       isPublished: true,
       plan: true,
       themePreset: true,
@@ -42,6 +55,7 @@ const getProfile = cache(async (slug: string) => {
           id: true,
           name: true,
           description: true,
+          itemType: true,
           basePrice: true,
           pricingType: true,
           fixedServiceCheckoutMode: true,
@@ -65,7 +79,7 @@ export async function generateMetadata({
   const title = `${profile.businessName} · Vitriny`;
   const description =
     profile.description ??
-    `Solicite um orçamento para ${profile.businessName}.`;
+    `Conheça os produtos e serviços de ${profile.businessName} e envie seu pedido.`;
   const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
 
   return {
@@ -102,13 +116,47 @@ export default async function PublicProviderProfilePage({
   );
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
+  // Rótulo do catálogo conforme o tipo do negócio. Ver docs/UX_UI_AUDIT.md P12.
+  const catalogLabel =
+    profile.businessType === "PRODUCTS"
+      ? "Produtos"
+      : profile.businessType === "SERVICES"
+        ? "Serviços"
+        : "Produtos e serviços";
+  const locationDisplay = [profile.address, location]
+    .filter(Boolean)
+    .join(" · ");
+
+  const hours = parseBusinessHours(profile.businessHours);
+
+  const mapsQuery = [profile.address, profile.city, profile.state]
+    .filter(Boolean)
+    .join(", ");
+  const mapsUrl = mapsQuery
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery)}`
+    : null;
+
+  const socialLinks = (
+    [
+      ["instagram", profile.instagram],
+      ["facebook", profile.facebook],
+      ["tiktok", profile.tiktok],
+    ] as const
+  ).flatMap(([network, value]) => {
+    if (!value) return [];
+    const href = normalizeSocialUrl(network, value);
+    return href ? [{ network, label: SOCIAL_LABELS[network], href }] : [];
+  });
+
+  const customLinks = parseProfileLinks(profile.links);
+
   const profilePhoneDisplay = formatPhoneBR(profile.phone);
   const whatsappNumber = profile.phone
     ? phoneToWhatsAppNumber(profile.phone)
     : null;
   const whatsappHref = whatsappNumber
     ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
-        `Olá ${profile.businessName}, vi seu perfil no Vitriny e gostaria de solicitar um orçamento.`,
+        `Olá ${profile.businessName}, vi sua vitrine no Vitriny e gostaria de pedir mais detalhes.`,
       )}`
     : null;
 
@@ -129,14 +177,6 @@ export default async function PublicProviderProfilePage({
           whatsappHref: null,
         }
       : null,
-    location
-      ? {
-          label: "Localização",
-          value: location,
-          href: null,
-          whatsappHref: null,
-        }
-      : null,
   ].filter(Boolean) as {
     label: string;
     value: string;
@@ -146,97 +186,216 @@ export default async function PublicProviderProfilePage({
 
   const hasServices = profile.services.length > 0;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
-  const { title: howItWorksTitle, steps: howItWorksSteps } =
-    getHowItWorksContent(profile.services);
 
   return (
     <main
       className="min-h-screen bg-paper text-ink font-jakarta"
       data-brand-theme={theme.id}
     >
+      <StorefrontViewBeacon slug={slug} />
       {/* Hero */}
-      <div className="grain relative bg-leaf px-6 pb-16 pt-14">
+      <div className="grain relative bg-leaf px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-12">
         <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/60">
-            Prestador de serviço{location ? ` · ${location}` : ""}
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
+            {catalogLabel}{location ? ` · ${location}` : ""}
           </p>
           <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
             {profile.businessName}
           </h1>
+
+          <div className="mt-4">
+            <OpenNowBadge businessHours={profile.businessHours} />
+          </div>
+
           {profile.description ? (
             <p className="mt-5 max-w-2xl break-words text-base leading-7 text-white/80">
               {profile.description}
             </p>
           ) : null}
-          <Link
-            href={`/u/${slug}/orcamento`}
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-6 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
-          >
-            Solicitar orçamento →
-          </Link>
+
+          {hasServices ? (
+            <a
+              href="#itens"
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+            >
+              Ver {catalogLabel.toLowerCase()} ↓
+            </a>
+          ) : null}
         </div>
       </div>
 
-      <div className="px-6">
+      <div className="px-4 sm:px-6">
         <div className="mx-auto max-w-4xl pb-28 pt-10 sm:pb-16">
-          {/* Contact cards */}
+          {socialLinks.length > 0 ? (
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Redes sociais
+              </p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                {socialLinks.map((link) => (
+                  <a
+                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    href={link.href}
+                    key={link.network}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {link.label} ↗
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {customLinks.length > 0 ? (
+            <section className={socialLinks.length > 0 ? "mt-8" : ""}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Links
+              </p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                {customLinks.map((link, index) => (
+                  <a
+                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    href={link.url}
+                    key={`${link.url}-${index}`}
+                    rel="noopener noreferrer nofollow"
+                    target="_blank"
+                  >
+                    {link.label} ↗
+                  </a>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {contacts.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-3">
-              {contacts.map((c) => (
-                <div
-                  key={c.label}
-                  className="rounded-xl border border-paper-soft bg-white p-4 shadow-card"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                    {c.label}
-                  </p>
-                  {c.whatsappHref ? (
-                    <>
-                      <p className="mt-1 text-sm font-semibold text-ink">
+            <section className={socialLinks.length > 0 || customLinks.length > 0 ? "mt-8" : ""}>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Contatos
+              </p>
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                {contacts.map((c) => (
+                  <div
+                    key={c.label}
+                    className="rounded-xl border border-paper-soft bg-white p-4 shadow-card"
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
+                      {c.label}
+                    </p>
+                    {c.whatsappHref ? (
+                      <>
+                        <p className="mt-1 text-sm font-semibold text-ink">
+                          {c.value}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <a
+                            href={c.whatsappHref}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:flex-none"
+                          >
+                            WhatsApp
+                          </a>
+                          {c.href ? (
+                            <a
+                              href={c.href}
+                              className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md border border-paper-soft px-3 text-xs font-semibold text-ink-muted transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:flex-none"
+                            >
+                              Ligar
+                            </a>
+                          ) : null}
+                        </div>
+                      </>
+                    ) : c.href ? (
+                      <>
+                        <p className="mt-1 break-words text-sm font-semibold text-ink">
+                          {c.value}
+                        </p>
+                        <a
+                          href={c.href}
+                          className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:w-auto"
+                        >
+                          Enviar e-mail
+                        </a>
+                      </>
+                    ) : (
+                      <p className="mt-1 break-words text-sm font-semibold text-ink">
                         {c.value}
                       </p>
-                      <div className="mt-3 flex gap-2">
-                        <a
-                          href={c.whatsappHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex min-h-8 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                        >
-                          WhatsApp
-                        </a>
-                        {c.href ? (
-                          <a
-                            href={c.href}
-                            className="inline-flex min-h-8 items-center justify-center rounded-md border border-paper-soft px-3 text-xs font-semibold text-ink-muted transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                          >
-                            Ligar
-                          </a>
-                        ) : null}
-                      </div>
-                    </>
-                  ) : c.href ? (
-                    <a
-                      href={c.href}
-                      className="mt-1 text-sm font-semibold text-leaf transition hover:underline"
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
+
+          {locationDisplay ? (
+            <section
+              className={
+                contacts.length > 0 ||
+                socialLinks.length > 0 ||
+                customLinks.length > 0
+                  ? "mt-6"
+                  : ""
+              }
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Local
+              </p>
+              <div className="mt-2 flex flex-col gap-2 border-t border-paper-soft pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="break-words text-sm font-medium text-ink">
+                  {locationDisplay}
+                </p>
+                {mapsUrl ? (
+                  <a
+                    className="inline-flex min-h-8 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-3 text-xs font-semibold text-leaf transition hover:border-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:w-auto"
+                    href={mapsUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Ver no mapa ↗
+                  </a>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
+          {hours ? (
+            <section
+              className={
+                contacts.length > 0 ||
+                socialLinks.length > 0 ||
+                customLinks.length > 0 ||
+                locationDisplay
+                  ? "mt-6"
+                  : ""
+              }
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
+                Horário de funcionamento
+              </p>
+              <div className="mt-2 border-t border-paper-soft pt-3">
+                <dl className="grid gap-1 sm:grid-cols-2 sm:gap-x-10">
+                  {formatWeek(hours).map((entry) => (
+                    <div
+                      className="flex items-baseline justify-between gap-4 text-sm"
+                      key={entry.day}
                     >
-                      {c.value}
-                    </a>
-                  ) : (
-                    <p className="mt-1 break-words text-sm font-semibold text-ink">
-                      {c.value}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
+                      <dt className="text-ink-muted">{entry.day}</dt>
+                      <dd className="font-semibold text-ink">{entry.label}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </section>
           ) : null}
 
           {/* Services */}
-          <div className="mt-12">
+          <div id="itens" className="mt-12 scroll-mt-6">
             {hasServices ? (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Serviços disponíveis
+                  {catalogLabel}
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
                   O que ofereço
@@ -245,10 +404,10 @@ export default async function PublicProviderProfilePage({
             ) : (
               <>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  Orçamento personalizado
+                  {catalogLabel}
                 </p>
                 <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-                  Solicite o que precisa
+                  Em breve
                 </h2>
               </>
             )}
@@ -256,39 +415,11 @@ export default async function PublicProviderProfilePage({
               services={profile.services.map((s) => ({
                 ...s,
                 basePrice: s.basePrice?.toString() ?? null,
-                imageUrl: profile.plan === "PRO" ? (s.imageUrl ?? null) : null,
+                imageUrl: canUseServiceImages(profile.plan) ? (s.imageUrl ?? null) : null,
                 pixConfigured,
               }))}
               slug={slug}
             />
-          </div>
-
-          {/* How it works */}
-          <div className="mt-12">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-              Como funciona
-            </p>
-            <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-              {howItWorksTitle}
-            </h2>
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              {howItWorksSteps.map((s) => (
-                <div
-                  key={s.step}
-                  className="rounded-xl border border-paper-soft bg-white p-5 shadow-card"
-                >
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint text-sm font-bold text-leaf">
-                    {s.step}
-                  </span>
-                  <h3 className="mt-3 line-clamp-2 break-words font-jakarta text-base font-bold text-ink">
-                    {s.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-3 flex-1 break-words text-sm leading-6 text-ink-muted">
-                    {s.description}
-                  </p>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Powered by */}

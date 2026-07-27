@@ -4,8 +4,12 @@ import {
   brDateDigitsToISO,
   isISODateBeforeToday,
   isPixPaymentExpired,
+  isProposalExpired,
   isValidISODate,
-  PIX_PAYMENT_EXPIRY_HOURS
+  PIX_PAYMENT_EXPIRY_HOURS,
+  pixPaymentExpiryCutoff,
+  startOfLocalDay,
+  todayISOInTimeZone
 } from "@/lib/utils/date";
 
 describe("date utils", () => {
@@ -49,6 +53,73 @@ describe("date utils", () => {
       const notYet = new Date("2026-06-29T12:00:01Z");
       expect(isPixPaymentExpired(justExpired, base)).toBe(true);
       expect(isPixPaymentExpired(notYet, base)).toBe(false);
+    });
+  });
+
+  describe("isProposalExpired", () => {
+    it("proposta sem validade nunca expira", () => {
+      expect(isProposalExpired(null)).toBe(false);
+    });
+
+    it("proposta válida até hoje continua válida durante todo o dia", () => {
+      // validUntil salvo como meia-noite local do dia escolhido (formato legado)
+      const validUntil = new Date(2026, 6, 2, 0, 0, 0);
+      const noonSameDay = new Date(2026, 6, 2, 12, 0, 0);
+      const almostMidnight = new Date(2026, 6, 2, 23, 59, 59);
+
+      expect(isProposalExpired(validUntil, noonSameDay)).toBe(false);
+      expect(isProposalExpired(validUntil, almostMidnight)).toBe(false);
+    });
+
+    it("proposta expira somente após o fim do dia de validade", () => {
+      const validUntil = new Date(2026, 6, 2, 0, 0, 0);
+      const nextDay = new Date(2026, 6, 3, 0, 0, 1);
+
+      expect(isProposalExpired(validUntil, nextDay)).toBe(true);
+    });
+
+    it("proposta com validade em dia futuro não está expirada", () => {
+      const validUntil = new Date(2026, 6, 10, 0, 0, 0);
+      const now = new Date(2026, 6, 2, 12, 0, 0);
+
+      expect(isProposalExpired(validUntil, now)).toBe(false);
+    });
+  });
+
+  describe("pixPaymentExpiryCutoff", () => {
+    it("retorna o instante de 48h atrás", () => {
+      const now = new Date("2026-07-03T12:00:00Z");
+      expect(pixPaymentExpiryCutoff(now).toISOString()).toBe(
+        "2026-07-01T12:00:00.000Z"
+      );
+    });
+  });
+
+  describe("todayISOInTimeZone", () => {
+    it("retorna a data do fuso mesmo quando o UTC já virou o dia", () => {
+      // 01:00 UTC de 03/07 ainda é 22:00 de 02/07 em São Paulo (UTC-3)
+      const now = new Date("2026-07-03T01:00:00Z");
+      expect(todayISOInTimeZone("America/Sao_Paulo", now)).toBe("2026-07-02");
+    });
+
+    it("retorna a data UTC quando o fuso é UTC", () => {
+      const now = new Date("2026-07-03T01:00:00Z");
+      expect(todayISOInTimeZone("UTC", now)).toBe("2026-07-03");
+    });
+  });
+
+  describe("startOfLocalDay", () => {
+    it("zera horas, minutos, segundos e milissegundos no fuso local", () => {
+      const date = new Date(2026, 6, 2, 15, 30, 45, 123);
+      const start = startOfLocalDay(date);
+
+      expect(start.getFullYear()).toBe(2026);
+      expect(start.getMonth()).toBe(6);
+      expect(start.getDate()).toBe(2);
+      expect(start.getHours()).toBe(0);
+      expect(start.getMinutes()).toBe(0);
+      expect(start.getSeconds()).toBe(0);
+      expect(start.getMilliseconds()).toBe(0);
     });
   });
 });

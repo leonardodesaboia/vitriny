@@ -19,7 +19,7 @@ const features = [
         />
       </svg>
     ),
-    label: "Perfil público",
+    label: "Vitrine pública",
     title: "Seu link. Seu negócio.",
     text: "Uma página profissional em vitriny.com/u/seu-nome, pronta para receber clientes.",
   },
@@ -41,7 +41,7 @@ const features = [
     ),
     label: "Painel de pedidos",
     title: "Nenhum pedido perdido.",
-    text: "Todos os orçamentos chegam organizados por status. Do novo ao aprovado.",
+    text: "Todos os pedidos chegam organizados por status. Do novo ao concluído.",
   },
   {
     icon: (
@@ -81,7 +81,7 @@ const item = {
 
 export function LandingFeatures() {
   return (
-    <section id="funcionalidades" className="bg-paper-soft px-6 py-20">
+    <section id="funcionalidades" className="scroll-mt-20 bg-paper-soft px-6 py-20">
       <div className="mx-auto max-w-6xl">
         <motion.div
           initial={{ opacity: 0, y: 16 }}

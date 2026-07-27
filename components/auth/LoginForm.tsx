@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 import { loginWithCredentials } from "@/lib/actions/auth";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 
 type LoginFormProps = {
   errorCode?: string;
@@ -11,7 +14,7 @@ const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-mut
 
 const errorMessages: Record<string, string> = {
   "invalid-credentials": "E-mail ou senha incorretos.",
-  "google-account": "Este e-mail está cadastrado com Google. Entre com Google.",
+  "email-not-verified": "Confirme seu e-mail antes de entrar.",
   OAuthAccountNotLinked: "Este e-mail já está cadastrado com outro método de login.",
   auth: "Não foi possível entrar. Tente novamente."
 };
@@ -20,11 +23,20 @@ export function LoginForm({ errorCode }: LoginFormProps) {
   return (
     <form action={loginWithCredentials} className="mt-6 grid gap-4">
       {errorCode ? (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-sm font-semibold text-red-700">
             {errorMessages[errorCode] ?? "Não foi possível entrar. Tente novamente."}
           </p>
         </div>
+      ) : null}
+
+      {errorCode === "email-not-verified" ? (
+        <Link
+          className="text-sm font-semibold text-leaf hover:text-leaf-hover"
+          href="/verifique-seu-email"
+        >
+          Reenviar e-mail de confirmação
+        </Link>
       ) : null}
 
       <div className="grid gap-2">
@@ -45,18 +57,18 @@ export function LoginForm({ errorCode }: LoginFormProps) {
         <label className={labelClass} htmlFor="password">
           Senha
         </label>
-        <input
+        <PasswordInput
           className={inputClass}
           id="password"
           name="password"
           placeholder="••••••••"
           required
-          type="password"
+          autoComplete="current-password"
         />
       </div>
 
       <button
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-ink px-5 text-sm font-semibold text-white transition hover:bg-ink/80"
+        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
         type="submit"
       >
         Entrar

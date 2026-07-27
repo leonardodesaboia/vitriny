@@ -4,6 +4,10 @@
 
 Vitriny usa Next.js App Router com Server Components, Server Actions, Prisma e PostgreSQL.
 
+Na interface, `Service`, `ProviderProfile` e `QuoteRequest` são apresentados respectivamente como item da vitrine, vitrine pública e pedido/solicitação. A nomenclatura técnica, as rotas e os models permanecem inalterados.
+
+`Service.itemType` classifica o item como `PRODUCT` ou `SERVICE`. É um atributo visual e organizacional; as regras de proposta, Pix e pedidos continuam baseadas em `pricingType` e `fixedServiceCheckoutMode`.
+
 Fluxo simplificado:
 
 ```text
@@ -39,6 +43,7 @@ docs/
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
+- `lib/service-sale-mode.ts`: helper de UI que mapeia `pricingType` + `fixedServiceCheckoutMode` para o tipo `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST` | `FIXED_PIX`). Não existe no banco.
 - `lib/dashboard.ts`: regras puras do onboarding, das visões rápidas de pedidos e da composição imutável da atividade recente.
 - `lib/dashboard-activity.ts`: consultas limitadas e filtradas por prestador que alimentam a timeline da dashboard.
 - `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
@@ -56,6 +61,8 @@ Rotas públicas:
 - `app/(auth)/cadastro/page.tsx`
 - `app/(auth)/esqueci-senha/page.tsx`
 - `app/(auth)/redefinir-senha/[token]/page.tsx`
+- `app/(auth)/verifique-seu-email/page.tsx`
+- `app/(auth)/verificar-email/[token]/page.tsx`
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
 - `app/u/[slug]/reserva/[requestId]/page.tsx` — página de pagamento antecipado obrigatório: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e Pix configurado.
@@ -66,7 +73,7 @@ Rotas autenticadas:
 
 - `app/(dashboard)/dashboard/page.tsx`
 - `app/(dashboard)/dashboard/perfil/page.tsx`
-- `app/(dashboard)/dashboard/servicos/page.tsx`
+- `app/(dashboard)/dashboard/servicos/page.tsx` — gerenciamento de itens da vitrine (rota técnica/legada)
 - `app/(dashboard)/dashboard/pedidos/page.tsx`
 - `app/(dashboard)/dashboard/propostas/nova/page.tsx`
 - `app/(dashboard)/dashboard/propostas/templates/page.tsx`
@@ -100,9 +107,9 @@ Server Actions ficam em `lib/actions/`:
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts` — inclui `markDepositPaid` (provider-only)
-- `proposal-templates.ts`
+- `proposal-templates.ts` — inclui `saveProposalAsTemplate` (salva a proposta em edição como modelo sem redirecionar)
 - `proposal-response.ts`
-- `auth.ts` (`registerUser`, `loginWithCredentials`, `requestPasswordReset`, `resetPassword`)
+- `auth.ts` (`registerUser`, `loginWithCredentials`, `confirmEmail`, `resendEmailVerification`, `requestPasswordReset`, `resetPassword`)
 
 Elas validam sessão quando necessário e aplicam regras de ownership.
 
@@ -123,7 +130,7 @@ Configuração central:
 Providers:
 
 - Google OAuth.
-- Credentials (e-mail/senha), com `bcrypt` para hash/verificação de senha.
+- Credentials (e-mail/senha), com `bcrypt` e confirmação obrigatória antes do primeiro login para contas criadas após a migration de verificação. Contas anteriores foram marcadas como verificadas no rollout para evitar lockout.
 
 Sessão:
 
@@ -135,7 +142,9 @@ Adapter:
 
 Proteção:
 
-- `proxy.ts` protege `/dashboard/:path*` e aplica rate limiting em POST para `/api/auth/callback/credentials`, `/esqueci-senha` e `/u/*/orcamento`. O store é in-memory (sliding window); trocar por Redis/Upstash antes de escalar para múltiplas instâncias.
+- `proxy.ts` protege `/dashboard/:path*` e aplica rate limiting em POST para login, cadastro, redefinição/reenvio/confirmação de e-mail e pedidos públicos. O store é in-memory (sliding window); trocar por Redis/Upstash antes de escalar para múltiplas instâncias.
+- Cadastro Credentials persiste `User` pendente e `EmailVerificationToken` na mesma transação. A confirmação é uma mutação `POST`, preenche `emailVerified` e consome o token de uso único. Google OAuth não é condicionado por esse campo.
+- A migration `20260702140000_add_email_verification` faz backfill de `emailVerified` somente para contas Credentials preexistentes; por isso elas não recebem confirmação retroativa.
 - Páginas autenticadas também checam `auth()` e redirecionam para `/login`.
 - `next.config.mjs` define security headers HTTP em todas as respostas: `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e `Permissions-Policy`.
 
@@ -163,7 +172,11 @@ Schemas ficam em `lib/validations/`:
 - `proposal-template.ts`
 - `auth.ts` (`registerSchema`, `loginSchema`, `forgotPasswordSchema`, `resetPasswordSchema`)
 
-O pedido público exige pelo menos e-mail ou telefone. Regras dependentes do serviço são validadas novamente na Server Action: descrição para `CUSTOM` ou pedido genérico, dados completos de agendamento quando configurados e data real não passada.
+O pedido público exige pelo menos e-mail ou telefone e um item da vitrine selecionado (não existe pedido genérico sem item). Regras dependentes do serviço são validadas novamente na Server Action: descrição para `CUSTOM`, dados completos de agendamento quando configurados e data real não passada.
+
+## Fuso horário
+
+As funções de data em `lib/utils/date.ts` (`getCurrentMonthRange`, `startOfLocalDay`, `isProposalExpired`) e o parse de `validUntil` usam horário local do processo. Como o produto é do Brasil, `instrumentation.ts` fixa `process.env.TZ = "America/Sao_Paulo"` (Brasil não tem horário de verão desde 2019) quando `TZ` não vem do ambiente. Sem isso, um servidor em UTC calcularia o reset do limite mensal e a expiração de proposta na meia-noite UTC (21h de Brasília), errando o dia por ~3h. O deploy pode sobrescrever definindo `TZ`. A expiração do Pix (`isPixPaymentExpired`) usa diferença absoluta em ms e independe do fuso.
 
 ## Planos e limites
 
@@ -176,7 +189,7 @@ O plano é armazenado em `ProviderProfile.plan`, usando `PlanTier`:
 
 Limites `FREE`:
 
-- 3 serviços ativos;
+- 3 itens ativos;
 - 10 pedidos de orçamento por mês;
 - 5 propostas por mês;
 - 1 template de proposta.
@@ -189,7 +202,7 @@ Limites `FREE`:
 - Cliente público não precisa de login.
 - Propostas públicas usam `publicToken`, não ID interno.
 - Perfil público só aparece se `isPublished=true`.
-- Serviços públicos só aparecem se `isActive=true`.
+- Itens públicos só aparecem se `isActive=true`.
 - Páginas públicas de Pix validam que o pedido pertence ao perfil indicado pelo slug e usam o valor congelado em `fixedServiceAmount`.
 - Upload/remoção de imagem e geração de PDF validam autenticação, plano quando aplicável e ownership.
 - Webhook Stripe valida `stripe-signature` antes de alterar plano ou assinatura.
@@ -201,6 +214,7 @@ Limites `FREE`:
 - Senha de usuário sempre hash bcrypt, nunca texto puro.
 - E-mail duplicado entre Google e e-mail/senha é bloqueado, nunca vinculado automaticamente.
 - "Esqueci minha senha" nunca revela se um e-mail existe no sistema (mesma resposta em todos os casos).
+- O login por credenciais responde `invalid-credentials` genérico também para conta Google-only (sem senha): não revela existência nem método da conta antes de validar a senha. O aviso `email-not-verified` só aparece após a senha correta, então não serve para enumeração.
 
 ## Testes
 
@@ -248,10 +262,11 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 
 - `QuoteRequest` possui `serviceId` opcional. Pedidos novos salvam a descrição limpa; a UI de pedidos ainda usa parsing legado da `description` apenas para pedidos antigos sem `serviceId`. No formulário público, quando o pedido vem de um card de serviço, o serviço já entra pré-selecionado e o select fica oculto.
 - Auth.js v5 está em beta (`next-auth@5.0.0-beta.31`).
-- Sessão `jwt` não é invalidável manualmente antes de expirar.
+- Sessão `jwt` não é invalidável manualmente antes de expirar; por isso `requireAuth` e o layout do dashboard verificam `User.deletedAt` a cada requisição.
+- Exclusão de conta é soft delete (`lib/actions/account.ts`): dados pessoais anonimizados, e-mail/slug viram tombstones (liberando ambos para novo cadastro), assinatura Stripe cancelada, itens desativados e imagens removidas do storage. Pedidos, propostas e históricos são preservados para a futura tela administrativa; `deletedEmailHash` (SHA-256) permite detectar recorrência sem guardar o e-mail.
 - Remetente do Resend (`onboarding@resend.dev`) é sandbox; trocar por domínio verificado antes de produção real.
 - O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Rate limiting in-memory no middleware não sobrevive a reinicializações e não é compartilhado entre instâncias. Adequado para single-instance; exige Redis/Upstash em produção multi-instância.
-- Pagamento Pix obrigatório não tem expiração automática: `pixReservationRequestedAt` fica permanente no banco mesmo se o cliente não pagar. Sem limpeza automática de pagamentos abandonados.
+- Pagamento Pix obrigatório expira em 48h (`PIX_PAYMENT_EXPIRY_HOURS` em `lib/utils/date.ts`): a página de reserva mostra o prazo e passa a exibir "Código Pix expirado" depois dele. `pixReservationRequestedAt` permanece no banco; não há limpeza automática de pagamentos abandonados.
 - Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket deve existir com leitura pública. Em produção, configurar as variáveis `S3_*` descritas em `.env.example`.

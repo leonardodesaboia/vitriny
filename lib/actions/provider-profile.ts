@@ -2,11 +2,14 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { ProviderThemePreset } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import type { BusinessType, ProviderThemePreset } from "@prisma/client";
 
+import { canUseThemePresets } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import { sanitizeProfileLinks } from "@/lib/profile-links";
 
 export type ProviderProfileFormValues = {
   businessName: string;
@@ -22,6 +25,13 @@ export type ProviderProfileFormValues = {
   pixHolderName: string;
   pixCity: string;
   themePreset: ProviderThemePreset;
+  businessType: BusinessType;
+  address: string;
+  instagram: string;
+  facebook: string;
+  tiktok: string;
+  businessHours: string;
+  links: { label: string; url: string }[];
 };
 
 export type ProviderProfileFormState =
@@ -41,6 +51,14 @@ function readProviderProfileFormValues(
   formData: FormData
 ): ProviderProfileFormValues {
   const themePreset = formValue(formData, "themePreset");
+  const businessType = formValue(formData, "businessType");
+
+  const linkLabels = formData.getAll("linkLabel");
+  const linkUrls = formData.getAll("linkUrl");
+  const links = linkLabels.map((label, index) => ({
+    label: typeof label === "string" ? label : "",
+    url: typeof linkUrls[index] === "string" ? (linkUrls[index] as string) : "",
+  }));
 
   return {
     businessName: formValue(formData, "businessName"),
@@ -55,7 +73,14 @@ function readProviderProfileFormValues(
     pixKeyType: formValue(formData, "pixKeyType"),
     pixHolderName: formValue(formData, "pixHolderName"),
     pixCity: formValue(formData, "pixCity"),
-    themePreset: (themePreset || "DEFAULT") as ProviderThemePreset
+    themePreset: (themePreset || "DEFAULT") as ProviderThemePreset,
+    businessType: (businessType || "SERVICES") as BusinessType,
+    address: formValue(formData, "address"),
+    instagram: formValue(formData, "instagram"),
+    facebook: formValue(formData, "facebook"),
+    tiktok: formValue(formData, "tiktok"),
+    businessHours: formValue(formData, "businessHours"),
+    links
   };
 }
 
@@ -94,19 +119,41 @@ export async function saveProviderProfile(
     };
   }
 
+  const { links: sanitizedLinks, errors: linkErrors } = sanitizeProfileLinks(
+    values.links
+  );
+  if (linkErrors.length > 0) {
+    return { error: linkErrors[0], values, submittedAt: Date.now() };
+  }
+
+  const { businessHours, ...profileData } = parsed.data;
+
   const dataToSave = {
-    ...parsed.data,
+    ...profileData,
+    businessHours: businessHours ?? Prisma.DbNull,
+    links: sanitizedLinks.length > 0 ? sanitizedLinks : Prisma.DbNull,
     themePreset:
-      currentProfile?.plan === "PRO"
+      currentProfile?.plan && canUseThemePresets(currentProfile.plan)
         ? parsed.data.themePreset
         : currentProfile?.themePreset ?? "DEFAULT"
   };
 
-  await prisma.providerProfile.upsert({
-    where: { userId },
-    create: { ...dataToSave, userId },
-    update: dataToSave
-  });
+  try {
+    await prisma.providerProfile.upsert({
+      where: { userId },
+      create: { ...dataToSave, userId },
+      update: dataToSave
+    });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2003"
+    ) {
+      // Session references a user that no longer exists in the DB (stale JWT after a DB reset).
+      redirect("/api/auth/signout?callbackUrl=/login");
+    }
+    throw error;
+  }
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/perfil");
