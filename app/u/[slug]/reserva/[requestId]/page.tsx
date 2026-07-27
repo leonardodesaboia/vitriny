@@ -6,8 +6,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false }
 };
 
-import { CopyPixButton } from "./CopyPixButton";
 import { MarkPaidButton } from "./MarkPaidButton";
+import { CopyButton } from "@/components/ui/CopyButton";
 import { markPixReservationClientPaid } from "@/lib/actions/quote-requests";
 import { createPixPayment } from "@/lib/pix";
 import { prisma } from "@/lib/prisma";
@@ -291,7 +291,11 @@ export default async function PixReservationPage({ params }: PixReservationPageP
               <p className="mt-2 break-all rounded-lg bg-paper px-3 py-3 text-xs text-ink">
                 {pixPayment.copyPasteCode}
               </p>
-              <CopyPixButton code={pixPayment.copyPasteCode} />
+              <CopyButton
+                text={pixPayment.copyPasteCode}
+                label="Copiar código"
+                className="mt-3 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-paper px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+              />
               <div className="mt-4 flex gap-8 border-t border-paper-soft pt-4 text-sm text-ink-muted">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-widest">
