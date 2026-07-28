@@ -3,11 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   brDateDigitsToISO,
   isISODateBeforeToday,
-  isPixPaymentExpired,
   isProposalExpired,
   isValidISODate,
-  PIX_PAYMENT_EXPIRY_HOURS,
-  pixPaymentExpiryCutoff,
   startOfLocalDay,
   todayISOInTimeZone
 } from "@/lib/utils/date";
@@ -28,32 +25,6 @@ describe("date utils", () => {
     expect(isISODateBeforeToday("2026-06-29", reference)).toBe(true);
     expect(isISODateBeforeToday("2026-06-30", reference)).toBe(false);
     expect(isISODateBeforeToday("2026-07-01", reference)).toBe(false);
-  });
-
-  describe("isPixPaymentExpired", () => {
-    const EXPIRY_MS = PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000;
-
-    it("não expirado: solicitado há menos de 48h", () => {
-      const requestedAt = new Date(Date.now() - EXPIRY_MS + 60_000);
-      expect(isPixPaymentExpired(requestedAt)).toBe(false);
-    });
-
-    it("expirado: solicitado há exatamente 48h + 1s", () => {
-      const requestedAt = new Date(Date.now() - EXPIRY_MS - 1000);
-      expect(isPixPaymentExpired(requestedAt)).toBe(true);
-    });
-
-    it("não expirado quando requestedAt é now", () => {
-      expect(isPixPaymentExpired(new Date())).toBe(false);
-    });
-
-    it("aceita referenceDate explícito", () => {
-      const base = new Date("2026-07-01T12:00:00Z");
-      const justExpired = new Date("2026-06-29T11:59:59Z");
-      const notYet = new Date("2026-06-29T12:00:01Z");
-      expect(isPixPaymentExpired(justExpired, base)).toBe(true);
-      expect(isPixPaymentExpired(notYet, base)).toBe(false);
-    });
   });
 
   describe("isProposalExpired", () => {
@@ -83,15 +54,6 @@ describe("date utils", () => {
       const now = new Date(2026, 6, 2, 12, 0, 0);
 
       expect(isProposalExpired(validUntil, now)).toBe(false);
-    });
-  });
-
-  describe("pixPaymentExpiryCutoff", () => {
-    it("retorna o instante de 48h atrás", () => {
-      const now = new Date("2026-07-03T12:00:00Z");
-      expect(pixPaymentExpiryCutoff(now).toISOString()).toBe(
-        "2026-07-01T12:00:00.000Z"
-      );
     });
   });
 

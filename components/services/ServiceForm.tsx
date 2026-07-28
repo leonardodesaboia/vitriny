@@ -320,11 +320,6 @@ export function ServiceForm({
               </button>
             );
           })}
-          {saleMode === "FIXED_PIX" ? (
-            <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              Requer dados Pix configurados no perfil. O pagamento é feito diretamente para você e a confirmação é manual.
-            </p>
-          ) : null}
         </div>
 
         <div className="grid gap-2">

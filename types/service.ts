@@ -21,7 +21,6 @@ export type PublicService = {
   fixedServiceCheckoutMode: FixedServiceCheckoutMode;
   basePrice: string | null;
   imageUrl: string | null;
-  pixConfigured: boolean;
 };
 
 export type ServiceForClient = {

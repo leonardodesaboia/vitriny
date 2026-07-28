@@ -27,7 +27,6 @@ type ServiceItemProps = {
 const saleModeBadge: Record<ServiceSaleMode, string> = {
   CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft",
   FIXED_REQUEST: "bg-mint text-leaf border border-mint",
-  FIXED_PIX: "bg-mint text-leaf border border-mint",
 };
 
 function formatPrice(price: string | null): string | null {

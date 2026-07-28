@@ -45,9 +45,6 @@ const getProfile = cache(async (slug: string) => {
       isPublished: true,
       plan: true,
       themePreset: true,
-      pixKey: true,
-      pixHolderName: true,
-      pixCity: true,
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -100,6 +97,35 @@ export async function generateMetadata({
   };
 }
 
+function WhatsAppIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className={`${className} fill-current`}
+    >
+      <path d="M12.04 2c-5.46 0-9.9 4.44-9.9 9.9 0 1.75.46 3.45 1.32 4.95L2 22l5.3-1.38a9.86 9.86 0 0 0 4.73 1.2h.01c5.46 0 9.9-4.44 9.9-9.9 0-2.64-1.03-5.13-2.9-7A9.82 9.82 0 0 0 12.04 2Zm0 1.8c2.16 0 4.19.84 5.72 2.37a8.06 8.06 0 0 1 2.37 5.73c0 4.46-3.63 8.09-8.1 8.09a8.1 8.1 0 0 1-4.12-1.13l-.3-.18-3.06.8.82-2.99-.19-.31a8.03 8.03 0 0 1-1.24-4.28c0-4.47 3.64-8.1 8.1-8.1Zm4.68 10.24c-.25-.13-1.5-.74-1.73-.82-.23-.09-.4-.13-.57.13-.17.25-.65.82-.8.99-.15.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.66-1.25-1.48-1.4-1.73-.14-.25-.02-.39.11-.51.11-.11.25-.29.38-.44.12-.15.16-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.57-1.37-.78-1.87-.2-.49-.41-.42-.57-.43l-.48-.01c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.43 1.03 2.6.13.17 1.77 2.7 4.29 3.79.6.26 1.06.41 1.43.53.6.19 1.15.16 1.58.1.48-.07 1.5-.61 1.71-1.2.21-.59.21-1.1.15-1.2-.06-.11-.23-.17-.48-.3Z" />
+    </svg>
+  );
+}
+
+function Chevron() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      className="h-5 w-5 shrink-0 text-ink-muted transition-transform duration-200 group-open:rotate-180"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
 export default async function PublicProviderProfilePage({
   params,
 }: PublicProviderProfilePageProps) {
@@ -108,12 +134,6 @@ export default async function PublicProviderProfilePage({
   const profile = await getProfile(slug);
 
   if (!profile || !profile.isPublished) notFound();
-
-  const pixConfigured = !!(
-    profile.pixKey &&
-    profile.pixHolderName &&
-    profile.pixCity
-  );
 
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   // Rótulo do catálogo conforme o tipo do negócio. Ver docs/UX_UI_AUDIT.md P12.
@@ -184,8 +204,16 @@ export default async function PublicProviderProfilePage({
     whatsappHref: string | null;
   }[];
 
-  const hasServices = profile.services.length > 0;
   const theme = getPublicThemePreset(profile.plan, profile.themePreset);
+
+  const allLinks = [
+    ...socialLinks.map((link) => ({ key: link.network, label: link.label, href: link.href, nofollow: false })),
+    ...customLinks.map((link, index) => ({ key: `custom-${index}`, label: link.label, href: link.url, nofollow: true })),
+  ];
+
+  const phoneContact = contacts.find((c) => c.label === "Telefone") ?? null;
+  const emailContact = contacts.find((c) => c.label === "E-mail") ?? null;
+  const hasBusinessInfo = Boolean(locationDisplay || hours || allLinks.length > 0);
 
   return (
     <main
@@ -193,242 +221,198 @@ export default async function PublicProviderProfilePage({
       data-brand-theme={theme.id}
     >
       <StorefrontViewBeacon slug={slug} />
+
       {/* Hero */}
-      <div className="grain relative bg-leaf px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-12">
-        <div className="mx-auto max-w-4xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white/80">
-            {catalogLabel}{location ? ` · ${location}` : ""}
+      <header className="grain relative overflow-hidden bg-leaf px-5 pb-8 pt-12 sm:px-6 sm:pb-16 sm:pt-14">
+        <div className="mx-auto max-w-3xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
+            {catalogLabel}
+            {location ? ` · ${location}` : ""}
           </p>
-          <h1 className="mt-3 break-words font-fraunces text-5xl font-bold leading-tight text-white md:text-6xl">
+          <h1 className="mt-3 break-words font-fraunces text-[2.6rem] font-bold leading-[1.04] text-white sm:text-6xl">
             {profile.businessName}
           </h1>
-
-          <div className="mt-4">
+          <div className="mt-5 flex items-center gap-2">
             <OpenNowBadge businessHours={profile.businessHours} />
+            {hasBusinessInfo ? (
+              <a
+                aria-label="Ver informações do negócio"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+                href="#informacoes"
+              >
+                <svg
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 11v5" strokeLinecap="round" />
+                  <path d="M12 8h.01" strokeLinecap="round" strokeWidth="3" />
+                </svg>
+              </a>
+            ) : null}
           </div>
-
           {profile.description ? (
-            <p className="mt-5 max-w-2xl break-words text-base leading-7 text-white/80">
+            <p className="mt-5 max-w-xl break-words text-[0.95rem] leading-7 text-white/85">
               {profile.description}
             </p>
           ) : null}
 
-          {hasServices ? (
+          {!whatsappHref && contacts.length > 0 ? (
             <a
-              href="#itens"
-              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-md bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+              href="#contato"
+              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
             >
-              Ver {catalogLabel.toLowerCase()} ↓
+              Ver contato ↓
             </a>
           ) : null}
         </div>
-      </div>
+      </header>
 
-      <div className="px-4 sm:px-6">
-        <div className="mx-auto max-w-4xl pb-28 pt-10 sm:pb-16">
-          {socialLinks.length > 0 ? (
-            <section>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                Redes sociais
-              </p>
-              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
-                {socialLinks.map((link) => (
-                  <a
-                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                    href={link.href}
-                    key={link.network}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    {link.label} ↗
-                  </a>
-                ))}
-              </div>
-            </section>
-          ) : null}
+      <div className="px-5 sm:px-6">
+        <div className="mx-auto max-w-3xl pb-20 pt-8 sm:pt-8">
+          {/* Produtos — primeiro conteúdo: é o que o cliente veio ver */}
+          <section id="itens" className="scroll-mt-6">
+            <h2 className="font-fraunces text-[1.7rem] font-bold text-ink sm:text-3xl">
+              O que ofereço
+            </h2>
+            <PublicServicesGrid
+              services={profile.services.map((s) => ({
+                ...s,
+                basePrice: s.basePrice?.toString() ?? null,
+                imageUrl: canUseServiceImages(profile.plan)
+                  ? (s.imageUrl ?? null)
+                  : null,
+              }))}
+              slug={slug}
+            />
+          </section>
 
-          {customLinks.length > 0 ? (
-            <section className={socialLinks.length > 0 ? "mt-8" : ""}>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                Links
-              </p>
-              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
-                {customLinks.map((link, index) => (
-                  <a
-                    className="inline-flex min-h-8 items-center justify-center rounded-full border border-paper-soft bg-white px-3 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-                    href={link.url}
-                    key={`${link.url}-${index}`}
-                    rel="noopener noreferrer nofollow"
-                    target="_blank"
-                  >
-                    {link.label} ↗
-                  </a>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
+          {/* Falar direto com o negócio — segunda ação mais importante */}
           {contacts.length > 0 ? (
-            <section className={socialLinks.length > 0 || customLinks.length > 0 ? "mt-8" : ""}>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                Contatos
-              </p>
-              <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                {contacts.map((c) => (
-                  <div
-                    key={c.label}
-                    className="rounded-xl border border-paper-soft bg-white p-4 shadow-card"
-                  >
-                    <p className="text-xs font-semibold uppercase tracking-widest text-ink-muted">
-                      {c.label}
-                    </p>
-                    {c.whatsappHref ? (
-                      <>
-                        <p className="mt-1 text-sm font-semibold text-ink">
-                          {c.value}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <a
-                            href={c.whatsappHref}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:flex-none"
-                          >
-                            WhatsApp
-                          </a>
-                          {c.href ? (
-                            <a
-                              href={c.href}
-                              className="inline-flex min-h-9 flex-1 items-center justify-center rounded-md border border-paper-soft px-3 text-xs font-semibold text-ink-muted transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:flex-none"
-                            >
-                              Ligar
-                            </a>
-                          ) : null}
-                        </div>
-                      </>
-                    ) : c.href ? (
-                      <>
-                        <p className="mt-1 break-words text-sm font-semibold text-ink">
-                          {c.value}
-                        </p>
-                        <a
-                          href={c.href}
-                          className="mt-3 inline-flex min-h-9 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:w-auto"
-                        >
-                          Enviar e-mail
-                        </a>
-                      </>
-                    ) : (
-                      <p className="mt-1 break-words text-sm font-semibold text-ink">
-                        {c.value}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {locationDisplay ? (
-            <section
-              className={
-                contacts.length > 0 ||
-                socialLinks.length > 0 ||
-                customLinks.length > 0
-                  ? "mt-6"
-                  : ""
-              }
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                Local
-              </p>
-              <div className="mt-2 flex flex-col gap-2 border-t border-paper-soft pt-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="break-words text-sm font-medium text-ink">
-                  {locationDisplay}
-                </p>
-                {mapsUrl ? (
+            <section id="contato" className="mt-14 scroll-mt-6">
+              <h2 className="font-fraunces text-2xl font-bold text-ink">
+                Fale com o negócio
+              </h2>
+              <div
+                className={`mt-4 grid gap-2.5 ${contacts.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}
+              >
+                {phoneContact?.href ? (
                   <a
-                    className="inline-flex min-h-8 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-3 text-xs font-semibold text-leaf transition hover:border-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:w-auto"
-                    href={mapsUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
+                    href={phoneContact.href}
+                    className="inline-flex min-h-12 items-center justify-center rounded-xl border border-paper-soft bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
                   >
-                    Ver no mapa ↗
+                    Ligar
+                  </a>
+                ) : null}
+                {emailContact?.href ? (
+                  <a
+                    href={emailContact.href}
+                    className="inline-flex min-h-12 items-center justify-center rounded-xl border border-paper-soft bg-white px-4 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                  >
+                    Enviar e-mail
                   </a>
                 ) : null}
               </div>
             </section>
           ) : null}
 
-          {hours ? (
-            <section
-              className={
-                contacts.length > 0 ||
-                socialLinks.length > 0 ||
-                customLinks.length > 0 ||
-                locationDisplay
-                  ? "mt-6"
-                  : ""
-              }
-            >
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                Horário de funcionamento
-              </p>
-              <div className="mt-2 border-t border-paper-soft pt-3">
-                <dl className="grid gap-1 sm:grid-cols-2 sm:gap-x-10">
-                  {formatWeek(hours).map((entry) => (
-                    <div
-                      className="flex items-baseline justify-between gap-4 text-sm"
-                      key={entry.day}
-                    >
-                      <dt className="text-ink-muted">{entry.day}</dt>
-                      <dd className="font-semibold text-ink">{entry.label}</dd>
-                    </div>
-                  ))}
-                </dl>
+          <div id="informacoes" className="scroll-mt-6">
+            {/* Identidade secundária — divulgação progressiva, fora do caminho */}
+            {locationDisplay || hours ? (
+            <details className="group mt-10 border-t border-paper-soft">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-4 text-ink [&::-webkit-details-marker]:hidden">
+                <span className="font-fraunces text-lg font-bold">
+                  Endereço e horários
+                </span>
+                <Chevron />
+              </summary>
+              <div className="grid gap-5 pb-5">
+                {locationDisplay ? (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="break-words text-sm text-ink">
+                      {locationDisplay}
+                    </p>
+                    {mapsUrl ? (
+                      <a
+                        className="inline-flex min-h-9 w-full items-center justify-center rounded-lg border border-paper-soft bg-white px-3 text-xs font-semibold text-leaf transition hover:border-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2 sm:w-auto"
+                        href={mapsUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Ver no mapa ↗
+                      </a>
+                    ) : null}
+                  </div>
+                ) : null}
+                {hours ? (
+                  <dl className="grid gap-1.5 sm:grid-cols-2 sm:gap-x-10">
+                    {formatWeek(hours).map((entry) => (
+                      <div
+                        className="flex items-baseline justify-between gap-4 text-sm"
+                        key={entry.day}
+                      >
+                        <dt className="text-ink-muted">{entry.day}</dt>
+                        <dd className="font-semibold text-ink">{entry.label}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                ) : null}
               </div>
-            </section>
-          ) : null}
+            </details>
+            ) : null}
 
-          {/* Services */}
-          <div id="itens" className="mt-12 scroll-mt-6">
-            {hasServices ? (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  {catalogLabel}
-                </p>
-                <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-                  O que ofereço
-                </h2>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-leaf">
-                  {catalogLabel}
-                </p>
-                <h2 className="mt-2 font-fraunces text-3xl font-bold text-ink">
-                  Em breve
-                </h2>
-              </>
-            )}
-            <PublicServicesGrid
-              services={profile.services.map((s) => ({
-                ...s,
-                basePrice: s.basePrice?.toString() ?? null,
-                imageUrl: canUseServiceImages(profile.plan) ? (s.imageUrl ?? null) : null,
-                pixConfigured,
-              }))}
-              slug={slug}
-            />
+            {allLinks.length > 0 ? (
+            <details className="group border-t border-paper-soft">
+              <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between py-4 text-ink [&::-webkit-details-marker]:hidden">
+                <span className="font-fraunces text-lg font-bold">
+                  Redes e links
+                </span>
+                <Chevron />
+              </summary>
+              <div className="flex flex-wrap gap-2 pb-5">
+                {allLinks.map((link) => (
+                  <a
+                    className="inline-flex min-h-9 items-center justify-center rounded-full border border-paper-soft bg-white px-3.5 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+                    href={link.href}
+                    key={link.key}
+                    rel={
+                      link.nofollow
+                        ? "noopener noreferrer nofollow"
+                        : "noopener noreferrer"
+                    }
+                    target="_blank"
+                  >
+                    {link.label} ↗
+                  </a>
+                ))}
+              </div>
+            </details>
+            ) : null}
           </div>
 
-          {/* Powered by */}
-          <p className="mt-8 text-center text-xs text-ink-muted/60">
+          <p className="mt-14 border-t border-paper-soft pt-6 text-center text-xs text-ink-muted/70">
             Powered by{" "}
             <span className="font-semibold text-ink-muted">Vitriny</span>
           </p>
         </div>
       </div>
+
+      {/* Ação persistente: alcançável de qualquer ponto de um catálogo longo */}
+      {whatsappHref ? (
+        <a
+          href={whatsappHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Falar no WhatsApp"
+          className="fixed bottom-5 right-5 z-40 inline-flex h-14 w-14 items-center justify-center rounded-full bg-leaf text-white shadow-[0_8px_24px_rgba(27,94,59,0.35)] transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
+        >
+          <WhatsAppIcon className="h-7 w-7" />
+        </a>
+      ) : null}
     </main>
   );
 }

@@ -17,15 +17,6 @@ export function getHowItWorksContent(services: ServiceInput[]): {
 } {
   const hasCustom = services.some((s) => s.pricingType === "CUSTOM");
   const hasFixed = services.some((s) => s.pricingType === "FIXED");
-  const hasPixRequired = services.some(
-    (s) =>
-      s.pricingType === "FIXED" &&
-      s.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT"
-  );
-  const hasRequestOnly = services.some(
-    (s) =>
-      s.pricingType === "FIXED" && s.fixedServiceCheckoutMode === "REQUEST_ONLY"
-  );
 
   if (hasCustom && hasFixed) {
     return {
@@ -47,30 +38,6 @@ export function getHowItWorksContent(services: ServiceInput[]): {
           step: "3",
           title: "Receba o retorno",
           description: "Você é contactado com as próximas etapas."
-        }
-      ]
-    };
-  }
-
-  if (hasFixed && hasPixRequired && !hasRequestOnly) {
-    return {
-      title: "Simples e rápido",
-      steps: [
-        {
-          step: "1",
-          title: "Preencha seus dados",
-          description: "Informe nome e contato para continuar."
-        },
-        {
-          step: "2",
-          title: "Realize o pagamento Pix",
-          description: "O pagamento é exigido para confirmar o pedido."
-        },
-        {
-          step: "3",
-          title: "Confirmação manual",
-          description:
-            "O negócio confirma o recebimento e combina os próximos passos."
         }
       ]
     };

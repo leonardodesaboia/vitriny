@@ -8,7 +8,6 @@ import {
   getServiceSaleMode,
   SALE_MODE_BADGE_LABEL,
 } from "@/lib/service-sale-mode";
-import { isPixPaymentExpired } from "@/lib/utils/date";
 import {
   formatDateShort,
   getInitials,
@@ -29,9 +28,6 @@ export type QuoteRequestSummary = {
   customerName: string;
   description: string | null;
   serviceNameSnapshot: string | null;
-  pixReservationRequestedAt: Date | null;
-  pixReservationPaidAt: Date | null;
-  pixReservationClientPaidAt: Date | null;
   service: SerializedService | null;
 };
 
@@ -90,27 +86,6 @@ export function QuoteRequestCard({ quoteRequest, serviceNamesById }: Props) {
                   </span>
                 ) : null;
               })()
-            ) : null}
-            {quoteRequest.pixReservationRequestedAt ? (
-              <span
-                className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                  quoteRequest.pixReservationPaidAt
-                    ? "border-mint bg-mint text-leaf"
-                    : quoteRequest.pixReservationClientPaidAt
-                      ? "border-amber-300 bg-amber-100 text-amber-800"
-                      : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-                        ? "border-red-200 bg-red-50 text-red-700"
-                        : "border-amber-200 bg-amber-50 text-amber-700"
-                }`}
-              >
-                {quoteRequest.pixReservationPaidAt
-                  ? "Pagamento Pix confirmado"
-                  : quoteRequest.pixReservationClientPaidAt
-                    ? "Cliente informou pagamento"
-                    : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-                      ? "Pix expirado"
-                      : "Pagamento Pix pendente"}
-              </span>
             ) : null}
           </div>
           <p

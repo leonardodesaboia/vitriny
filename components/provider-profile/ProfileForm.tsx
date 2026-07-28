@@ -12,7 +12,6 @@ import { AppearanceSection } from "@/components/provider-profile/sections/Appear
 import { BusinessTypeSection } from "@/components/provider-profile/sections/BusinessTypeSection";
 import { ContactSection } from "@/components/provider-profile/sections/ContactSection";
 import { IdentitySection } from "@/components/provider-profile/sections/IdentitySection";
-import { PixSection } from "@/components/provider-profile/sections/PixSection";
 import { PresenceSection } from "@/components/provider-profile/sections/PresenceSection";
 import { StatusSection } from "@/components/provider-profile/sections/StatusSection";
 
@@ -25,7 +24,6 @@ const TABS = [
   { id: "negocio", label: "Negócio" },
   { id: "contato", label: "Contato" },
   { id: "aparencia", label: "Aparência" },
-  { id: "pagamento", label: "Pagamento" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -184,15 +182,6 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
           isPro={isPro}
           currentThemePreset={currentThemePreset}
         />
-      </div>
-
-      <div
-        role="tabpanel"
-        id="profile-panel-pagamento"
-        aria-labelledby="profile-tab-pagamento"
-        className={panelClass("pagamento")}
-      >
-        <PixSection values={values} profile={profile} />
       </div>
 
       {/* Ação — salva todas as seções de uma vez */}

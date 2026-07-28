@@ -12,19 +12,15 @@ import {
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { requireProviderProfile } from "@/lib/actions/auth-guard";
-import { resolveQuoteRequestReturnPath } from "@/lib/actions/return-path";
 import type { ActionResult } from "@/types";
 import {
   quoteRequestSchema,
   validateQuoteRequestForService
 } from "@/lib/validations/quote-request";
 import {
-  sendPixReservationClientPaidEmail,
-  sendPixReservationReopenedEmail,
   sendQuoteRequestConfirmationToCustomerEmail,
   sendQuoteRequestReceivedEmail
 } from "@/lib/email";
-import { isPixPaymentExpired } from "@/lib/utils/date";
 
 function appUrl(path: string) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? "";
@@ -110,22 +106,6 @@ export async function createQuoteRequest(
   const businessRuleError = validateQuoteRequestForService(parsed.data, service);
   if (businessRuleError) return { error: businessRuleError };
 
-  const pixConfigured = !!(
-    profile.pixKey &&
-    profile.pixHolderName &&
-    profile.pixCity
-  );
-
-  const requiresPixPayment =
-    service?.pricingType === "FIXED" &&
-    service.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT";
-
-  if (requiresPixPayment && (!service.basePrice || !pixConfigured)) {
-    redirect(`/u/${slug}/orcamento?error=payment-unavailable`);
-  }
-
-  const isPixPayment = requiresPixPayment && !!service.basePrice && pixConfigured;
-
   const monthRange = getCurrentMonthRange();
   const created = await prisma.$transaction(async (tx) => {
     const monthlyRequestsCount = await tx.quoteRequest.count({
@@ -158,12 +138,6 @@ export async function createQuoteRequest(
         desiredTime: parsed.data.desiredTime,
         location: parsed.data.location,
         status: "NEW",
-        ...(isPixPayment
-          ? {
-              fixedServiceAmount: service!.basePrice,
-              pixReservationRequestedAt: new Date()
-            }
-          : {}),
         statusHistory: {
           create: {
             toStatus: "NEW",
@@ -215,9 +189,7 @@ export async function createQuoteRequest(
           customerName: created.customerName,
           businessName: profile.businessName,
           serviceName: service?.name,
-          isPixPayment,
-          profileUrl: appUrl(`/u/${slug}`),
-          pixReservaUrl: isPixPayment ? appUrl(`/u/${slug}/reserva/${created.id}`) : null
+          profileUrl: appUrl(`/u/${slug}`)
         });
       } catch (error) {
         console.error("Falha ao enviar e-mail de confirmação ao cliente.", {
@@ -228,207 +200,7 @@ export async function createQuoteRequest(
     }
   });
 
-  if (isPixPayment) {
-    redirect(`/u/${slug}/reserva/${created.id}`);
-  }
-
   redirect(`/u/${slug}/orcamento?success=1`);
-}
-
-export async function markPixReservationPaid(formData: FormData) {
-  const { profile } = await requireProviderProfile();
-  const returnTo = resolveQuoteRequestReturnPath(formData.get("returnTo"));
-  if (!profile) redirect(`${returnTo}?error=profile`);
-
-  const requestId = String(formData.get("requestId") ?? "");
-  if (!requestId) redirect(`${returnTo}?error=not-found`);
-
-  const quoteRequest = await prisma.quoteRequest.findFirst({
-    where: { id: requestId, providerId: profile.id },
-    select: {
-      id: true,
-      pixReservationRequestedAt: true,
-      pixReservationPaidAt: true
-    }
-  });
-
-  if (!quoteRequest || !quoteRequest.pixReservationRequestedAt) {
-    redirect(`${returnTo}?error=not-found`);
-  }
-
-  if (quoteRequest.pixReservationPaidAt) {
-    redirect(returnTo);
-  }
-
-  await prisma.quoteRequest.update({
-    where: { id: quoteRequest.id },
-    data: { pixReservationPaidAt: new Date() }
-  });
-
-  revalidatePath("/dashboard/pedidos");
-  revalidatePath("/dashboard/pedidos/[id]", "page");
-  redirect(returnTo);
-}
-
-export async function reopenPixReservation(formData: FormData) {
-  const { profile } = await requireProviderProfile();
-  const returnTo = resolveQuoteRequestReturnPath(formData.get("returnTo"));
-  if (!profile) redirect(`${returnTo}?error=profile`);
-
-  const requestId = String(formData.get("requestId") ?? "");
-  if (!requestId) redirect(`${returnTo}?error=not-found`);
-
-  const quoteRequest = await prisma.quoteRequest.findFirst({
-    where: { id: requestId, providerId: profile.id },
-    select: {
-      id: true,
-      customerName: true,
-      customerEmail: true,
-      serviceNameSnapshot: true,
-      fixedServiceAmount: true,
-      pixReservationRequestedAt: true,
-      pixReservationPaidAt: true,
-      provider: { select: { slug: true, businessName: true } }
-    }
-  });
-
-  if (!quoteRequest?.pixReservationRequestedAt) {
-    redirect(`${returnTo}?error=not-found`);
-  }
-
-  // Só reserva expirada e não paga ganha novo prazo; nos demais estados o
-  // clique é no-op (idempotência).
-  if (
-    quoteRequest.pixReservationPaidAt ||
-    !isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-  ) {
-    redirect(returnTo);
-  }
-
-  await prisma.quoteRequest.update({
-    where: { id: quoteRequest.id },
-    data: {
-      pixReservationRequestedAt: new Date(),
-      // Nova janela de pagamento: zera o sinal "já paguei" da janela anterior
-      // para a reserva reaberta não renderizar presa em "pagamento informado".
-      pixReservationClientPaidAt: null
-    }
-  });
-
-  const customerEmail = quoteRequest.customerEmail;
-  const amount = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  }).format(Number(quoteRequest.fixedServiceAmount ?? 0));
-  const reservaUrl = appUrl(
-    `/u/${quoteRequest.provider.slug}/reserva/${quoteRequest.id}`
-  );
-
-  after(async () => {
-    if (!customerEmail) return;
-    try {
-      await sendPixReservationReopenedEmail({
-        to: customerEmail,
-        customerName: quoteRequest.customerName,
-        businessName: quoteRequest.provider.businessName,
-        serviceName: quoteRequest.serviceNameSnapshot,
-        amount,
-        reservaUrl
-      });
-    } catch (error) {
-      console.error("Falha ao enviar e-mail de prazo renovado.", {
-        error,
-        quoteRequestId: quoteRequest.id
-      });
-    }
-  });
-
-  revalidatePath("/dashboard/pedidos");
-  revalidatePath("/dashboard/pedidos/[id]", "page");
-  redirect(returnTo);
-}
-
-export async function markPixReservationClientPaid(
-  slug: string,
-  formData: FormData
-): Promise<void> {
-  const requestId = String(formData.get("requestId") ?? "");
-  if (!requestId) redirect(`/u/${slug}`);
-
-  // Action pública (o cliente não tem login): a segurança vem do vínculo
-  // slug→perfil→pedido e das checagens de estado abaixo.
-  const profile = await prisma.providerProfile.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      businessName: true,
-      email: true,
-      user: { select: { email: true } }
-    }
-  });
-  if (!profile) redirect("/");
-
-  const reservaPath = `/u/${slug}/reserva/${requestId}`;
-
-  const quoteRequest = await prisma.quoteRequest.findFirst({
-    where: { id: requestId, providerId: profile.id },
-    select: {
-      id: true,
-      customerName: true,
-      serviceNameSnapshot: true,
-      fixedServiceAmount: true,
-      pixReservationRequestedAt: true,
-      pixReservationPaidAt: true,
-      pixReservationClientPaidAt: true,
-      service: { select: { name: true } }
-    }
-  });
-
-  if (!quoteRequest?.pixReservationRequestedAt) redirect(`/u/${slug}`);
-
-  // Estados terminais: nada a gravar; a página renderiza o estado real.
-  if (
-    quoteRequest.pixReservationPaidAt ||
-    quoteRequest.pixReservationClientPaidAt ||
-    isPixPaymentExpired(quoteRequest.pixReservationRequestedAt)
-  ) {
-    redirect(reservaPath);
-  }
-
-  await prisma.quoteRequest.update({
-    where: { id: quoteRequest.id },
-    data: { pixReservationClientPaidAt: new Date() }
-  });
-
-  const providerEmail = profile.email ?? profile.user.email;
-  const amount = new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  }).format(Number(quoteRequest.fixedServiceAmount ?? 0));
-
-  after(async () => {
-    if (!providerEmail) return;
-    try {
-      await sendPixReservationClientPaidEmail({
-        to: providerEmail,
-        businessName: profile.businessName,
-        customerName: quoteRequest.customerName,
-        serviceName:
-          quoteRequest.serviceNameSnapshot ?? quoteRequest.service?.name,
-        amount,
-        dashboardUrl: appUrl(`/dashboard/pedidos/${quoteRequest.id}`)
-      });
-    } catch (error) {
-      console.error("Falha ao enviar e-mail de pagamento informado.", {
-        error,
-        quoteRequestId: quoteRequest.id
-      });
-    }
-  });
-
-  revalidatePath(reservaPath);
-  revalidatePath("/dashboard/pedidos");
-  redirect(reservaPath);
 }
 
 export async function updateQuoteRequestDescription(

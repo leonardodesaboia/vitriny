@@ -24,7 +24,6 @@ type QuoteRequestFormProps = {
   services: ServiceSummary[];
   selectedServiceId?: string | null;
   selectedService?: SelectedService | null;
-  requiresPixPayment?: boolean;
 };
 
 const inputClass =
@@ -32,19 +31,11 @@ const inputClass =
 
 const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
 
-function formatMoney(value: string) {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL"
-  }).format(Number(value));
-}
-
 export function QuoteRequestForm({
   slug,
   services,
   selectedServiceId,
-  selectedService,
-  requiresPixPayment = false
+  selectedService
 }: QuoteRequestFormProps) {
   const boundAction = createQuoteRequest.bind(null, slug);
   const [state, formAction, isPending] = useActionState<QuoteRequestFormState, FormData>(
@@ -69,13 +60,6 @@ export function QuoteRequestForm({
   // agendamento e local de atendimento.
   const isProduct = activeService?.itemType === "PRODUCT";
 
-  // O item escolhido no dropdown também pode exigir pagamento Pix; o aviso
-  // precisa aparecer antes do envio, não só quando o item vem da URL.
-  const willRequirePixPayment =
-    requiresPixPayment ||
-    (dropdownService?.pricingType === "FIXED" &&
-      dropdownService.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT");
-
   return (
     <form action={formAction} className="mt-8 grid gap-5">
       {state?.error ? (
@@ -91,20 +75,6 @@ export function QuoteRequestForm({
       {selectedService ? (
         <input name="serviceId" type="hidden" value={selectedService.id} />
       ) : null}
-      {!selectedService && willRequirePixPayment && activeService?.basePrice ? (
-        <div className="rounded-xl border border-leaf/30 bg-mint/30 p-4">
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Valor do pedido
-          </p>
-          <p className="mt-1 font-fraunces text-3xl font-bold text-ink">
-            {formatMoney(activeService.basePrice)}
-          </p>
-          <p className="mt-1 text-xs text-ink-muted">
-            Você realizará o pagamento via Pix após preencher seus dados.
-          </p>
-        </div>
-      ) : null}
-
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="customerName">
           Nome *
@@ -254,13 +224,7 @@ export function QuoteRequestForm({
         disabled={isPending}
         type="submit"
       >
-        {isPending
-          ? "Enviando..."
-          : willRequirePixPayment
-            ? "Continuar para pagar com Pix →"
-            : isFixed
-              ? "Solicitar"
-              : "Enviar pedido"}
+        {isPending ? "Enviando..." : isFixed ? "Solicitar" : "Enviar pedido"}
       </button>
     </form>
   );

@@ -18,17 +18,11 @@ import {
   proposalRejectedMessage
 } from "@/lib/whatsapp-messages";
 import { markDepositPaid } from "@/lib/actions/proposals";
-import {
-  markPixReservationPaid,
-  reopenPixReservation
-} from "@/lib/actions/quote-requests";
 import { WhatsAppButton } from "@/components/whatsapp/WhatsAppButton";
 import { formatPhoneBR, phoneToTelHref } from "@/lib/utils/phone";
-import { isPixPaymentExpired } from "@/lib/utils/date";
 import {
   actorLabels,
   formatDate,
-  formatDateShort,
   proposalStatusBadge,
   proposalStatusLabel,
   splitServiceFromDescription,
@@ -392,90 +386,6 @@ export function QuoteRequestDetails({
             </div>
           )}
 
-          {/* Pix reservation section */}
-          {quoteRequest.pixReservationRequestedAt ? (
-            <div className="rounded-xl border border-paper-soft bg-paper p-4 sm:p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-                Pagamento Pix do pedido
-              </p>
-              {quoteRequest.fixedServiceAmount ? (
-                <p className="mt-1 font-fraunces text-xl font-bold text-ink">
-                  {new Intl.NumberFormat("pt-BR", {
-                    style: "currency",
-                    currency: "BRL"
-                  }).format(Number(quoteRequest.fixedServiceAmount))}
-                </p>
-              ) : null}
-              {quoteRequest.pixReservationPaidAt ? (
-                <div className="mt-3 flex items-center gap-2 rounded-lg border border-mint bg-mint/40 px-3 py-2">
-                  <span className="text-xs font-semibold text-leaf">
-                    ✓ Pix confirmado em{" "}
-                    {formatDateShort(quoteRequest.pixReservationPaidAt)}
-                  </span>
-                </div>
-              ) : quoteRequest.pixReservationClientPaidAt ? (
-                <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 sm:flex-row sm:items-center">
-                  <span className="text-xs font-semibold text-amber-800">
-                    Cliente informou pagamento em{" "}
-                    {formatDateShort(quoteRequest.pixReservationClientPaidAt)}{" "}
-                    — confira o recebimento no seu banco.
-                  </span>
-                  <form action={markPixReservationPaid}>
-                    <input type="hidden" name="requestId" value={quoteRequest.id} />
-                    {returnTo ? (
-                      <input type="hidden" name="returnTo" value={returnTo} />
-                    ) : null}
-                    <button
-                      type="submit"
-                      className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
-                    >
-                      Confirmar recebimento
-                    </button>
-                  </form>
-                </div>
-              ) : isPixPaymentExpired(quoteRequest.pixReservationRequestedAt) ? (
-                <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                  <span className="text-xs font-semibold text-red-700">
-                    Pix expirado — o cliente não realizou o pagamento no prazo.
-                  </span>
-                  <p className="mt-1 text-xs text-ink-muted">
-                    Gere um novo prazo de 48h para o cliente pagar, ou encerre
-                    o pedido via alteração de status.
-                  </p>
-                  <form action={reopenPixReservation} className="mt-2">
-                    <input type="hidden" name="requestId" value={quoteRequest.id} />
-                    {returnTo ? (
-                      <input type="hidden" name="returnTo" value={returnTo} />
-                    ) : null}
-                    <button
-                      type="submit"
-                      className="inline-flex min-h-8 items-center justify-center rounded-md border border-leaf bg-white px-3 text-xs font-semibold text-leaf transition hover:bg-mint"
-                    >
-                      Gerar novo prazo
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div className="mt-3 flex flex-col items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 sm:flex-row sm:items-center">
-                  <span className="text-xs font-semibold text-amber-700">
-                    Aguardando confirmação do Pix
-                  </span>
-                  <form action={markPixReservationPaid}>
-                    <input type="hidden" name="requestId" value={quoteRequest.id} />
-                    {returnTo ? (
-                      <input type="hidden" name="returnTo" value={returnTo} />
-                    ) : null}
-                    <button
-                      type="submit"
-                      className="inline-flex min-h-8 w-full items-center justify-center rounded-md bg-leaf px-3 text-xs font-semibold text-white transition hover:bg-leaf-hover sm:w-auto"
-                    >
-                      Confirmar recebimento
-                    </button>
-                  </form>
-                </div>
-              )}
-            </div>
-          ) : null}
         </div>
       )}
 

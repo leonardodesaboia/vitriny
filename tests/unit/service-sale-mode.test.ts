@@ -25,10 +25,10 @@ describe("getServiceSaleMode", () => {
     ).toBe("FIXED_REQUEST");
   });
 
-  it("FIXED + REQUIRE_PIX_PAYMENT → FIXED_PIX", () => {
+  it("FIXED + REQUIRE_PIX_PAYMENT → FIXED_REQUEST (Pix obrigatório removido; item legado degrada)", () => {
     expect(
       getServiceSaleMode({ pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" })
-    ).toBe("FIXED_PIX");
+    ).toBe("FIXED_REQUEST");
   });
 });
 
@@ -46,13 +46,6 @@ describe("getTechnicalSaleMode", () => {
       fixedServiceCheckoutMode: "REQUEST_ONLY",
     });
   });
-
-  it("FIXED_PIX → FIXED + REQUIRE_PIX_PAYMENT", () => {
-    expect(getTechnicalSaleMode("FIXED_PIX")).toEqual({
-      pricingType: "FIXED",
-      fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT",
-    });
-  });
 });
 
 describe("labels aprovados", () => {
@@ -61,25 +54,20 @@ describe("labels aprovados", () => {
     expect(opt?.label).toBe("Sob consulta");
   });
 
-  it("FIXED_REQUEST tem label 'Preço fixo, solicitar primeiro'", () => {
+  it("FIXED_REQUEST tem label 'Preço fixo'", () => {
     const opt = SALE_MODE_OPTIONS.find((o) => o.value === "FIXED_REQUEST");
-    expect(opt?.label).toBe("Preço fixo, solicitar primeiro");
+    expect(opt?.label).toBe("Preço fixo");
   });
 
-  it("FIXED_PIX tem label 'Preço fixo, pagar via Pix'", () => {
-    const opt = SALE_MODE_OPTIONS.find((o) => o.value === "FIXED_PIX");
-    expect(opt?.label).toBe("Preço fixo, pagar via Pix");
+  it("só existem dois modos de venda", () => {
+    expect(SALE_MODE_OPTIONS).toHaveLength(2);
   });
 
   it("badge CUSTOM → 'Sob consulta'", () => {
     expect(SALE_MODE_BADGE_LABEL["CUSTOM"]).toBe("Sob consulta");
   });
 
-  it("badge FIXED_REQUEST → 'Preço fixo · Solicitação'", () => {
-    expect(SALE_MODE_BADGE_LABEL["FIXED_REQUEST"]).toBe("Preço fixo · Solicitação");
-  });
-
-  it("badge FIXED_PIX → 'Preço fixo · Pix'", () => {
-    expect(SALE_MODE_BADGE_LABEL["FIXED_PIX"]).toBe("Preço fixo · Pix");
+  it("badge FIXED_REQUEST → 'Preço fixo'", () => {
+    expect(SALE_MODE_BADGE_LABEL["FIXED_REQUEST"]).toBe("Preço fixo");
   });
 });

@@ -60,15 +60,3 @@ export function todayISOInTimeZone(timeZone: string, now = new Date()) {
     day: "2-digit"
   }).format(now);
 }
-
-export const PIX_PAYMENT_EXPIRY_HOURS = 48;
-
-export function isPixPaymentExpired(requestedAt: Date, now = new Date()) {
-  const expiryMs = PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000;
-  return now.getTime() - requestedAt.getTime() > expiryMs;
-}
-
-// Reservas solicitadas antes deste instante já expiraram.
-export function pixPaymentExpiryCutoff(now = new Date()) {
-  return new Date(now.getTime() - PIX_PAYMENT_EXPIRY_HOURS * 60 * 60 * 1000);
-}
