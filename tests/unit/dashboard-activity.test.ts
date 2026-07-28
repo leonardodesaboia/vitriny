@@ -44,13 +44,6 @@ describe("getRecentDashboardActivity", () => {
       ],
       [
         {
-          customerName: "Carlos",
-          id: "reservation-1",
-          pixReservationPaidAt: new Date("2026-06-30T10:00:00.000Z")
-        }
-      ],
-      [
-        {
           depositPaidAt: new Date("2026-06-30T11:00:00.000Z"),
           id: "deposit-1",
           quoteRequest: { customerName: "Daniela" }
@@ -62,7 +55,6 @@ describe("getRecentDashboardActivity", () => {
 
     expect(activity.map((event) => event.type)).toEqual([
       "PROPOSAL_DEPOSIT_PAID",
-      "PIX_RESERVATION_PAID",
       "PROPOSAL_APPROVED",
       "QUOTE_REQUEST_CREATED"
     ]);

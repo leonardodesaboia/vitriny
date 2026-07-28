@@ -10,7 +10,6 @@ type DashboardRecentActivityProps = {
 };
 
 const activityDotClasses: Record<DashboardActivityType, string> = {
-  PIX_RESERVATION_PAID: "bg-leaf",
   PROPOSAL_APPROVED: "bg-leaf",
   PROPOSAL_DEPOSIT_PAID: "bg-leaf",
   PROPOSAL_REJECTED: "bg-red-500",

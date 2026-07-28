@@ -127,14 +127,7 @@ export default async function RequestsPage({ searchParams }: RequestsPageProps) 
   const quoteRequests = profile
     ? await prisma.quoteRequest.findMany({
         where,
-        // Na view Pix, pagamentos informados pelo cliente vêm primeiro.
-        orderBy:
-          activeView === "PIX_RESERVATION"
-            ? [
-                { pixReservationClientPaidAt: { sort: "desc", nulls: "last" } },
-                { createdAt: "desc" }
-              ]
-            : { createdAt: "desc" },
+        orderBy: { createdAt: "desc" },
         take: PAGE_SIZE,
         skip: (page - 1) * PAGE_SIZE,
         include: {

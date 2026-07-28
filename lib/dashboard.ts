@@ -1,9 +1,6 @@
 import type { Prisma, ProposalStatus, QuoteRequestStatus } from "@prisma/client";
 
-import { isPixPaymentExpired, pixPaymentExpiryCutoff } from "@/lib/utils/date";
-
 export type DashboardActivityType =
-  | "PIX_RESERVATION_PAID"
   | "PROPOSAL_APPROVED"
   | "PROPOSAL_DEPOSIT_PAID"
   | "PROPOSAL_REJECTED"
@@ -22,7 +19,6 @@ type ProposalActivitySourceEvent = ActivitySourceEvent & {
 
 type RecentActivityInput = {
   paidDeposits: ActivitySourceEvent[];
-  paidReservations: ActivitySourceEvent[];
   proposalStatusEvents: ProposalActivitySourceEvent[];
   quoteRequests: ActivitySourceEvent[];
 };
@@ -42,7 +38,6 @@ const PROPOSAL_ACTIVITY: Partial<
 
 export function buildRecentDashboardActivity({
   paidDeposits,
-  paidReservations,
   proposalStatusEvents,
   quoteRequests
 }: RecentActivityInput): DashboardActivity[] {
@@ -68,12 +63,6 @@ export function buildRecentDashboardActivity({
       type: "QUOTE_REQUEST_CREATED" as const
     })),
     ...proposalActivities,
-    ...paidReservations.map((event) => ({
-      ...event,
-      id: `pix-reservation:${event.id}`,
-      title: "Pagamento Pix confirmado",
-      type: "PIX_RESERVATION_PAID" as const
-    })),
     ...paidDeposits.map((event) => ({
       ...event,
       id: `proposal-deposit:${event.id}`,
@@ -91,8 +80,7 @@ export type DashboardRequestView =
   | "APPROVED_MONTH"
   | "DEPOSIT"
   | "MONTH"
-  | "OPEN"
-  | "PIX_RESERVATION";
+  | "OPEN";
 
 type MonthRange = {
   end: Date;
@@ -101,9 +89,6 @@ type MonthRange = {
 
 type DashboardRequest = {
   createdAt: Date;
-  pixReservationClientPaidAt: Date | null;
-  pixReservationPaidAt: Date | null;
-  pixReservationRequestedAt: Date | null;
   proposal: {
     depositAmount: number | string | { toString(): string } | null;
     depositPaidAt: Date | null;
@@ -133,8 +118,7 @@ const DASHBOARD_REQUEST_VIEWS: DashboardRequestView[] = [
   "APPROVED_MONTH",
   "DEPOSIT",
   "MONTH",
-  "OPEN",
-  "PIX_RESERVATION"
+  "OPEN"
 ];
 
 export const DASHBOARD_REQUEST_VIEW_LABELS: Record<
@@ -144,8 +128,7 @@ export const DASHBOARD_REQUEST_VIEW_LABELS: Record<
   APPROVED_MONTH: "Propostas aprovadas no mês",
   DEPOSIT: "Entradas Pix pendentes",
   MONTH: "Pedidos deste mês",
-  OPEN: "Pedidos em aberto",
-  PIX_RESERVATION: "Pagamentos Pix pendentes"
+  OPEN: "Pedidos em aberto"
 };
 
 export function buildOnboardingOutcomeStep({
@@ -196,24 +179,17 @@ const formatBRL = (value: number) =>
   }).format(value);
 
 export type MonthlyRevenueSummary = {
-  approved: string;
-  pixConfirmed: string;
   total: string;
 };
 
-// Somas Decimal chegam como string (fronteira server→client) e saem
-// formatadas em BRL, prontas para renderizar.
+// A soma Decimal chega como string (fronteira server→client) e sai formatada
+// em BRL, pronta para renderizar. Hoje o movimentado do mês vem só das
+// propostas aprovadas — o pagamento Pix do cliente foi removido do fluxo.
 export function buildMonthlyRevenueSummary(
-  approvedSum: string | null,
-  pixConfirmedSum: string | null
+  approvedSum: string | null
 ): MonthlyRevenueSummary {
-  const approved = Number(approvedSum ?? 0);
-  const pixConfirmed = Number(pixConfirmedSum ?? 0);
-
   return {
-    approved: formatBRL(approved),
-    pixConfirmed: formatBRL(pixConfirmed),
-    total: formatBRL(approved + pixConfirmed)
+    total: formatBRL(Number(approvedSum ?? 0))
   };
 }
 
@@ -250,23 +226,13 @@ export function buildStorefrontViewsSummary(input: {
 // permite filtrar no banco para paginar sem carregar tudo.
 export function dashboardRequestViewWhere(
   view: DashboardRequestView,
-  monthRange: MonthRange,
-  now = new Date()
+  monthRange: MonthRange
 ): Prisma.QuoteRequestWhereInput {
   switch (view) {
     case "MONTH":
       return { createdAt: { gte: monthRange.start, lt: monthRange.end } };
     case "OPEN":
       return { status: { not: "CLOSED" } };
-    case "PIX_RESERVATION":
-      return {
-        pixReservationRequestedAt: { not: null },
-        pixReservationPaidAt: null,
-        OR: [
-          { pixReservationRequestedAt: { gte: pixPaymentExpiryCutoff(now) } },
-          { pixReservationClientPaidAt: { not: null } }
-        ]
-      };
     case "DEPOSIT":
       return {
         proposal: {
@@ -328,15 +294,6 @@ export function matchesDashboardRequestView(
       return isWithinMonth(request.createdAt, monthRange);
     case "OPEN":
       return request.status !== "CLOSED";
-    case "PIX_RESERVATION":
-      // Reservas expiradas não são acionáveis — exceto quando o cliente
-      // informou o pagamento: aí a bola está com o negócio.
-      return (
-        request.pixReservationRequestedAt !== null &&
-        request.pixReservationPaidAt === null &&
-        (!isPixPaymentExpired(request.pixReservationRequestedAt) ||
-          request.pixReservationClientPaidAt !== null)
-      );
     case "DEPOSIT":
       return (
         request.proposal?.status === "APPROVED" &&
