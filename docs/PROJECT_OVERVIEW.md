@@ -27,10 +27,9 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 1. Acessa `/u/[slug]`.
 2. Consulta os produtos e serviços do negócio.
 3. Envia pedido em `/u/[slug]/orcamento`, sempre vinculado a um item da vitrine e com ao menos e-mail ou telefone; itens `CUSTOM` exigem descrição; data/horário (`requiresSchedulingDetails`) e local (`requiresLocation`) são exigências independentes, configuráveis por item.
-4. Para item `FIXED` com `REQUIRE_PIX_PAYMENT`, realiza o pagamento manual em `/u/[slug]/reserva/[requestId]` após enviar os dados.
-5. Para item `FIXED` com `REQUEST_ONLY`, envia apenas a solicitação e aguarda o retorno do negócio.
-6. Recebe/acessa link da proposta.
-7. Aprova ou recusa em `/proposta/[publicToken]`.
+4. Para item `FIXED`, envia apenas a solicitação e aguarda o retorno do negócio para combinar o pagamento.
+5. Recebe/acessa link da proposta.
+6. Aprova ou recusa em `/proposta/[publicToken]`.
 
 ## Entidades principais
 
@@ -71,9 +70,7 @@ Pequenos negócios costumam receber pedidos por canais soltos, como mensagens e 
 | Produto / Serviço | `Service.itemType` (`PRODUCT` \| `SERVICE`) | Classificação visual apenas |
 | modo de venda | `ServiceSaleMode` em `lib/service-sale-mode.ts` | Helper de UI; não existe no banco |
 | Sob consulta | `pricingType = CUSTOM` | |
-| Preço fixo | `pricingType = FIXED` | |
-| Preço fixo, solicitar primeiro | `fixedServiceCheckoutMode = REQUEST_ONLY` | |
-| Preço fixo, pagar via Pix | `fixedServiceCheckoutMode = REQUIRE_PIX_PAYMENT` | |
+| Preço fixo | `pricingType = FIXED` | Cliente solicita; pagamento combinado à parte |
 | pedido / solicitação | `QuoteRequest` | Não renomear o model |
 | proposta | `Proposal` | |
 | vitrine pública / perfil do negócio | `ProviderProfile` publicado | |
@@ -91,8 +88,7 @@ Os models `Service`, `ProviderProfile`, `QuoteRequest` e `Proposal`, as rotas e 
 - `/esqueci-senha`: solicitar redefinição de senha.
 - `/redefinir-senha/[token]`: definir nova senha a partir do token recebido por e-mail.
 - `/u/[slug]`: vitrine pública do negócio.
-- `/u/[slug]/orcamento`: formulário público de pedido, com seleção implícita do serviço quando a URL vem de um card do perfil. Serviços configurados com `REQUIRE_PIX_PAYMENT` informam o pagamento obrigatório antes do envio.
-- `/u/[slug]/reserva/[requestId]`: página de pagamento antecipado Pix com QR Code e código copia e cola. Acessível sem login; exige que o pedido tenha `pixReservationRequestedAt` preenchido.
+- `/u/[slug]/orcamento`: formulário público de pedido, com seleção implícita do serviço quando a URL vem de um card do perfil.
 - `/proposta/[publicToken]`: página pública da proposta.
 - `/api/auth/[...nextauth]`: rota Auth.js.
 
@@ -127,11 +123,11 @@ Route handlers autenticados ou server-to-server:
 - **Estatísticas de visitas são FREE**: a dashboard mostra quantas vezes a vitrine foi vista (últimos 7/30 dias). Contagem via beacon client, agregada por dia, sem PII/cookie (dedupe por sessão em `sessionStorage`); exclui o dono logado e bots. Detalhe por item/origem fica para a fase 2 (PRO).
 - **Itens mais vistos são PRO**: a dashboard mostra o ranking dos itens que mais geram interesse (abertura da página de orçamento do item, últimos 30 dias). FREE vê um card de upsell. Gating via `canUseStorefrontAnalytics`. Origem do tráfego fica para a fase 3 (links marcados — referrer é enganoso em navegadores in-app).
 - Temas visuais da aplicação são recurso PRO e afetam o dashboard do profissional e o fluxo público do cliente. FREE sempre renderiza o tema padrão, mesmo que exista outro preset salvo por uso anterior do PRO. Os temas alteram apenas tokens globais de cor e fonte, não layout ou classes específicas por componente.
-- **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, Pix, propostas, pedidos, limites nem checkout. As regras de negócio continuam dependendo de `pricingType` e `fixedServiceCheckoutMode`.
+- **`itemType` é classificação visual**: `PRODUCT` e `SERVICE` organizam a vitrine visualmente, mas não alteram preço, propostas, pedidos nem limites. As regras de negócio continuam dependendo de `pricingType`.
 - **O tipo do negócio orienta novos itens**: perfis configurados somente para produtos ou somente para serviços recebem `itemType` automaticamente na criação. O seletor Produto/Serviço aparece apenas para perfis que oferecem ambos.
 - **Não existem dois produtos separados no banco**: Produto e Serviço são classificações do mesmo model `Service`. Não haverá separação em dois models distintos sem decisão explícita.
 - **Proposta existe apenas para itens sob consulta (`CUSTOM`)**: itens com preço fixo não passam pelo fluxo de proposta.
 - **Modelos de proposta são contextuais ao fluxo de proposta**: como proposta só existe para itens `CUSTOM`, a gestão de modelos foi tirada do menu lateral e passou a viver dentro de `propostas/nova` (aplicar modelo por chip, "Gerenciar/Criar modelo" e "Salvar esta proposta como modelo" no modo Itens detalhados). A página `/dashboard/propostas/templates` continua existindo, mas não é destino de navegação primária. Isso evita que negócios só de produto — que nunca enviam proposta — vejam a feature no menu.
 - Gateway de pagamento do cliente final, confirmação automática de Pix, carrinho, estoque, frete, variações, cupons, WhatsApp API, editor avançado de PDF, IA e marketplace estão fora do MVP e só serão considerados após validação de negócio.
-- Pix manual existe na entrada de proposta aprovada e no pagamento antecipado obrigatório de item `FIXED`. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix.
+- Pix manual existe apenas na entrada de proposta aprovada. O Vitriny gera QR Code/código estático, mas não movimenta dinheiro nem recebe webhook Pix. O pagamento antecipado obrigatório de item `FIXED` (fluxo de reserva/"pagar com Pix") foi removido: itens de preço fixo só geram solicitação, e o pagamento é combinado diretamente entre cliente e negócio.
 - Stripe é usado exclusivamente para assinatura do usuário da Vitriny; nunca para pagamento do cliente final.

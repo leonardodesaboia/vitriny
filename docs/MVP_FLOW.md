@@ -12,23 +12,13 @@ Na interface, produtos e serviços são chamados de itens da vitrine. Os nomes t
 6. Usuário publica a vitrine.
 7. Usuário cadastra itens da vitrine.
 8. Cliente acessa `/u/[slug]`.
-9. Cliente envia pedido; quando o serviço `FIXED` usa `REQUIRE_PIX_PAYMENT`, segue obrigatoriamente para o Pix.
+9. Cliente envia pedido (item `FIXED` gera solicitação; o pagamento é combinado à parte).
 10. Negócio vê pedido.
 11. Negócio cria proposta (apenas para itens `CUSTOM`).
 12. Cliente acessa `/proposta/[publicToken]`.
 13. Cliente aprova ou recusa.
 14. Se houver entrada Pix, cliente paga diretamente ao negócio e envia comprovante.
 15. Negócio vê status atualizado e marca a entrada como recebida.
-
-Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
-
-9a. Cliente clica em "Pagar com Pix" no card do serviço.
-9b. Cliente preenche dados e envia formulário.
-9c. Cliente é redirecionado para `/u/[slug]/reserva/[requestId]` com QR Code + código copia e cola.
-9d. Cliente realiza o pagamento Pix diretamente ao negócio.
-9e. Cliente avisa o negócio e envia o comprovante.
-9f. Negócio acessa `/dashboard/pedidos`, expande o pedido e clica em "Confirmar recebimento".
-9g. `pixReservationPaidAt` é preenchido e o painel exibe badge "Pagamento Pix confirmado".
 
 ## Passo a passo manual
 
@@ -70,7 +60,6 @@ Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
 - Para perfil que oferece ambos, escolha `Produto` ou `Serviço` no cadastro.
 - Valide que o badge correspondente aparece no painel e na vitrine pública.
 - Confirme que `Produto` e `Serviço` aceitam tanto preço fixo quanto preço sob consulta.
-- Para itens `FIXED`: ative "Exigir pagamento antecipado via Pix" quando o cliente precisar pagar para concluir a solicitação (requer dados Pix configurados no perfil).
 - Esperado: item aparece na listagem.
 
 ### 4. Vitrine pública
@@ -81,25 +70,15 @@ Fluxo alternativo — Pagamento Pix obrigatório (serviços FIXED):
 
 ### 5. Pedido público
 
-- Clique em `Solicitar orçamento` para item `CUSTOM`, `Solicitar` para `FIXED` em `REQUEST_ONLY` ou `Pagar com Pix` para `FIXED` em `REQUIRE_PIX_PAYMENT`.
+- Clique em `Solicitar orçamento` para item `CUSTOM` ou `Solicitar` para item `FIXED`.
 - Se o acesso vier de um card de serviço, o formulário já abre com esse serviço selecionado e sem o seletor de serviços.
 - Informe ao menos um contato válido: e-mail ou telefone.
 - Todo pedido exige um item da vitrine selecionado; não existe pedido genérico sem item.
 - Para item `CUSTOM`, descreva obrigatoriamente o que precisa.
 - Quando o item pede data e horário (`requiresSchedulingDetails`), informe uma data real que não esteja no passado, além de horário/período. Quando o item pede local (`requiresLocation`), informe o local/endereço. As duas exigências são independentes e configuráveis por item.
 - Envie o formulário.
-- Para serviço `CUSTOM` ou `FIXED` em `REQUEST_ONLY`, esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
-- Para serviço `FIXED` em `REQUIRE_PIX_PAYMENT`, esperado: `/u/[slug]/reserva/[requestId]` com QR Code e valor de `fixedServiceAmount`.
-- Se o Pix obrigatório deixou de estar configurado, esperado: o pedido não é criado e a página mostra `payment-unavailable`.
+- Para qualquer item (`CUSTOM` ou `FIXED`), esperado: estado de sucesso em `/u/[slug]/orcamento?success=1`.
 - Se `RESEND_API_KEY` e `EMAIL_FROM` estiverem configurados, o negócio recebe e-mail avisando sobre o novo pedido.
-
-### 5a. Pagamento Pix obrigatório (serviços FIXED com REQUIRE_PIX_PAYMENT)
-
-- Clique em `Pagar com Pix` no card do serviço (visível quando `fixedServiceCheckoutMode = REQUIRE_PIX_PAYMENT` e os dados Pix estão configurados).
-- O formulário informa que o pagamento é obrigatório e exibe o valor em destaque.
-- Envie o formulário.
-- Esperado: redirecionamento para `/u/[slug]/reserva/[requestId]` com QR Code Pix e código copia e cola.
-- O valor exibido é o snapshot `fixedServiceAmount` — não muda mesmo se o negócio alterar o preço depois.
 
 Como verificar no banco:
 
@@ -112,7 +91,7 @@ Como verificar no banco:
 - Esperado: pedido aparece na lista.
 - Use os filtros de status (`Todos`, `Novo`, `Em análise`, `Proposta enviada`, `Fechado`) para validar a listagem filtrada.
 - Confirme que apenas o filtro selecionado tem destaque e que um `?status=` inválido volta para `Todos`.
-- A partir da dashboard, abra as visões rápidas por `?view=MONTH|OPEN|APPROVED_MONTH|PIX_RESERVATION|DEPOSIT` e confirme que o título da visão e a opção de limpar filtro aparecem.
+- A partir da dashboard, abra as visões rápidas por `?view=MONTH|OPEN|APPROVED_MONTH|DEPOSIT` e confirme que o título da visão e a opção de limpar filtro aparecem.
 - Volte à dashboard e confirme que novos pedidos, mudanças de proposta e confirmações Pix aparecem em ordem decrescente na seção `Atividade recente`, limitada a cinco itens.
 - Altere status para `REVIEWING` ou `CLOSED`.
 

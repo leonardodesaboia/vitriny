@@ -274,7 +274,7 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
-   Quando o item com preço fixo exige pagamento, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`.
+   Para itens de preço fixo, o negócio combina o pagamento diretamente com o cliente.
 9. Negócio vê o pedido em `/dashboard/pedidos`.
 10. Negócio cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.
