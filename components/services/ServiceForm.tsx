@@ -343,7 +343,7 @@ export function ServiceForm({
           <p className="text-xs text-ink-muted">
             {saleMode !== "CUSTOM"
               ? "Exibido publicamente no card do item."
-              : "Referência interna. Não é exibido ao cliente."}
+              : "Se preenchido, aparece como \"A partir de R$ X\" na vitrine. Caso contrário, exibe \"Sob consulta\"."}
           </p>
         </div>
       </div>

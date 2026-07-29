@@ -266,7 +266,7 @@ export function BillingCard({
             </p>
             <ul className="mt-3 grid gap-2 text-sm text-ink sm:grid-cols-2">
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Itens ativos ilimitados
+                <span className="text-leaf">✓</span> Itens ilimitados na vitrine
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Pedidos ilimitados por mês
@@ -275,10 +275,13 @@ export function BillingCard({
                 <span className="text-leaf">✓</span> Propostas ilimitadas por mês
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Templates ilimitados
+                <span className="text-leaf">✓</span> Templates de proposta ilimitados
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Temas visuais para sua página
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-leaf">✓</span> Ranking dos itens mais vistos
               </li>
             </ul>
           </div>
