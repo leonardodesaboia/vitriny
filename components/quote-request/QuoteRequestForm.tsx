@@ -107,18 +107,16 @@ export function QuoteRequestForm({
 
         <div className="grid gap-2">
           <label className={labelClass} htmlFor="customerPhone">
-            Telefone
+            Telefone *
           </label>
           <PhoneInput
             className={inputClass}
             id="customerPhone"
             name="customerPhone"
+            required
           />
         </div>
       </div>
-      <p className="-mt-3 text-xs text-ink-muted">
-        Informe ao menos um: e-mail ou telefone.
-      </p>
 
       {!selectedService && services.length > 0 ? (
         <div className="grid gap-2">
@@ -201,21 +199,14 @@ export function QuoteRequestForm({
 
       <div className="grid gap-2">
         <label className={labelClass} htmlFor="description">
-          {activeService?.pricingType === "CUSTOM"
-            ? "Descreva o que você precisa *"
-            : "Observações adicionais"}
+          Observações <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
         <CharCountTextarea
           className="min-h-32 w-full rounded-lg border border-paper-soft bg-white px-3 py-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20"
           id="description"
           maxLength={1200}
           name="description"
-          placeholder={
-            activeService?.pricingType === "CUSTOM"
-              ? "Conte um pouco mais sobre o que você precisa, prazo, tamanho do projeto..."
-              : "Alguma observação sobre data, local ou preferências? (opcional)"
-          }
-          required={activeService?.pricingType === "CUSTOM"}
+          placeholder="Alguma observação sobre o pedido, prazo ou preferências? (opcional)"
         />
       </div>
 

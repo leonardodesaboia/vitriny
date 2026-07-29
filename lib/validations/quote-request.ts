@@ -17,6 +17,18 @@ const optionalPhone = optionalText.pipe(
     .transform((value) => (value ? formatPhoneBR(value) : null))
 );
 
+const requiredPhone = z
+  .preprocess((value) => (value == null ? "" : String(value)), z.string())
+  .transform((value) => value.trim())
+  .pipe(
+    z
+      .string()
+      .min(1, "Informe seu telefone.")
+      .max(30, "Use no máximo 30 caracteres.")
+      .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
+      .transform((value) => formatPhoneBR(value))
+  );
+
 export const quoteRequestSchema = z.object({
   customerName: z
     .string()
@@ -30,7 +42,7 @@ export const quoteRequestSchema = z.object({
       .max(120, "Use no máximo 120 caracteres.")
       .nullable()
   ),
-  customerPhone: optionalPhone,
+  customerPhone: requiredPhone,
   serviceId: optionalText.pipe(z.string().cuid().nullable()),
   description: optionalText.pipe(
     z.string().max(1200, "Use no máximo 1200 caracteres.").nullable()
@@ -51,14 +63,6 @@ export const quoteRequestSchema = z.object({
   location: optionalText.pipe(
     z.string().max(200, "Use no máximo 200 caracteres.").nullable()
   )
-}).superRefine((data, ctx) => {
-  if (!data.customerEmail && !data.customerPhone) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "Informe pelo menos um meio de contato: e-mail ou telefone.",
-      path: ["customerEmail"]
-    });
-  }
 });
 
 export type QuoteRequestInput = z.infer<typeof quoteRequestSchema>;
@@ -78,10 +82,6 @@ export function validateQuoteRequestForService(
   // um item cadastrado na vitrine.
   if (!service) {
     return "Selecione um item da vitrine para enviar a solicitação.";
-  }
-
-  if (service.pricingType !== "FIXED" && !input.description) {
-    return "Descreva o que você precisa para enviar a solicitação.";
   }
 
   if (
