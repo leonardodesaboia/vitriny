@@ -12,7 +12,7 @@ export function DashboardViewsCard({
   canViewAnalytics,
   summary,
 }: DashboardViewsCardProps) {
-  const hasViews = summary.views7 > 0 || summary.views30 > 0;
+  const hasViews = summary.views7 > 0;
 
   return (
     <Card className="mt-8 p-5 sm:p-6">
