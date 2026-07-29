@@ -8,15 +8,6 @@ const optionalText = z
   .transform((value) => value.trim())
   .transform((value) => (value === "" ? null : value));
 
-const optionalPhone = optionalText.pipe(
-  z
-    .string()
-    .max(30, "Use no máximo 30 caracteres.")
-    .nullable()
-    .refine(isValidPhoneBR, "Informe um telefone válido com DDD.")
-    .transform((value) => (value ? formatPhoneBR(value) : null))
-);
-
 const requiredPhone = z
   .preprocess((value) => (value == null ? "" : String(value)), z.string())
   .transform((value) => value.trim())

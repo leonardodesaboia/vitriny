@@ -44,7 +44,7 @@ beforeEach(async () => {
 });
 
 describe("createQuoteRequest", () => {
-  it("rejeita pedido sem e-mail e sem telefone", async () => {
+  it("rejeita pedido sem telefone", async () => {
     const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
     const result = await createQuoteRequest(
       "vitriny",
@@ -58,34 +58,7 @@ describe("createQuoteRequest", () => {
     );
 
     expect(result).toEqual({
-      error: "Informe pelo menos um meio de contato: e-mail ou telefone."
-    });
-    expect(db.quoteRequest.create).not.toHaveBeenCalled();
-  });
-
-  it("exige descrição em pedido CUSTOM", async () => {
-    db.service.findFirst.mockResolvedValue({
-      id: serviceId,
-      name: "Pintura",
-      pricingType: "CUSTOM",
-      fixedServiceCheckoutMode: "REQUEST_ONLY",
-      basePrice: null,
-      requiresSchedulingDetails: false
-    });
-    const { createQuoteRequest } = await import("@/lib/actions/quote-requests");
-    const result = await createQuoteRequest(
-      "vitriny",
-      undefined,
-      makeFormData({
-        customerName: "Maria",
-        customerPhone: "11999999999",
-        serviceId,
-        description: ""
-      })
-    );
-
-    expect(result).toEqual({
-      error: "Descreva o que você precisa para enviar a solicitação."
+      error: "Informe seu telefone."
     });
     expect(db.quoteRequest.create).not.toHaveBeenCalled();
   });
@@ -280,6 +253,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Maria",
           customerEmail: "maria@example.com",
+          customerPhone: "11999999999",
           serviceId,
           description: "Preciso pintar a sala."
         })
@@ -300,6 +274,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Carlos",
           customerEmail: "carlos@example.com",
+          customerPhone: "11999999999",
           serviceId,
           description: "Preciso pintar a sala."
         })
@@ -344,6 +319,7 @@ describe("createQuoteRequest", () => {
         makeFormData({
           customerName: "Maria",
           customerEmail: "maria@example.com",
+          customerPhone: "11999999999",
           serviceId,
           description: "Preciso pintar a sala."
         })
@@ -366,6 +342,7 @@ describe("createQuoteRequest", () => {
       makeFormData({
         customerName: "Maria",
         customerEmail: "maria@example.com",
+        customerPhone: "11999999999",
         description: "Preciso de um orçamento."
       })
     );

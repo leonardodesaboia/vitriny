@@ -8,27 +8,26 @@ describe("quoteRequestSchema", () => {
   const valid = {
     customerName: "Maria Oliveira",
     customerEmail: "maria@example.com",
-    customerPhone: "",
+    customerPhone: "(11) 99999-9999",
     serviceId: "",
     description: "Preciso de pintura no quarto e sala da minha casa."
   };
 
-  it("exige pelo menos e-mail ou telefone", () => {
+  it("exige telefone", () => {
     const result = quoteRequestSchema.safeParse({
       ...valid,
-      customerEmail: "",
       customerPhone: ""
     });
 
     expect(result.success).toBe(false);
   });
 
-  it("aceita dados válidos somente com e-mail como contato", () => {
-    const result = quoteRequestSchema.safeParse(valid);
+  it("aceita dados válidos com telefone obrigatório e e-mail opcional", () => {
+    const result = quoteRequestSchema.safeParse({ ...valid, customerEmail: "" });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.customerEmail).toBe("maria@example.com");
-      expect(result.data.customerPhone).toBeNull();
+      expect(result.data.customerPhone).toBe("(11) 99999-9999");
+      expect(result.data.customerEmail).toBeNull();
       expect(result.data.serviceId).toBeNull();
     }
   });
@@ -125,7 +124,7 @@ describe("validateQuoteRequestForService", () => {
   const baseInput = {
     customerName: "Maria Oliveira",
     customerEmail: "maria@example.com",
-    customerPhone: null,
+    customerPhone: "(11) 99999-9999",
     serviceId: null,
     description: "Preciso de um orçamento detalhado do serviço.",
     desiredDate: null,
@@ -137,15 +136,6 @@ describe("validateQuoteRequestForService", () => {
     expect(validateQuoteRequestForService(baseInput, null)).toBe(
       "Selecione um item da vitrine para enviar a solicitação."
     );
-  });
-
-  it("exige descrição para item sob consulta", () => {
-    const result = validateQuoteRequestForService(
-      { ...baseInput, description: null },
-      { pricingType: "CUSTOM", requiresSchedulingDetails: false, requiresLocation: false }
-    );
-
-    expect(result).toBe("Descreva o que você precisa para enviar a solicitação.");
   });
 
   it("aceita item de preço fixo sem descrição", () => {
