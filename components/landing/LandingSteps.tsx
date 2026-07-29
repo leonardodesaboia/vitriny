@@ -213,7 +213,7 @@ export function LandingSteps() {
             <h3 className="mt-2 text-sm font-bold text-ink">{step.title}</h3>
             <p className="mt-1 text-xs text-ink-muted">{step.text}</p>
           </div>
-          <div className="mt-1">{step.visual}</div>
+          <div aria-hidden="true" className="mt-1">{step.visual}</div>
         </motion.div>
       ))}
     </motion.div>

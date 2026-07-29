@@ -6,6 +6,7 @@ const features = [
   {
     icon: (
       <svg
+        aria-hidden="true"
         className="h-6 w-6"
         fill="none"
         stroke="currentColor"
@@ -26,6 +27,7 @@ const features = [
   {
     icon: (
       <svg
+        aria-hidden="true"
         className="h-6 w-6"
         fill="none"
         stroke="currentColor"
@@ -46,6 +48,7 @@ const features = [
   {
     icon: (
       <svg
+        aria-hidden="true"
         className="h-6 w-6"
         fill="none"
         stroke="currentColor"

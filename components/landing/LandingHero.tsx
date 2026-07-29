@@ -28,7 +28,7 @@ export function LandingHero() {
         }}
       />
 
-      <div className="mx-auto grid max-w-6xl gap-16 px-6 pb-24 pt-20 md:grid-cols-[1fr_1.2fr] md:items-center md:pb-32 md:pt-28">
+      <div className="mx-auto grid max-w-6xl gap-8 px-6 pb-16 pt-10 md:gap-16 md:grid-cols-[1fr_1.2fr] md:items-center md:pb-32 md:pt-28">
         {/* Left */}
         <div>
 
@@ -64,7 +64,7 @@ export function LandingHero() {
           >
             Produtos, serviços, pedidos e propostas — em um só painel.
             <br />
-            Sem confusão.
+            Sem precisar de técnico. Sem complicação.
           </motion.p>
 
           <motion.div
@@ -72,19 +72,25 @@ export function LandingHero() {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="mt-8 flex flex-wrap gap-3"
+            className="mt-8 flex flex-wrap items-center gap-3"
           >
             <Link
               href="/cadastro"
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover"
+              className="inline-flex min-h-11 items-center justify-center rounded-md bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2"
             >
               Começar grátis
             </Link>
             <a
               href="#como-funciona"
-              className="inline-flex min-h-11 items-center justify-center rounded-md border border-paper-soft bg-white px-6 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf"
+              className="inline-flex min-h-11 items-center justify-center rounded-md border border-paper-soft bg-white px-6 text-sm font-semibold text-ink transition hover:border-leaf hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2"
             >
               Como funciona
+            </a>
+            <a
+              href="#precos"
+              className="text-sm font-medium text-ink-muted transition hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-leaf focus-visible:ring-offset-2 rounded"
+            >
+              Ver planos →
             </a>
           </motion.div>
 
@@ -104,6 +110,7 @@ export function LandingHero() {
         >
           {/* Floating approval badge */}
           <motion.div
+            aria-hidden="true"
             initial={{ opacity: 0, x: 20, y: -10 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             transition={{
@@ -112,10 +119,11 @@ export function LandingHero() {
               stiffness: 260,
               damping: 24,
             }}
-            className="absolute -right-4 -top-4 z-20 flex items-center gap-2.5 rounded-xl border border-mint bg-white px-4 py-2.5 shadow-card"
+            className="absolute right-2 top-2 z-20 flex items-center gap-2.5 rounded-xl border border-mint bg-white px-4 py-2.5 shadow-card sm:-right-4 sm:-top-4"
           >
             <div className="flex h-7 w-7 items-center justify-center rounded-full bg-mint">
               <svg
+                aria-hidden="true"
                 className="h-3.5 w-3.5 text-leaf"
                 fill="none"
                 stroke="currentColor"
@@ -139,6 +147,7 @@ export function LandingHero() {
 
           {/* Floating new request badge */}
           <motion.div
+            aria-hidden="true"
             initial={{ opacity: 0, x: -20, y: 10 }}
             animate={{ opacity: 1, x: 0, y: 0 }}
             transition={{
@@ -147,10 +156,10 @@ export function LandingHero() {
               stiffness: 260,
               damping: 24,
             }}
-            className="absolute -bottom-4 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-paper-soft bg-white px-4 py-2.5 shadow-card"
+            className="absolute bottom-2 left-2 z-20 flex items-center gap-2.5 rounded-xl border border-paper-soft bg-white px-4 py-2.5 shadow-card sm:-bottom-4 sm:-left-4"
           >
             <div className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber opacity-75" />
+              <span className="absolute inline-flex h-full w-full motion-safe:animate-ping rounded-full bg-amber opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-amber" />
             </div>
             <p className="text-xs font-semibold text-ink">
@@ -159,7 +168,7 @@ export function LandingHero() {
           </motion.div>
 
           {/* Browser chrome */}
-          <div className="overflow-hidden rounded-2xl border border-paper-soft bg-white shadow-card-hover">
+          <div aria-hidden="true" className="overflow-hidden rounded-2xl border border-paper-soft bg-white shadow-card-hover">
             {/* Chrome bar */}
             <div className="flex items-center gap-2 border-b border-paper-soft bg-paper px-4 py-3">
               <div className="flex gap-1.5">
