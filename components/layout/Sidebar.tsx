@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
+import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const navItems = [
   {
@@ -115,6 +117,7 @@ export function Sidebar() {
   // persiste em localStorage. Ver docs/UX_UI_AUDIT.md P1.
   const [expanded, setExpanded] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem("sidebar-expanded");
@@ -290,7 +293,47 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        <div className="mt-auto border-t border-paper-soft px-2 py-3">
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            aria-label="Sair"
+            title="Sair"
+            className="flex min-h-10 w-full items-center gap-3 rounded-md px-2 text-sm font-medium text-ink-muted transition-colors hover:bg-red-50 hover:text-red-600"
+          >
+            <span aria-hidden="true" className="flex w-5 shrink-0 items-center justify-center">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+            </span>
+            <AnimatePresence>
+              {showLabels && (
+                <motion.span
+                  key="logout-label"
+                  initial={{ opacity: 0, x: -4 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -4 }}
+                  transition={{ duration: 0.12 }}
+                  className="truncate whitespace-nowrap"
+                >
+                  Sair
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </button>
+        </div>
       </motion.aside>
+
+      <ConfirmModal
+        open={showLogoutModal}
+        title="Sair da conta"
+        description="Tem certeza que deseja sair? Você precisará fazer login novamente para acessar o painel."
+        confirmLabel="Sair"
+        cancelLabel="Cancelar"
+        variant="danger"
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={() => signOut({ callbackUrl: "/" })}
+      />
     </>
   );
 }

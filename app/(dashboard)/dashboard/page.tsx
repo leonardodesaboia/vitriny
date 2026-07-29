@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import {
   DashboardMetricGrid,
@@ -304,23 +303,22 @@ export default async function DashboardPage() {
   const shouldShowOperationalMetrics =
     hasPublishedStorefront && activeServicesCount > 0;
   const hasRevenueThisMonth = approvedRevenue?._sum.totalAmount != null;
-  const hasTopItems = canSeeItemViews && topItems.length > 0;
+  // Mostra o card quando PRO tem dados, ou quando FREE tem vitrine publicada (exibe upsell)
+  const shouldShowTopItemsCard =
+    hasPublishedStorefront && (!canSeeItemViews || topItems.length > 0);
 
   return (
     <div className="min-w-0 p-4 sm:p-6 md:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Dashboard
-          </p>
-          <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-            Olá, {session.user.name?.split(" ")[0]}
-          </h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            Veja o que precisa da sua atenção e acompanhe sua vitrine.
-          </p>
-        </div>
-        <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf" />
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+          Dashboard
+        </p>
+        <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
+          Olá, {session.user.name?.split(" ")[0]}
+        </h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          Veja o que precisa da sua atenção e acompanhe sua vitrine.
+        </p>
       </div>
 
       <DashboardPendingActions actions={pendingActions} />
@@ -349,7 +347,7 @@ export default async function DashboardPage() {
         />
       ) : null}
 
-      {hasTopItems ? (
+      {shouldShowTopItemsCard ? (
         <DashboardTopItemsCard
           canViewAnalytics={canSeeItemViews}
           topItems={topItems}
