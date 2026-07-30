@@ -9,15 +9,6 @@ import {
   pixKeyErrorMessage
 } from "@/lib/utils/pix-key";
 
-const providerThemePresetSchema = z.enum([
-  "DEFAULT",
-  "CLEAN",
-  "BEAUTY",
-  "CREATIVE",
-  "PREMIUM",
-  "BOLD"
-]);
-
 const businessTypeSchema = z.enum(["PRODUCTS", "SERVICES", "BOTH"]);
 
 const optionalText = z
@@ -121,7 +112,6 @@ export const providerProfileSchema = z
     pixCity: optionalText.pipe(
       z.string().max(80, "Use no máximo 80 caracteres.").nullable()
     ),
-    themePreset: providerThemePresetSchema.default("DEFAULT"),
     businessType: businessTypeSchema.default("SERVICES"),
     address: optionalText.pipe(
       z.string().max(160, "Use no máximo 160 caracteres.").nullable()

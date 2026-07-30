@@ -16,7 +16,6 @@ const baseInput = {
   pixKeyType: "",
   pixHolderName: "",
   pixCity: "",
-  themePreset: "DEFAULT",
   businessType: "SERVICES",
   address: "",
   instagram: "",

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   canUseServiceImages,
-  canUseThemePresets,
+  canUseBrandCustomization,
   canUseStorefrontAnalytics,
   getPlanLimits,
   getPlanLimit,
@@ -158,9 +158,9 @@ describe("getCurrentMonthRange", () => {
 describe("capacidades por plano", () => {
   it("FREE tem imagens mas não temas; PRO tem ambos", () => {
     expect(canUseServiceImages("FREE")).toBe(true);
-    expect(canUseThemePresets("FREE")).toBe(false);
+    expect(canUseBrandCustomization("FREE")).toBe(false);
     expect(canUseServiceImages("PRO")).toBe(true);
-    expect(canUseThemePresets("PRO")).toBe(true);
+    expect(canUseBrandCustomization("PRO")).toBe(true);
   });
 
   it("isPaidPlan distingue FREE de planos pagos", () => {

@@ -1,0 +1,6 @@
+ALTER TYPE "ProviderBrandColor" ADD VALUE 'SLATE';
+ALTER TYPE "ProviderBrandColor" ADD VALUE 'LAVENDER';
+ALTER TYPE "ProviderBrandColor" ADD VALUE 'TERRACOTTA';
+
+ALTER TYPE "ProviderBrandFont" ADD VALUE 'FRIENDLY';
+ALTER TYPE "ProviderBrandFont" ADD VALUE 'EDITORIAL';

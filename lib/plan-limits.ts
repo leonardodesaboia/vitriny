@@ -57,19 +57,35 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
 // checagens `plan === "PRO"` espalhadas.
 export const PLAN_FEATURES: Record<
   PlanTier,
-  { serviceImages: boolean; themePresets: boolean; storefrontAnalytics: boolean }
+  {
+    serviceImages: boolean;
+    brandCustomization: boolean;
+    storefrontAnalytics: boolean;
+  }
 > = {
   // Foto por item é FREE (o limite de 3 itens já limita a 3 fotos); o gatilho
   // PRO fica em itens/propostas ilimitados, temas visuais e analytics detalhado.
-  FREE: { serviceImages: true, themePresets: false, storefrontAnalytics: false },
-  PRO: { serviceImages: true, themePresets: true, storefrontAnalytics: true }
+  FREE: {
+    serviceImages: true,
+    brandCustomization: false,
+    storefrontAnalytics: false,
+  },
+  PRO: {
+    serviceImages: true,
+    brandCustomization: true,
+    storefrontAnalytics: true,
+  },
 };
 
 export const canUseServiceImages = (plan: PlanTier) =>
   PLAN_FEATURES[plan].serviceImages;
 
-export const canUseThemePresets = (plan: PlanTier) =>
-  PLAN_FEATURES[plan].themePresets;
+export const canUseBrandCustomization = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].brandCustomization;
+
+// Compatibilidade temporária enquanto a interface migra dos presets para
+// escolhas independentes de cor e tipografia.
+export const canUseThemePresets = canUseBrandCustomization;
 
 export const canUseStorefrontAnalytics = (plan: PlanTier) =>
   PLAN_FEATURES[plan].storefrontAnalytics;
