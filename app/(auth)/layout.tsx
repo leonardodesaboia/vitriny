@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { AuthVitrinePreview } from "@/components/auth/AuthVitrinePreview";
 import { PRIVATE_METADATA } from "@/lib/seo/metadata";
 
 export const metadata = PRIVATE_METADATA;
@@ -7,32 +8,31 @@ export const metadata = PRIVATE_METADATA;
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
     <main className="flex min-h-screen text-ink">
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-leaf p-12 lg:flex">
-        <p className="font-fraunces text-2xl font-semibold text-white">
+      <div className="grain relative hidden w-1/2 flex-col overflow-hidden bg-leaf p-12 lg:flex">
+        {/* Glow de acento para dar profundidade ao painel (grão + glow). */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-24 -top-24 h-[28rem] w-[28rem] rounded-full bg-mint/10 blur-3xl"
+        />
+
+        <p className="relative font-fraunces text-2xl font-semibold text-white">
           Vitriny
         </p>
 
-        <div
-          className="pointer-events-none absolute -bottom-32 -left-32 h-96 w-96 rounded-full opacity-20"
-          style={{
-            background: "radial-gradient(circle, #D4EBD9, transparent 70%)",
-          }}
-        />
-        <div
-          className="pointer-events-none absolute -right-20 top-20 h-64 w-64 rounded-full opacity-15"
-          style={{
-            background: "radial-gradient(circle, #F5E6D3, transparent 70%)",
-          }}
-        />
+        {/* Showcase do produto: a própria vitrine que o visitante vai criar,
+            trazendo luz/creme para o painel escuro em vez de só uma frase. */}
+        <div className="relative my-auto w-full max-w-sm">
+          <p className="font-fraunces text-[2rem] font-bold leading-[1.1] tracking-[-0.01em] text-white">
+            Apresente seus produtos e serviços e organize cada pedido.
+          </p>
+          <div className="mt-8">
+            <AuthVitrinePreview />
+          </div>
+        </div>
 
-        <blockquote>
-          <p className="font-fraunces text-2xl font-medium leading-snug text-white/90">
-            &ldquo;Apresente seus produtos e serviços e organize cada pedido.&rdquo;
-          </p>
-          <p className="mt-4 text-sm font-medium text-white/60">
-            Feito para pequenos negócios
-          </p>
-        </blockquote>
+        <p className="relative text-xs font-medium text-white/50">
+          Feito para pequenos negócios
+        </p>
       </div>
 
       <div className="flex flex-1 items-center justify-center bg-paper px-6 py-16">
