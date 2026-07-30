@@ -10,6 +10,13 @@ test.describe("Landing page", () => {
     await expect(page.locator("main")).toBeVisible();
   });
 
+  test("tem exatamente um h1 (hierarquia de headings para SEO)", async ({
+    page,
+  }) => {
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h1")).toContainText("vitrine");
+  });
+
   test("exibe seção de funcionalidades", async ({ page }) => {
     const features = page.locator("#como-funciona");
     await expect(features).toBeVisible();

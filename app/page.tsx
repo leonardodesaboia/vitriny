@@ -6,10 +6,20 @@ import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingMotion } from "@/components/landing/LandingMotion";
 import { LandingPricing } from "@/components/landing/LandingPricing";
 import { LandingSteps } from "@/components/landing/LandingSteps";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  buildOrganizationJsonLd,
+  buildWebSiteJsonLd,
+} from "@/lib/seo/structured-data";
 
 export default function Home() {
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+
   return (
     <main className="min-h-screen bg-paper text-ink">
+      <JsonLd
+        data={[buildOrganizationJsonLd(baseUrl), buildWebSiteJsonLd(baseUrl)]}
+      />
       <SiteHeader />
 
       <LandingMotion>

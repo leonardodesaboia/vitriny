@@ -12,6 +12,13 @@ import { prisma } from "@/lib/prisma";
 import { parseProfileLinks } from "@/lib/profile-links";
 import { normalizeSocialUrl, SOCIAL_LABELS } from "@/lib/social-links";
 import { getBrandAppearance } from "@/lib/brand-appearance";
+import { buildStorefrontSeo } from "@/lib/seo/storefront-metadata";
+import { hasSufficientStorefrontContent } from "@/lib/seo/storefront-content";
+import {
+  buildBreadcrumbJsonLd,
+  buildStorefrontJsonLd,
+} from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 import {
   formatPhoneBR,
   phoneToTelHref,
@@ -75,20 +82,39 @@ export async function generateMetadata({
     return { robots: { index: false, follow: false } };
   }
 
-  const title = `${profile.businessName} · Vitriny`;
-  const description =
-    profile.description ??
-    `Conheça os produtos e serviços de ${profile.businessName} e envie seu pedido.`;
+  const { title, description } = buildStorefrontSeo({
+    businessName: profile.businessName,
+    businessType: profile.businessType,
+    description: profile.description,
+    city: profile.city,
+    state: profile.state,
+  });
   const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
 
+  // Vitrine publicada porém sem conteúdo suficiente renderiza (200) mas não é
+  // indexada — evita thin content no índice. Mesma regra do sitemap.
+  const sufficient = hasSufficientStorefrontContent({
+    activeItemCount: profile.services.length,
+    description: profile.description,
+    city: profile.city,
+    state: profile.state,
+    address: profile.address,
+    phone: profile.phone,
+    email: profile.email,
+  });
+
   return {
-    title,
+    // `absolute` evita que o template do root ("%s · Vitriny") duplique a marca.
+    title: { absolute: title },
     description,
     alternates: { canonical: url },
+    robots: sufficient ? undefined : { index: false, follow: false },
     openGraph: {
       title,
       description,
       url,
+      siteName: "Vitriny",
+      locale: "pt_BR",
       type: "website",
     },
     twitter: {
@@ -221,6 +247,34 @@ export default async function PublicProviderProfilePage({
   const emailContact = contacts.find((c) => c.label === "E-mail") ?? null;
   const hasBusinessInfo = Boolean(locationDisplay || hours || allLinks.length > 0);
 
+  // Dados estruturados — refletem só o que a vitrine já mostra (telefone,
+  // endereço, redes e catálogo entram apenas quando publicados).
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+  const canonicalUrl = `${baseUrl}/u/${slug}`;
+  const storefrontJsonLd = buildStorefrontJsonLd({
+    businessName: profile.businessName,
+    businessType: profile.businessType,
+    url: canonicalUrl,
+    description: profile.description,
+    city: profile.city,
+    state: profile.state,
+    address: profile.address,
+    phone: profile.phone,
+    sameAs: socialLinks.map((link) => link.href),
+    items: profile.services.map((service) => ({
+      name: service.name,
+      itemType: service.itemType,
+    })),
+    image: canUseServiceImages(profile.plan)
+      ? (profile.services.find((service) => service.imageUrl)?.imageUrl ?? null)
+      : null,
+  });
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd({
+    businessName: profile.businessName,
+    url: canonicalUrl,
+    baseUrl,
+  });
+
   return (
     <main
       className="min-h-screen bg-paper text-ink font-jakarta"
@@ -228,28 +282,28 @@ export default async function PublicProviderProfilePage({
       data-brand-font={appearance.font}
     >
       <StorefrontViewBeacon slug={slug} />
+      <JsonLd data={[storefrontJsonLd, breadcrumbJsonLd]} />
 
-      {/* Hero */}
-      <header className="grain relative overflow-hidden bg-leaf px-5 pb-8 pt-12 sm:px-6 sm:pb-16 sm:pt-14">
-        <div className="mx-auto max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/70">
-            {catalogLabel}
-            {location ? ` · ${location}` : ""}
-          </p>
-          <h1 className="mt-3 break-words font-fraunces text-[2.6rem] font-bold leading-[1.04] text-white sm:text-6xl">
-            {profile.businessName}
-          </h1>
-          <div className="mt-5 flex items-center gap-2">
-            <OpenNowBadge businessHours={profile.businessHours} />
+      {/* Hero — masthead com hierarquia em tiers:
+          1) identidade (nome) + utilitário (info) · 2) meta (oferta · local · status)
+          · 3) descrição · 4) ação. O espaçamento cresce entre tiers para separar
+          os pensamentos; a meta fica tight sob o nome. */}
+      <header className="grain relative overflow-hidden bg-leaf px-5 pb-10 pt-14 sm:px-6 sm:pb-16 sm:pt-16">
+        <div className="relative mx-auto max-w-3xl">
+          {/* Tier 1 — identidade + utilitário no canto (equilibra a composição) */}
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="min-w-0 break-words font-fraunces text-[2.85rem] font-bold leading-[0.98] tracking-[-0.02em] text-white sm:text-[4.25rem]">
+              {profile.businessName}
+            </h1>
             {hasBusinessInfo ? (
               <a
-                aria-label="Ver informações do negócio"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/10 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+                aria-label="Ver endereço e horários"
                 href="#informacoes"
+                className="mt-1 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/40 text-white transition hover:bg-white hover:text-leaf focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf sm:h-11 sm:w-11"
               >
                 <svg
                   aria-hidden="true"
-                  className="h-4 w-4"
+                  className="h-4 w-4 sm:h-[18px] sm:w-[18px]"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -262,16 +316,33 @@ export default async function PublicProviderProfilePage({
               </a>
             ) : null}
           </div>
+
+          {/* Tier 2 — meta: oferta · local + status, agrupados e tight ao nome */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
+            <p className="min-w-0 break-words font-medium text-white/80">
+              {catalogLabel}
+              {location ? (
+                <span className="text-white/60"> · {location}</span>
+              ) : null}
+            </p>
+            {hours ? (
+              <span aria-hidden="true" className="h-3.5 w-px bg-white/25" />
+            ) : null}
+            <OpenNowBadge businessHours={profile.businessHours} />
+          </div>
+
+          {/* Tier 3 — descrição (gap maior: outro pensamento) */}
           {profile.description ? (
-            <p className="mt-5 max-w-xl break-words text-[0.95rem] leading-7 text-white/85">
+            <p className="mt-6 max-w-xl break-words text-[0.95rem] leading-7 text-white/85">
               {profile.description}
             </p>
           ) : null}
 
+          {/* Tier 4 — ação */}
           {!whatsappHref && contacts.length > 0 ? (
             <a
               href="#contato"
-              className="mt-6 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
+              className="mt-7 inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf"
             >
               Ver contato ↓
             </a>
@@ -283,7 +354,7 @@ export default async function PublicProviderProfilePage({
         <div className="mx-auto max-w-3xl pb-20 pt-8 sm:pt-8">
           {/* Produtos — primeiro conteúdo: é o que o cliente veio ver */}
           <section id="itens" className="scroll-mt-6">
-            <h2 className="font-fraunces text-[1.7rem] font-bold text-ink sm:text-3xl">
+            <h2 className="font-fraunces text-3xl font-bold tracking-[-0.01em] text-ink sm:text-4xl">
               O que ofereço
             </h2>
             <PublicServicesGrid
@@ -301,7 +372,7 @@ export default async function PublicProviderProfilePage({
           {/* Falar direto com o negócio — segunda ação mais importante */}
           {contacts.length > 0 ? (
             <section id="contato" className="mt-14 scroll-mt-6">
-              <h2 className="font-fraunces text-2xl font-bold text-ink">
+              <h2 className="font-fraunces text-xl font-bold text-ink sm:text-2xl">
                 Fale com o negócio
               </h2>
               <div
