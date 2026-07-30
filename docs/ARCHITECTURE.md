@@ -119,6 +119,23 @@ Elas validam sessão quando necessário e aplicam regras de ownership.
 - `app/api/stripe/webhook/route.ts` — webhook Stripe com validação de assinatura.
 - `app/api/proposals/[id]/pdf/route.ts` — download autenticado de proposta aprovada ou recusada em PDF, com validação de ownership.
 
+## SEO e indexação
+
+Helpers puros e testáveis em `lib/seo/`; `robots.ts` e `sitemap.ts` dinâmicos.
+
+Regras de indexação:
+
+- **Indexáveis:** landing (`/`), institucionais (`/termos`, `/privacidade`) e vitrines publicadas `/u/[slug]` **com conteúdo suficiente**.
+- **`noindex, nofollow`** via metadata (helper `lib/seo/metadata.ts`): `/dashboard/**`, `(auth)/**`, `/u/[slug]/orcamento`, `/proposta/[publicToken]` e a página 404.
+- `robots.txt` só faz `Disallow: /api` (sem HTML). **Não** se mistura `Disallow` com `noindex` na mesma rota — o Google precisa rastrear a página para ler o `noindex`.
+- Vitrine **não publicada/inexistente** → `notFound()` (404 real) + `noindex`.
+- **Conteúdo suficiente** (`lib/seo/storefront-content.ts`): itens ativos **ou** descrição **ou** (localização **e** contato). Vitrine publicada sem isso renderiza (200) mas fica `noindex` e fora do sitemap.
+
+Metadata e dados estruturados:
+
+- Vitrine: título/descrição locais ("[negócio] — [tipo] em [cidade, UF]") em `lib/seo/storefront-metadata.ts`; canonical próprio.
+- JSON-LD (`lib/seo/structured-data.ts`, injetado por `components/seo/JsonLd.tsx`): o `@type` **varia por `businessType`** (serviços → `ProfessionalService`; produtos/ambos → `LocalBusiness` + `OfferCatalog`) + `BreadcrumbList`; landing usa `Organization` + `WebSite`. **Só reflete o que a vitrine mostra** — telefone, endereço, redes e catálogo entram apenas quando publicados. `serializeJsonLd` escapa `<` (XSS).
+
 ## Auth.js / NextAuth
 
 Configuração central:
@@ -228,6 +245,7 @@ Limites `FREE`:
 
 ```bash
 npm test                   # unit + actions, sem banco real
+npm run test:coverage      # unit + actions com relatório de cobertura (gera coverage/, ignorado no git)
 npm run test:integration   # integração com banco real
 npm run test:e2e           # E2E Playwright (exige dev server rodando)
 npm run test:e2e:ui        # Playwright com UI interativa
