@@ -1,17 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentProps } from "react";
 
-type PasswordInputProps = {
-  id: string;
-  name: string;
-  className?: string;
-  placeholder?: string;
-  required?: boolean;
-  minLength?: number;
-  maxLength?: number;
-  autoComplete?: string;
-};
+// Aceita as props padrão de <input> (onChange, value/defaultValue, aria-*, etc.)
+// além do `type`, que é controlado internamente pelo toggle mostrar/ocultar.
+type PasswordInputProps = Omit<ComponentProps<"input">, "type">;
 
 // Campo de senha com alternância "mostrar/ocultar". Ver docs/UX_UI_AUDIT.md P11.
 export function PasswordInput({ className = "", ...props }: PasswordInputProps) {

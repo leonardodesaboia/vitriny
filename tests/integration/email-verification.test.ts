@@ -36,6 +36,7 @@ describe("verificação de e-mail (integração)", () => {
 
     await expect(
       registerUser(
+        {},
         makeFormData({
           name: "Ana Silva",
           email: "ana@example.com",

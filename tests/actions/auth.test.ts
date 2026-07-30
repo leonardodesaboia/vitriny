@@ -63,7 +63,7 @@ describe("registerUser", () => {
     const { sendEmailVerificationEmail } = await import("@/lib/email");
     const { registerUser } = await import("@/lib/actions/auth");
 
-    await expect(registerUser(validRegistration())).rejects.toThrow(
+    await expect(registerUser({}, validRegistration())).rejects.toThrow(
       "/verifique-seu-email?sent=1",
     );
 
@@ -101,10 +101,56 @@ describe("registerUser", () => {
 
     const { registerUser } = await import("@/lib/actions/auth");
 
-    await expect(registerUser(validRegistration())).rejects.toThrow(
+    await expect(registerUser({}, validRegistration())).rejects.toThrow(
       "/verifique-seu-email?error=delivery",
     );
     expect(db.emailVerificationToken.create).toHaveBeenCalledOnce();
+  });
+
+  it("retorna erros por campo e preserva nome/e-mail (nunca a senha) quando inválido", async () => {
+    const { registerUser } = await import("@/lib/actions/auth");
+
+    const state = await registerUser(
+      {},
+      makeFormData({
+        name: "A",
+        email: "invalido",
+        password: "curta",
+        confirmPassword: "outra",
+      }),
+    );
+
+    expect(state.fieldErrors).toBeDefined();
+    expect(state.values).toEqual({ name: "A", email: "invalido" });
+    expect(state.values).not.toHaveProperty("password");
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+
+  it("retorna estado (não redireciona) quando o e-mail já existe", async () => {
+    db.user.findUnique.mockResolvedValue({ password: "hash" });
+    const { registerUser } = await import("@/lib/actions/auth");
+
+    const state = await registerUser({}, validRegistration());
+
+    expect(state.error).toBe("email-exists");
+    expect(state.values?.email).toBe("ana@example.com");
+    expect(db.user.create).not.toHaveBeenCalled();
+  });
+});
+
+describe("loginWithCredentials", () => {
+  it("retorna erro por campo e preserva o e-mail quando inválido", async () => {
+    const { signIn } = await import("@/auth");
+    const { loginWithCredentials } = await import("@/lib/actions/auth");
+
+    const state = await loginWithCredentials(
+      {},
+      makeFormData({ email: "invalido", password: "" }),
+    );
+
+    expect(state.fieldErrors).toBeDefined();
+    expect(state.values).toEqual({ email: "invalido" });
+    expect(signIn).not.toHaveBeenCalled();
   });
 });
 
@@ -232,7 +278,7 @@ describe("requestPasswordReset", () => {
     const { requestPasswordReset } = await import("@/lib/actions/auth");
 
     await expect(
-      requestPasswordReset(makeFormData({ email: "ana@example.com" })),
+      requestPasswordReset({}, makeFormData({ email: "ana@example.com" })),
     ).rejects.toThrow("/esqueci-senha?sent=1");
     expect(db.passwordResetToken.create).not.toHaveBeenCalled();
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
@@ -248,7 +294,7 @@ describe("requestPasswordReset", () => {
     const { requestPasswordReset } = await import("@/lib/actions/auth");
 
     await expect(
-      requestPasswordReset(makeFormData({ email: "ana@example.com" })),
+      requestPasswordReset({}, makeFormData({ email: "ana@example.com" })),
     ).rejects.toThrow("/esqueci-senha?sent=1");
 
     const createArg = db.passwordResetToken.create.mock.calls[0][0];
@@ -275,6 +321,7 @@ describe("resetPassword", () => {
 
     await expect(
       resetPassword(
+        {},
         makeFormData({
           token: "tok-puro",
           password: "SenhaForte1",

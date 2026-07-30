@@ -1,49 +1,57 @@
+"use client";
+
+import { useActionState } from "react";
+
 import { requestPasswordReset } from "@/lib/actions/auth";
+import {
+  authLabelClass,
+  fieldClass,
+  FieldError,
+  FormAlert,
+  SubmitButton,
+} from "@/components/auth/auth-form-ui";
 
 type ForgotPasswordFormProps = {
   errorCode?: string;
 };
 
-const inputClass =
-  "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
-
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
-
-const errorMessages: Record<string, string> = {
-  invalid: "Informe um e-mail válido."
-};
-
 export function ForgotPasswordForm({ errorCode }: ForgotPasswordFormProps) {
+  const [state, formAction, pending] = useActionState(
+    requestPasswordReset,
+    errorCode ? { error: errorCode } : {},
+  );
+  const emailError = state.fieldErrors?.email;
+
   return (
-    <form action={requestPasswordReset} className="mt-6 grid gap-4">
-      {errorCode ? (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-700">
-            {errorMessages[errorCode] ?? "Não foi possível processar o pedido."}
-          </p>
-        </div>
+    <form action={formAction} className="mt-6 grid gap-4" noValidate>
+      {state.error ? (
+        <FormAlert>Não foi possível processar o pedido.</FormAlert>
       ) : null}
 
       <div className="grid gap-2">
-        <label className={labelClass} htmlFor="email">
+        <label className={authLabelClass} htmlFor="email">
           E-mail
         </label>
         <input
-          className={inputClass}
+          className={fieldClass(Boolean(emailError))}
           id="email"
           name="email"
+          type="email"
+          autoComplete="email"
           placeholder="seu@email.com"
           required
-          type="email"
+          defaultValue={state.values?.email}
+          aria-invalid={emailError ? true : undefined}
+          aria-describedby={emailError ? "email-error" : undefined}
         />
+        {emailError ? (
+          <FieldError id="email-error">{emailError}</FieldError>
+        ) : null}
       </div>
 
-      <button
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-        type="submit"
-      >
+      <SubmitButton pending={pending} pendingLabel="Enviando...">
         Enviar link de redefinição
-      </button>
+      </SubmitButton>
     </form>
   );
 }
