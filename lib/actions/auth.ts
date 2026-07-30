@@ -32,6 +32,35 @@ import {
 
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
+// Estado retornado pelos forms de auth via `useActionState`. Em vez de
+// `redirect(?error=)` — que recarrega a página e apaga o que foi digitado —, o
+// erro volta como estado: mensagem por campo + valores para repovoar os inputs.
+// A senha NUNCA é ecoada de volta.
+export type AuthFormState = {
+  error?: string;
+  fieldErrors?: Partial<Record<string, string>>;
+  values?: { name?: string; email?: string };
+};
+
+function toFieldErrors(
+  error: import("zod").ZodError,
+): Partial<Record<string, string>> {
+  const flattened = error.flatten().fieldErrors as Record<
+    string,
+    string[] | undefined
+  >;
+  const result: Record<string, string> = {};
+  for (const [field, messages] of Object.entries(flattened)) {
+    const first = messages?.[0];
+    if (first) result[field] = first;
+  }
+  return result;
+}
+
+function asString(value: FormDataEntryValue | null): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
 async function rememberPendingVerificationEmail(email: string) {
   const cookieStore = await cookies();
   cookieStore.set(PENDING_VERIFICATION_EMAIL_COOKIE, email, {
@@ -43,38 +72,24 @@ async function rememberPendingVerificationEmail(email: string) {
   });
 }
 
-async function signInWithCredentials(
-  email: string,
-  password: string,
-  errorBasePath: string
-) {
-  try {
-    await signIn("credentials", {
-      email,
-      password,
-      redirectTo: "/dashboard"
-    });
-  } catch (error) {
-    if (error instanceof CredentialsSignin) {
-      redirect(`${errorBasePath}?error=${error.code}`);
-    }
-    if (error instanceof AuthError) {
-      redirect(`${errorBasePath}?error=auth`);
-    }
-    throw error;
-  }
-}
 
-export async function registerUser(formData: FormData) {
+export async function registerUser(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const name = asString(formData.get("name"));
+  const email = asString(formData.get("email"));
+  const values = { name, email };
+
   const parsed = registerSchema.safeParse({
-    name: formData.get("name"),
-    email: formData.get("email"),
+    name,
+    email,
     password: formData.get("password"),
     confirmPassword: formData.get("confirmPassword")
   });
 
   if (!parsed.success) {
-    redirect("/cadastro?error=invalid");
+    return { fieldErrors: toFieldErrors(parsed.error), values };
   }
 
   const existingUser = await prisma.user.findUnique({
@@ -83,7 +98,7 @@ export async function registerUser(formData: FormData) {
   });
 
   if (existingUser) {
-    redirect("/cadastro?error=email-exists");
+    return { error: "email-exists", values };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
@@ -117,7 +132,7 @@ export async function registerUser(formData: FormData) {
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      redirect("/cadastro?error=email-exists");
+      return { error: "email-exists", values };
     }
     throw error;
   }
@@ -141,26 +156,49 @@ export async function registerUser(formData: FormData) {
   redirect("/verifique-seu-email?sent=1");
 }
 
-export async function loginWithCredentials(formData: FormData) {
+export async function loginWithCredentials(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = asString(formData.get("email"));
   const parsed = loginSchema.safeParse({
-    email: formData.get("email"),
+    email,
     password: formData.get("password")
   });
 
   if (!parsed.success) {
-    redirect("/login?error=invalid-credentials");
+    return { fieldErrors: toFieldErrors(parsed.error), values: { email } };
   }
 
-  await signInWithCredentials(parsed.data.email, parsed.data.password, "/login");
+  try {
+    await signIn("credentials", {
+      email: parsed.data.email,
+      password: parsed.data.password,
+      redirectTo: "/dashboard"
+    });
+  } catch (error) {
+    // Sucesso: signIn lança NEXT_REDIRECT, que cai no `throw` e redireciona.
+    if (error instanceof CredentialsSignin) {
+      return { error: error.code, values: { email } };
+    }
+    if (error instanceof AuthError) {
+      return { error: "auth", values: { email } };
+    }
+    throw error;
+  }
+
+  return {};
 }
 
-export async function requestPasswordReset(formData: FormData) {
-  const parsed = forgotPasswordSchema.safeParse({
-    email: formData.get("email")
-  });
+export async function requestPasswordReset(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
+  const email = asString(formData.get("email"));
+  const parsed = forgotPasswordSchema.safeParse({ email });
 
   if (!parsed.success) {
-    redirect("/esqueci-senha?error=invalid");
+    return { fieldErrors: toFieldErrors(parsed.error), values: { email } };
   }
 
   const user = await prisma.user.findUnique({
@@ -299,7 +337,10 @@ export async function resendEmailVerification(formData: FormData) {
   redirect("/verifique-seu-email?sent=1");
 }
 
-export async function resetPassword(formData: FormData) {
+export async function resetPassword(
+  _prevState: AuthFormState,
+  formData: FormData,
+): Promise<AuthFormState> {
   const parsed = resetPasswordSchema.safeParse({
     token: formData.get("token"),
     password: formData.get("password"),
@@ -307,8 +348,7 @@ export async function resetPassword(formData: FormData) {
   });
 
   if (!parsed.success) {
-    const token = encodeURIComponent(String(formData.get("token") ?? ""));
-    redirect(`/redefinir-senha/${token}?error=invalid`);
+    return { fieldErrors: toFieldErrors(parsed.error) };
   }
 
   const resetToken = await prisma.passwordResetToken.findUnique({

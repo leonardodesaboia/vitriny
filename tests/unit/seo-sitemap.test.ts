@@ -25,6 +25,13 @@ describe("sitemap", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://vitriny.example";
   });
 
+  it("é dinâmico para não consultar o banco durante o build", async () => {
+    const route = (await import("@/app/sitemap")) as Record<string, unknown>;
+
+    expect(route.dynamic).toBe("force-dynamic");
+    expect(route.revalidate).toBeUndefined();
+  });
+
   it("inclui landing + institucionais e só vitrines com conteúdo suficiente", async () => {
     const { prisma } = await import("@/lib/prisma");
     vi.mocked(prisma.providerProfile.findMany).mockResolvedValue([

@@ -1,36 +1,47 @@
+"use client";
+
 import Link from "next/link";
+import { useActionState } from "react";
 
 import { loginWithCredentials } from "@/lib/actions/auth";
 import { PasswordInput } from "@/components/ui/PasswordInput";
+import {
+  authLabelClass,
+  fieldClass,
+  FieldError,
+  FormAlert,
+  SubmitButton,
+} from "@/components/auth/auth-form-ui";
 
 type LoginFormProps = {
   errorCode?: string;
 };
 
-const inputClass =
-  "min-h-11 w-full rounded-lg border border-paper-soft bg-white px-3 text-sm text-ink outline-none ring-offset-paper transition focus:border-leaf focus:ring-2 focus:ring-leaf/20";
-
-const labelClass = "text-xs font-semibold uppercase tracking-widest text-ink-muted";
-
 const errorMessages: Record<string, string> = {
   "invalid-credentials": "E-mail ou senha incorretos.",
   "email-not-verified": "Confirme seu e-mail antes de entrar.",
-  OAuthAccountNotLinked: "Este e-mail já está cadastrado com outro método de login.",
-  auth: "Não foi possível entrar. Tente novamente."
+  OAuthAccountNotLinked:
+    "Este e-mail já está cadastrado com outro método de login.",
+  auth: "Não foi possível entrar. Tente novamente.",
 };
 
 export function LoginForm({ errorCode }: LoginFormProps) {
+  const [state, formAction, pending] = useActionState(
+    loginWithCredentials,
+    errorCode ? { error: errorCode } : {},
+  );
+  const emailError = state.fieldErrors?.email;
+  const passwordError = state.fieldErrors?.password;
+
   return (
-    <form action={loginWithCredentials} className="mt-6 grid gap-4">
-      {errorCode ? (
-        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <p className="text-sm font-semibold text-red-700">
-            {errorMessages[errorCode] ?? "Não foi possível entrar. Tente novamente."}
-          </p>
-        </div>
+    <form action={formAction} className="mt-6 grid gap-4" noValidate>
+      {state.error ? (
+        <FormAlert>
+          {errorMessages[state.error] ?? "Não foi possível entrar. Tente novamente."}
+        </FormAlert>
       ) : null}
 
-      {errorCode === "email-not-verified" ? (
+      {state.error === "email-not-verified" ? (
         <Link
           className="text-sm font-semibold text-leaf hover:text-leaf-hover"
           href="/verifique-seu-email"
@@ -40,39 +51,48 @@ export function LoginForm({ errorCode }: LoginFormProps) {
       ) : null}
 
       <div className="grid gap-2">
-        <label className={labelClass} htmlFor="email">
+        <label className={authLabelClass} htmlFor="email">
           E-mail
         </label>
         <input
-          className={inputClass}
+          className={fieldClass(Boolean(emailError))}
           id="email"
           name="email"
+          type="email"
+          autoComplete="email"
           placeholder="seu@email.com"
           required
-          type="email"
+          defaultValue={state.values?.email}
+          aria-invalid={emailError ? true : undefined}
+          aria-describedby={emailError ? "email-error" : undefined}
         />
+        {emailError ? (
+          <FieldError id="email-error">{emailError}</FieldError>
+        ) : null}
       </div>
 
       <div className="grid gap-2">
-        <label className={labelClass} htmlFor="password">
+        <label className={authLabelClass} htmlFor="password">
           Senha
         </label>
         <PasswordInput
-          className={inputClass}
+          className={fieldClass(Boolean(passwordError))}
           id="password"
           name="password"
           placeholder="••••••••"
           required
           autoComplete="current-password"
+          aria-invalid={passwordError ? true : undefined}
+          aria-describedby={passwordError ? "password-error" : undefined}
         />
+        {passwordError ? (
+          <FieldError id="password-error">{passwordError}</FieldError>
+        ) : null}
       </div>
 
-      <button
-        className="mt-2 inline-flex min-h-11 w-full items-center justify-center rounded-md bg-leaf px-5 text-sm font-semibold text-white transition hover:bg-leaf-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber focus-visible:ring-offset-2"
-        type="submit"
-      >
+      <SubmitButton pending={pending} pendingLabel="Entrando...">
         Entrar
-      </button>
+      </SubmitButton>
     </form>
   );
 }
