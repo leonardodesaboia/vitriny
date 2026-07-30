@@ -3,10 +3,9 @@ import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
 import { hasSufficientStorefrontContent } from "@/lib/seo/storefront-content";
 
-// Crawlers consultam o sitemap com frequência; 1h de cache (ISR) evita uma
-// query por hit sem atrasar de forma relevante a entrada de vitrines novas.
-// Sem `force-dynamic`: ele anularia o `revalidate` e faria uma query por hit.
-export const revalidate = 3600;
+// O sitemap consulta o Prisma e precisa ser gerado em runtime. Isso impede que
+// `next build` dependa de uma conexão disponível com o banco de produção.
+export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = (
