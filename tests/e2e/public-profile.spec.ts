@@ -26,6 +26,18 @@ test.describe("Vitrine pública do negócio", () => {
     await expect(link.first()).toBeVisible();
   });
 
+  test("oferece um link discreto para criar uma vitrine no Vitriny", async ({
+    page,
+  }) => {
+    const creditLink = page.getByRole("link", {
+      name: "Vitriny",
+      exact: true,
+    });
+
+    await expect(creditLink).toBeVisible();
+    await expect(creditLink).toHaveAttribute("href", "/");
+  });
+
   test("retorna 404 para slug inexistente", async ({ page }) => {
     const response = await page.goto("/u/prestador-que-nao-existe-xyz123");
     expect(response?.status()).toBe(404);

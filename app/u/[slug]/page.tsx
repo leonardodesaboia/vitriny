@@ -3,8 +3,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { OpenNowBadge } from "@/components/public/OpenNowBadge";
-import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
+import { PoweredByVitriny } from "@/components/public/PoweredByVitriny";
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
+import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
 import { canUseServiceImages } from "@/lib/plan-limits";
 import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
@@ -400,10 +401,7 @@ export default async function PublicProviderProfilePage({
             ) : null}
           </div>
 
-          <p className="mt-14 border-t border-paper-soft pt-6 text-center text-xs text-ink-muted/70">
-            Powered by{" "}
-            <span className="font-semibold text-ink-muted">Vitriny</span>
-          </p>
+          <PoweredByVitriny />
         </div>
       </div>
 
