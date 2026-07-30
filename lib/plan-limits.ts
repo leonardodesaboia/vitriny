@@ -31,7 +31,12 @@ export const PLAN_LIMIT_LABELS: Record<LimitedResource, string> = {
 export const PLAN_LIMITS: Record<PlanTier, PlanLimits> = {
   FREE: {
     activeServices: 3,
-    monthlyQuoteRequests: 10,
+    // Teto ANTI-ABUSO, não gatilho de upgrade: o cliente final é quem bate esse
+    // limite, então mantê-lo baixo queima o negócio na frente do cliente dele. O
+    // flood malicioso já é barrado pelo rate limiting do formulário público
+    // (proxy.ts). O gatilho de PRO fica no que o dono sente (itens, propostas,
+    // temas). Custo real por pedido é ~e-mail (Resend), não infra de banco.
+    monthlyQuoteRequests: 50,
     monthlyProposals: 5,
     proposalTemplates: 1
   },
@@ -52,19 +57,31 @@ export const PLAN_NAMES: Record<PlanTier, string> = {
 // checagens `plan === "PRO"` espalhadas.
 export const PLAN_FEATURES: Record<
   PlanTier,
-  { serviceImages: boolean; themePresets: boolean; storefrontAnalytics: boolean }
+  {
+    serviceImages: boolean;
+    brandCustomization: boolean;
+    storefrontAnalytics: boolean;
+  }
 > = {
   // Foto por item é FREE (o limite de 3 itens já limita a 3 fotos); o gatilho
   // PRO fica em itens/propostas ilimitados, temas visuais e analytics detalhado.
-  FREE: { serviceImages: true, themePresets: false, storefrontAnalytics: false },
-  PRO: { serviceImages: true, themePresets: true, storefrontAnalytics: true }
+  FREE: {
+    serviceImages: true,
+    brandCustomization: false,
+    storefrontAnalytics: false,
+  },
+  PRO: {
+    serviceImages: true,
+    brandCustomization: true,
+    storefrontAnalytics: true,
+  },
 };
 
 export const canUseServiceImages = (plan: PlanTier) =>
   PLAN_FEATURES[plan].serviceImages;
 
-export const canUseThemePresets = (plan: PlanTier) =>
-  PLAN_FEATURES[plan].themePresets;
+export const canUseBrandCustomization = (plan: PlanTier) =>
+  PLAN_FEATURES[plan].brandCustomization;
 
 export const canUseStorefrontAnalytics = (plan: PlanTier) =>
   PLAN_FEATURES[plan].storefrontAnalytics;
@@ -88,10 +105,13 @@ export const LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
     "Limite de templates de proposta atingido para o plano atual."
 };
 
+// Mensagens vistas pelo CLIENTE FINAL na vitrine pública. Nunca expor o plano do
+// negócio nem sugerir uma falha dele — o cliente não é quem assina. Direcionar
+// para contato direto sem culpar o negócio.
 export const PUBLIC_LIMIT_ERROR_MESSAGES: Record<PlanLimitCode, string> = {
   ...LIMIT_ERROR_MESSAGES,
   "limit-monthly-quote-requests":
-    "Este negócio atingiu o limite mensal de pedidos no plano atual. Tente entrar em contato pelos canais disponíveis."
+    "Não foi possível registrar seu pedido pelo site agora. Entre em contato com o negócio pelos canais disponíveis (WhatsApp, telefone ou e-mail)."
 };
 
 export function getPlanLimits(plan: PlanTier): PlanLimits {

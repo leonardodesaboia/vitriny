@@ -12,8 +12,11 @@ import {
   PUBLIC_LIMIT_ERROR_MESSAGES
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
-import { getPublicThemePreset } from "@/lib/theme-presets";
+import { getBrandAppearance } from "@/lib/brand-appearance";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
+import { privateMetadata } from "@/lib/seo/metadata";
+
+export const metadata = privateMetadata("Pedir orçamento");
 
 type PublicQuoteRequestPageProps = {
   params: Promise<{
@@ -60,7 +63,8 @@ export default async function PublicQuoteRequestPage({
       businessName: true,
       isPublished: true,
       plan: true,
-      themePreset: true,
+      brandColor: true,
+      brandFont: true,
       phone: true,
       email: true,
       pixKey: true,
@@ -97,42 +101,26 @@ export default async function PublicQuoteRequestPage({
     ? (profile.services.find((s) => s.id === selectedServiceId) ?? null)
     : null;
 
-  const pixConfigured = !!(
-    profile.pixKey &&
-    profile.pixHolderName &&
-    profile.pixCity
+  const selectableServices = profile.services;
+  const appearance = getBrandAppearance(
+    profile.plan,
+    profile.brandColor,
+    profile.brandFont,
   );
 
-  const selectedServiceNeedsPix =
-    selectedService?.pricingType === "FIXED" &&
-    selectedService?.fixedServiceCheckoutMode === "REQUIRE_PIX_PAYMENT";
-  const requiresPixPayment = selectedServiceNeedsPix && pixConfigured;
-  const pixUnavailableForSelected = selectedServiceNeedsPix && !pixConfigured;
-
-  // Itens com Pix obrigatório mas sem Pix configurado não podem ser enviados
-  // (a action rejeita com payment-unavailable), então saem do dropdown.
-  const selectableServices = profile.services.filter(
-    (s) =>
-      pixConfigured ||
-      s.pricingType !== "FIXED" ||
-      s.fixedServiceCheckoutMode !== "REQUIRE_PIX_PAYMENT",
-  );
-  const theme = getPublicThemePreset(profile.plan, profile.themePreset);
-
-  const pageLabel = requiresPixPayment
-    ? "Pagamento com Pix"
-    : selectedService?.pricingType === "FIXED"
+  const pageLabel =
+    selectedService?.pricingType === "FIXED"
       ? "Solicitação de item"
       : "Pedido de orçamento";
 
-  const pageDescription = requiresPixPayment
-    ? "Preencha seus dados. O pagamento via Pix é obrigatório para concluir a solicitação."
-    : "Envie as informações iniciais para que o negócio avalie seu pedido.";
+  const pageDescription =
+    "Envie as informações iniciais para que o negócio avalie seu pedido.";
 
   return (
     <main
       className="min-h-screen bg-paper px-6 py-12 text-ink font-jakarta"
-      data-brand-theme={theme.id}
+      data-brand-color={appearance.color}
+      data-brand-font={appearance.font}
     >
       {selectedService ? (
         <StorefrontViewBeacon slug={slug} serviceId={selectedService.id} />
@@ -249,23 +237,6 @@ export default async function PublicQuoteRequestPage({
                   Voltar à vitrine
                 </Link>
               </div>
-            ) : pixUnavailableForSelected ? (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-6">
-                <p className="font-fraunces text-xl font-bold text-ink">
-                  Pagamento temporariamente indisponível
-                </p>
-                <p className="mt-2 text-sm leading-6 text-ink-muted">
-                  Este item exige pagamento via Pix, mas o negócio ainda não
-                  configurou o recebimento. Entre em contato ou tente novamente
-                  mais tarde.
-                </p>
-                <Link
-                  className="mt-4 inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf"
-                  href={`/u/${slug}`}
-                >
-                  Voltar à vitrine
-                </Link>
-              </div>
             ) : (
               <>
                 {query.error ? (
@@ -277,7 +248,6 @@ export default async function PublicQuoteRequestPage({
                   </div>
                 ) : null}
                 <QuoteRequestForm
-                  requiresPixPayment={requiresPixPayment}
                   selectedServiceId={selectedServiceId}
                   selectedService={
                     selectedService

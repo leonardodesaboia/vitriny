@@ -23,7 +23,21 @@ playwright-report/
 test-results/
 tests/e2e/.auth/user.json
 
-# Graphify local/runtime files
-graphify-out/.graphify_*
+# Graphify local/runtime files (os outputs publicados — graph.json, graph.html,
+# GRAPH_REPORT.md e manifest.json — são não-ocultos e seguem versionados;
+# os runtime são dotfiles/dirs)
+graphify-out/.*
 graphify-out/cache/
 graphify-out/cost.json
+graphify-out/memory/
+graphify-out/reflections/
+graphify-out/20*/
+
+# Cobertura de testes (gerada por `npm run test:coverage`)
+/coverage
+
+# Ferramentas de IA / assistentes (config e artefatos locais, não versionados)
+.agents/
+.claude/
+.codex/
+.impeccable/

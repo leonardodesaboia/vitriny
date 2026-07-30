@@ -30,20 +30,20 @@ export function LandingCta() {
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
           <Link
             href="/cadastro"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-white px-8 text-sm font-bold text-leaf transition hover:bg-white/90 sm:w-auto"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md bg-white px-8 text-sm font-bold text-leaf transition hover:bg-white/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf sm:w-auto"
           >
             Criar conta grátis
           </Link>
           <a
             href="#precos"
-            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-white/30 px-8 text-sm font-semibold text-white transition hover:bg-white/10 sm:w-auto"
+            className="inline-flex min-h-12 w-full items-center justify-center rounded-md border border-white/30 px-8 text-sm font-semibold text-white transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-leaf sm:w-auto"
           >
             Ver planos
           </a>
         </div>
 
         <p className="mt-5 text-xs text-white/40">
-          Sem cartão de crédito · Cancele quando quiser
+          Cancele quando quiser
         </p>
       </motion.div>
     </section>

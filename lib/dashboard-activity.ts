@@ -2,7 +2,7 @@ import { buildRecentDashboardActivity } from "@/lib/dashboard";
 import { prisma } from "@/lib/prisma";
 
 export async function getRecentDashboardActivity(providerId: string) {
-  const [quoteRequests, proposalStatusEvents, paidReservations, paidDeposits] =
+  const [quoteRequests, proposalStatusEvents, paidDeposits] =
     await prisma.$transaction([
       prisma.quoteRequest.findMany({
         orderBy: { createdAt: "desc" },
@@ -28,19 +28,6 @@ export async function getRecentDashboardActivity(providerId: string) {
           toStatus: { in: ["SENT", "APPROVED", "REJECTED"] }
         }
       }),
-      prisma.quoteRequest.findMany({
-        orderBy: { pixReservationPaidAt: "desc" },
-        select: {
-          customerName: true,
-          id: true,
-          pixReservationPaidAt: true
-        },
-        take: 5,
-        where: {
-          pixReservationPaidAt: { not: null },
-          providerId
-        }
-      }),
       prisma.proposal.findMany({
         orderBy: { depositPaidAt: "desc" },
         select: {
@@ -64,17 +51,6 @@ export async function getRecentDashboardActivity(providerId: string) {
               customerName: proposal.quoteRequest.customerName,
               id: proposal.id,
               occurredAt: proposal.depositPaidAt
-            }
-          ]
-        : []
-    ),
-    paidReservations: paidReservations.flatMap((request) =>
-      request.pixReservationPaidAt
-        ? [
-            {
-              customerName: request.customerName,
-              id: request.id,
-              occurredAt: request.pixReservationPaidAt
             }
           ]
         : []

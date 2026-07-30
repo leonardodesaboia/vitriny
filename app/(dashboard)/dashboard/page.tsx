@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { LogoutButton } from "@/components/auth/LogoutButton";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import {
   DashboardMetricGrid,
@@ -26,7 +25,6 @@ import {
 } from "@/lib/dashboard";
 import { toDayBucket } from "@/lib/storefront-views";
 import { canUseStorefrontAnalytics, getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
-import { pixPaymentExpiryCutoff } from "@/lib/utils/date";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -36,8 +34,6 @@ export default async function DashboardPage() {
   }
 
   const monthRange = getCurrentMonthRange();
-  // Reservas Pix além deste corte já expiraram e saem das pendências.
-  const pixExpiryCutoff = pixPaymentExpiryCutoff();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     select: {
@@ -69,12 +65,9 @@ export default async function DashboardPage() {
     waitingProposals,
     approvedProposalsThisMonth,
     monthlyProposals,
-    pendingPixReservations,
-    clientInformedPixReservations,
     pendingProposalDeposits,
     fixedRequestCount,
-    approvedRevenue,
-    pixRevenue
+    approvedRevenue
   ] = profile
     ? await prisma.$transaction([
         prisma.quoteRequest.count({
@@ -108,25 +101,6 @@ export default async function DashboardPage() {
             providerId: profile.id
           }
         }),
-        prisma.quoteRequest.count({
-          where: {
-            pixReservationPaidAt: null,
-            providerId: profile.id,
-            // Consistente com a view PIX_RESERVATION: expiradas só contam
-            // quando o cliente informou o pagamento.
-            OR: [
-              { pixReservationRequestedAt: { gte: pixExpiryCutoff } },
-              { pixReservationClientPaidAt: { not: null } }
-            ]
-          }
-        }),
-        prisma.quoteRequest.count({
-          where: {
-            pixReservationPaidAt: null,
-            pixReservationClientPaidAt: { not: null },
-            providerId: profile.id
-          }
-        }),
         prisma.proposal.count({
           where: {
             depositAmount: { gt: 0 },
@@ -148,16 +122,9 @@ export default async function DashboardPage() {
             respondedAt: { gte: monthRange.start, lt: monthRange.end },
             status: "APPROVED"
           }
-        }),
-        prisma.quoteRequest.aggregate({
-          _sum: { fixedServiceAmount: true },
-          where: {
-            providerId: profile.id,
-            pixReservationPaidAt: { gte: monthRange.start, lt: monthRange.end }
-          }
         })
       ])
-    : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, null, null];
+    : [0, 0, 0, 0, 0, 0, 0, 0, null];
 
   const recentActivity = profile
     ? await getRecentDashboardActivity(profile.id)
@@ -165,8 +132,7 @@ export default async function DashboardPage() {
 
   // Decimal → string na fronteira; o resumo sai pronto em BRL.
   const revenueSummary = buildMonthlyRevenueSummary(
-    approvedRevenue?._sum.totalAmount?.toString() ?? null,
-    pixRevenue?._sum.fixedServiceAmount?.toString() ?? null
+    approvedRevenue?._sum.totalAmount?.toString() ?? null
   );
 
   const today = toDayBucket(new Date());
@@ -327,38 +293,41 @@ export default async function DashboardPage() {
       label: "Propostas aguardando resposta"
     },
     {
-      count: pendingPixReservations,
-      description:
-        clientInformedPixReservations > 0
-          ? `${clientInformedPixReservations} pagamento${clientInformedPixReservations > 1 ? "s" : ""} informado${clientInformedPixReservations > 1 ? "s" : ""} pelo cliente aguardando sua confirmação.`
-          : "Confirme os recebimentos informados pelos clientes.",
-      href: "/dashboard/pedidos?view=PIX_RESERVATION",
-      label: "Pagamentos Pix para confirmar"
-    },
-    {
       count: pendingProposalDeposits,
       description: "Marque as entradas recebidas nas propostas aprovadas.",
       href: "/dashboard/pedidos?view=DEPOSIT",
       label: "Entradas Pix para confirmar"
     }
   ];
+  const hasPublishedStorefront = profile?.isPublished ?? false;
+  const shouldShowOperationalMetrics =
+    hasPublishedStorefront && activeServicesCount > 0;
+  const hasRevenueThisMonth = approvedRevenue?._sum.totalAmount != null;
+  // Mostra o card quando PRO tem dados, ou quando FREE tem vitrine publicada (exibe upsell)
+  const shouldShowTopItemsCard =
+    hasPublishedStorefront && (!canSeeItemViews || topItems.length > 0);
 
   return (
     <div className="min-w-0 p-4 sm:p-6 md:p-8">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
-            Dashboard
-          </p>
-          <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
-            Olá, {session.user.name?.split(" ")[0]}
-          </h1>
-          <p className="mt-2 text-sm text-ink-muted">
-            Gerencie sua vitrine, seus itens e pedidos em um único painel.
-          </p>
-        </div>
-        <LogoutButton className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-4 text-xs font-semibold text-ink-muted transition hover:border-leaf hover:text-leaf" />
+      <div>
+        <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
+          Dashboard
+        </p>
+        <h1 className="mt-2 font-fraunces text-4xl font-bold text-ink">
+          Olá, {session.user.name?.split(" ")[0]}
+        </h1>
+        <p className="mt-2 text-sm text-ink-muted">
+          Veja o que precisa da sua atenção e acompanhe sua vitrine.
+        </p>
       </div>
+
+      <DashboardPendingActions actions={pendingActions} />
+
+      <OnboardingChecklist
+        steps={onboardingSteps}
+        slug={profile?.slug}
+        storageScope={session.user.id}
+      />
 
       {profile?.isPublished && profile.slug ? (
         <PublicLinkCard
@@ -367,22 +336,25 @@ export default async function DashboardPage() {
         />
       ) : null}
 
-      <OnboardingChecklist
-        steps={onboardingSteps}
-        slug={profile?.slug}
-        storageScope={session.user.id}
-      />
+      {shouldShowOperationalMetrics ? (
+        <DashboardMetricGrid metrics={metrics} />
+      ) : null}
 
-      <DashboardPendingActions actions={pendingActions} />
+      {hasPublishedStorefront ? (
+        <DashboardViewsCard
+          canViewAnalytics={canSeeItemViews}
+          summary={viewsSummary}
+        />
+      ) : null}
 
-      <DashboardViewsCard summary={viewsSummary} />
-      <DashboardTopItemsCard
-        canViewAnalytics={canSeeItemViews}
-        topItems={topItems}
-      />
-      <DashboardRevenueCard summary={revenueSummary} />
+      {shouldShowTopItemsCard ? (
+        <DashboardTopItemsCard
+          canViewAnalytics={canSeeItemViews}
+          topItems={topItems}
+        />
+      ) : null}
 
-      <DashboardMetricGrid metrics={metrics} />
+      {hasRevenueThisMonth ? <DashboardRevenueCard summary={revenueSummary} /> : null}
 
       <DashboardRecentActivity activities={recentActivity} />
 

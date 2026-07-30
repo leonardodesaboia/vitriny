@@ -7,12 +7,10 @@ import {
   saveProviderProfile,
   type ProviderProfileFormState,
 } from "@/lib/actions/provider-profile";
-import { canUseThemePresets } from "@/lib/plan-limits";
 import { AppearanceSection } from "@/components/provider-profile/sections/AppearanceSection";
 import { BusinessTypeSection } from "@/components/provider-profile/sections/BusinessTypeSection";
 import { ContactSection } from "@/components/provider-profile/sections/ContactSection";
 import { IdentitySection } from "@/components/provider-profile/sections/IdentitySection";
-import { PixSection } from "@/components/provider-profile/sections/PixSection";
 import { PresenceSection } from "@/components/provider-profile/sections/PresenceSection";
 import { StatusSection } from "@/components/provider-profile/sections/StatusSection";
 
@@ -25,7 +23,6 @@ const TABS = [
   { id: "negocio", label: "Negócio" },
   { id: "contato", label: "Contato" },
   { id: "aparencia", label: "Aparência" },
-  { id: "pagamento", label: "Pagamento" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -53,9 +50,8 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
 
   const values = state?.values;
   const formKey = values ? `profile-error-${state.submittedAt}` : "profile";
-  const currentThemePreset =
-    values?.themePreset ?? profile?.themePreset ?? "DEFAULT";
-  const isPro = profile ? canUseThemePresets(profile.plan) : false;
+  const currentBrandColor = profile?.brandColor ?? "FOREST";
+  const currentBrandFont = profile?.brandFont ?? "CLASSIC";
 
   // Alterna a exibição via classe do Tailwind (`hidden`), não pelo atributo
   // HTML `hidden`: uma classe de display de autor (`grid`) venceria a regra
@@ -181,30 +177,23 @@ export function ProfileForm({ profile, userEmail }: ProfileFormProps) {
         className={panelClass("aparencia")}
       >
         <AppearanceSection
-          isPro={isPro}
-          currentThemePreset={currentThemePreset}
+          plan={profile?.plan ?? "FREE"}
+          currentBrandColor={currentBrandColor}
+          currentBrandFont={currentBrandFont}
         />
       </div>
 
-      <div
-        role="tabpanel"
-        id="profile-panel-pagamento"
-        aria-labelledby="profile-tab-pagamento"
-        className={panelClass("pagamento")}
-      >
-        <PixSection values={values} profile={profile} />
-      </div>
-
-      {/* Ação — salva todas as seções de uma vez */}
-      <div className="border-t border-paper-soft pt-4">
-        <button
-          className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 sm:w-fit"
-          disabled={isPending}
-          type="submit"
-        >
-          {isPending ? "Salvando..." : "Salvar dados"}
-        </button>
-      </div>
+      {activeTab !== "aparencia" ? (
+        <div className="border-t border-paper-soft pt-4">
+          <button
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-leaf px-6 text-sm font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-50 sm:w-fit"
+            disabled={isPending}
+            type="submit"
+          >
+            {isPending ? "Salvando..." : "Salvar dados"}
+          </button>
+        </div>
+      ) : null}
     </form>
   );
 }

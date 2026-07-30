@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
-import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import {
+  Fraunces,
+  JetBrains_Mono,
+  Lora,
+  Nunito_Sans,
+  Playfair_Display,
+  Plus_Jakarta_Sans,
+  Space_Grotesk,
+} from "next/font/google";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -18,6 +26,30 @@ const jakarta = Plus_Jakarta_Sans({
 const mono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
+  display: "swap",
+});
+
+const nunito = Nunito_Sans({
+  subsets: ["latin"],
+  variable: "--font-nunito",
+  display: "swap",
+});
+
+const lora = Lora({
+  subsets: ["latin"],
+  variable: "--font-lora",
   display: "swap",
 });
 
@@ -56,7 +88,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
-      className={`${fraunces.variable} ${jakarta.variable} ${mono.variable}`}
+      className={`${fraunces.variable} ${jakarta.variable} ${mono.variable} ${playfair.variable} ${spaceGrotesk.variable} ${nunito.variable} ${lora.variable}`}
     >
       <body>{children}</body>
     </html>

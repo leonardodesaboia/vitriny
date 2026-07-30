@@ -19,13 +19,6 @@ describe("buildRecentDashboardActivity", () => {
           occurredAt: new Date("2026-06-30T10:00:00.000Z")
         }
       ],
-      paidReservations: [
-        {
-          customerName: "Eduardo",
-          id: "reservation-1",
-          occurredAt: new Date("2026-06-30T09:00:00.000Z")
-        }
-      ],
       proposalStatusEvents: [
         {
           customerName: "Daniela",
@@ -58,10 +51,10 @@ describe("buildRecentDashboardActivity", () => {
     expect(activity).toHaveLength(5);
     expect(activity.map((event) => event.type)).toEqual([
       "PROPOSAL_DEPOSIT_PAID",
-      "PIX_RESERVATION_PAID",
       "PROPOSAL_APPROVED",
       "PROPOSAL_REJECTED",
-      "PROPOSAL_SENT"
+      "PROPOSAL_SENT",
+      "QUOTE_REQUEST_CREATED"
     ]);
     expect(activity[0]).toMatchObject({
       customerName: "Fernanda",
@@ -72,7 +65,6 @@ describe("buildRecentDashboardActivity", () => {
   it("ignora status de proposta que não representa atividade suportada", () => {
     const activity = buildRecentDashboardActivity({
       paidDeposits: [],
-      paidReservations: [],
       proposalStatusEvents: [
         {
           customerName: "Ana",
@@ -103,7 +95,6 @@ describe("buildRecentDashboardActivity", () => {
 
     buildRecentDashboardActivity({
       paidDeposits: [],
-      paidReservations: [],
       proposalStatusEvents: [],
       quoteRequests
     });
@@ -169,7 +160,7 @@ describe("buildOnboardingOutcomeStep", () => {
 describe("parseDashboardRequestView", () => {
   it("aceita somente visões conhecidas", () => {
     expect(parseDashboardRequestView("OPEN")).toBe("OPEN");
-    expect(parseDashboardRequestView("PIX_RESERVATION")).toBe("PIX_RESERVATION");
+    expect(parseDashboardRequestView("DEPOSIT")).toBe("DEPOSIT");
     expect(parseDashboardRequestView("invalid")).toBeNull();
     expect(parseDashboardRequestView(undefined)).toBeNull();
   });
@@ -182,9 +173,6 @@ describe("matchesDashboardRequestView", () => {
   };
   const request = {
     createdAt: new Date("2026-06-15T12:00:00.000Z"),
-    pixReservationClientPaidAt: null,
-    pixReservationPaidAt: null,
-    pixReservationRequestedAt: null,
     proposal: null,
     status: "NEW" as const
   };
@@ -199,55 +187,6 @@ describe("matchesDashboardRequestView", () => {
         month
       )
     ).toBe(false);
-  });
-
-  it("identifica pagamento Pix ainda não confirmado", () => {
-    expect(
-      matchesDashboardRequestView(
-        { ...request, pixReservationRequestedAt: new Date() },
-        "PIX_RESERVATION",
-        month
-      )
-    ).toBe(true);
-    expect(
-      matchesDashboardRequestView(
-        {
-          ...request,
-          pixReservationPaidAt: new Date(),
-          pixReservationRequestedAt: new Date()
-        },
-        "PIX_RESERVATION",
-        month
-      )
-    ).toBe(false);
-  });
-
-  it("exclui pagamento Pix expirado das pendências", () => {
-    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
-
-    expect(
-      matchesDashboardRequestView(
-        { ...request, pixReservationRequestedAt: expiredRequestedAt },
-        "PIX_RESERVATION",
-        month
-      )
-    ).toBe(false);
-  });
-
-  it("inclui reserva expirada quando o cliente informou pagamento", () => {
-    const expiredRequestedAt = new Date(Date.now() - 49 * 60 * 60 * 1000);
-
-    expect(
-      matchesDashboardRequestView(
-        {
-          ...request,
-          pixReservationRequestedAt: expiredRequestedAt,
-          pixReservationClientPaidAt: new Date()
-        },
-        "PIX_RESERVATION",
-        month
-      )
-    ).toBe(true);
   });
 
   it("identifica entrada aprovada ainda não confirmada", () => {
@@ -292,36 +231,21 @@ describe("dashboardRequestViewWhere", () => {
     start: new Date("2026-07-01T00:00:00Z"),
     end: new Date("2026-08-01T00:00:00Z")
   };
-  const now = new Date("2026-07-09T12:00:00Z");
 
   it("MONTH filtra por createdAt no mês", () => {
-    expect(dashboardRequestViewWhere("MONTH", monthRange, now)).toEqual({
+    expect(dashboardRequestViewWhere("MONTH", monthRange)).toEqual({
       createdAt: { gte: monthRange.start, lt: monthRange.end }
     });
   });
 
   it("OPEN exclui fechados", () => {
-    expect(dashboardRequestViewWhere("OPEN", monthRange, now)).toEqual({
+    expect(dashboardRequestViewWhere("OPEN", monthRange)).toEqual({
       status: { not: "CLOSED" }
     });
   });
 
-  it("PIX_RESERVATION espelha a regra de expiração + informado", () => {
-    const cutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000);
-    expect(
-      dashboardRequestViewWhere("PIX_RESERVATION", monthRange, now)
-    ).toEqual({
-      pixReservationRequestedAt: { not: null },
-      pixReservationPaidAt: null,
-      OR: [
-        { pixReservationRequestedAt: { gte: cutoff } },
-        { pixReservationClientPaidAt: { not: null } }
-      ]
-    });
-  });
-
   it("DEPOSIT espelha entrada aprovada não recebida", () => {
-    expect(dashboardRequestViewWhere("DEPOSIT", monthRange, now)).toEqual({
+    expect(dashboardRequestViewWhere("DEPOSIT", monthRange)).toEqual({
       proposal: {
         is: {
           status: "APPROVED",
@@ -334,7 +258,7 @@ describe("dashboardRequestViewWhere", () => {
 
   it("APPROVED_MONTH espelha aprovadas pelo respondedAt", () => {
     expect(
-      dashboardRequestViewWhere("APPROVED_MONTH", monthRange, now)
+      dashboardRequestViewWhere("APPROVED_MONTH", monthRange)
     ).toEqual({
       proposal: {
         is: {
@@ -354,22 +278,15 @@ describe("buildMonthlyRevenueSummary", () => {
       currency: "BRL"
     }).format(value);
 
-  it("soma propostas aprovadas e pedidos Pix confirmados", () => {
-    expect(buildMonthlyRevenueSummary("1500.5", "249.5")).toEqual({
-      approved: brl(1500.5),
-      pixConfirmed: brl(249.5),
-      total: brl(1750)
+  it("formata o total de propostas aprovadas no mês", () => {
+    expect(buildMonthlyRevenueSummary("1500.5")).toEqual({
+      total: brl(1500.5)
     });
   });
 
-  it("trata somas nulas como zero", () => {
-    expect(buildMonthlyRevenueSummary(null, null)).toEqual({
-      approved: brl(0),
-      pixConfirmed: brl(0),
+  it("trata soma nula como zero", () => {
+    expect(buildMonthlyRevenueSummary(null)).toEqual({
       total: brl(0)
     });
   });
 });
-
-// A ordenação "informados primeiro" da view PIX_RESERVATION vive no orderBy
-// da query paginada (pixReservationClientPaidAt desc nulls last).

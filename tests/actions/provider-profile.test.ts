@@ -33,6 +33,23 @@ const validProfileForm = () =>
   });
 
 describe("saveProviderProfile", () => {
+  it("não altera aparência ao salvar os demais dados do perfil", async () => {
+    const form = validProfileForm();
+    form.set("brandColor", "ROSE");
+    form.set("brandFont", "GEOMETRIC");
+
+    const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
+    await expect(saveProviderProfile(undefined, form)).rejects.toThrow(
+      "/dashboard",
+    );
+
+    const upsert = db.providerProfile.upsert.mock.calls[0][0];
+    expect(upsert.create).not.toHaveProperty("brandColor");
+    expect(upsert.create).not.toHaveProperty("brandFont");
+    expect(upsert.update).not.toHaveProperty("brandColor");
+    expect(upsert.update).not.toHaveProperty("brandFont");
+  });
+
   it("salva perfil e redireciona para /dashboard em caso de sucesso", async () => {
     const { saveProviderProfile } = await import("@/lib/actions/provider-profile");
     await expect(saveProviderProfile(undefined, validProfileForm())).rejects.toThrow("/dashboard");

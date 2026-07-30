@@ -98,6 +98,7 @@ export default async function BillingPage({
               subscriptionStatus={profile.subscriptionStatus}
               currentPeriodEnd={profile.currentPeriodEnd}
               cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
+              hasActiveSubscription={!!profile.stripeSubscriptionId}
             />
           </div>
 

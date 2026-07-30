@@ -6,7 +6,7 @@ Vitriny usa Next.js App Router com Server Components, Server Actions, Prisma e P
 
 Na interface, `Service`, `ProviderProfile` e `QuoteRequest` são apresentados respectivamente como item da vitrine, vitrine pública e pedido/solicitação. A nomenclatura técnica, as rotas e os models permanecem inalterados.
 
-`Service.itemType` classifica o item como `PRODUCT` ou `SERVICE`. É um atributo visual e organizacional; as regras de proposta, Pix e pedidos continuam baseadas em `pricingType` e `fixedServiceCheckoutMode`.
+`Service.itemType` classifica o item como `PRODUCT` ou `SERVICE`. É um atributo visual e organizacional; as regras de proposta e pedidos continuam baseadas em `pricingType`.
 
 Fluxo simplificado:
 
@@ -43,10 +43,10 @@ docs/
 - `lib/validations/`: schemas Zod.
 - `lib/prisma.ts`: instância do Prisma Client.
 - `lib/plan-limits.ts`: regras de limites de plano centralizadas.
-- `lib/service-sale-mode.ts`: helper de UI que mapeia `pricingType` + `fixedServiceCheckoutMode` para o tipo `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST` | `FIXED_PIX`). Não existe no banco.
+- `lib/service-sale-mode.ts`: helper de UI que mapeia `pricingType` para o tipo `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST`). Não existe no banco.
 - `lib/dashboard.ts`: regras puras do onboarding, das visões rápidas de pedidos e da composição imutável da atividade recente.
 - `lib/dashboard-activity.ts`: consultas limitadas e filtradas por prestador que alimentam a timeline da dashboard.
-- `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
+- `lib/brand-appearance.ts`: opções allowlisted e resolução por plano da paleta e tipografia; os tokens são aplicados por CSS variables em `app/globals.css`.
 - `prisma/schema.prisma`: modelo de dados.
 - `types/`: tipos compartilhados entre actions e componentes.
 - `tests/`: testes automatizados (unit, actions, integration, e2e).
@@ -65,8 +65,6 @@ Rotas públicas:
 - `app/(auth)/verificar-email/[token]/page.tsx`
 - `app/u/[slug]/page.tsx`
 - `app/u/[slug]/orcamento/page.tsx`
-- `app/u/[slug]/reserva/[requestId]/page.tsx` — página de pagamento antecipado obrigatório: mostra QR Code + código copia e cola; requer `pixReservationRequestedAt` preenchido e Pix configurado.
-- `app/u/[slug]/pagamento/[requestId]/page.tsx` — compatibilidade para links legados de pagamento direto; novos pedidos não usam esta rota.
 - `app/proposta/[publicToken]/page.tsx`
 
 Rotas autenticadas:
@@ -79,7 +77,7 @@ Rotas autenticadas:
 - `app/(dashboard)/dashboard/propostas/templates/page.tsx`
 - `app/(dashboard)/dashboard/billing/page.tsx`
 
-`/dashboard/pedidos` aceita filtros por status em `?status=` e visões operacionais vindas da dashboard em `?view=MONTH|OPEN|APPROVED_MONTH|PIX_RESERVATION|DEPOSIT`.
+`/dashboard/pedidos` aceita filtros por status em `?status=` e visões operacionais vindas da dashboard em `?view=MONTH|OPEN|APPROVED_MONTH|DEPOSIT`.
 
 Auth:
 
@@ -103,7 +101,7 @@ Server Actions ficam em `lib/actions/`:
 
 - `provider-profile.ts`
 - `services.ts` — `createService`, `updateService`, `toggleServiceStatus`, `deleteService`
-- `quote-requests.ts` — `createQuoteRequest` (fluxo normal ou pagamento Pix obrigatório), `updateQuoteRequestDescription`, `markPixReservationPaid` (provider-only)
+- `quote-requests.ts` — `createQuoteRequest`, `updateQuoteRequestDescription`
 - `quote-request-notes.ts`
 - `quote-request-status.ts`
 - `proposals.ts` — inclui `markDepositPaid` (provider-only)
@@ -120,6 +118,23 @@ Elas validam sessão quando necessário e aplicam regras de ownership.
 - `app/api/billing/invoices/route.ts` — lista faturas Stripe do prestador autenticado sem bloquear a renderização da página.
 - `app/api/stripe/webhook/route.ts` — webhook Stripe com validação de assinatura.
 - `app/api/proposals/[id]/pdf/route.ts` — download autenticado de proposta aprovada ou recusada em PDF, com validação de ownership.
+
+## SEO e indexação
+
+Helpers puros e testáveis em `lib/seo/`; `robots.ts` e `sitemap.ts` dinâmicos.
+
+Regras de indexação:
+
+- **Indexáveis:** landing (`/`), institucionais (`/termos`, `/privacidade`) e vitrines publicadas `/u/[slug]` **com conteúdo suficiente**.
+- **`noindex, nofollow`** via metadata (helper `lib/seo/metadata.ts`): `/dashboard/**`, `(auth)/**`, `/u/[slug]/orcamento`, `/proposta/[publicToken]` e a página 404.
+- `robots.txt` só faz `Disallow: /api` (sem HTML). **Não** se mistura `Disallow` com `noindex` na mesma rota — o Google precisa rastrear a página para ler o `noindex`.
+- Vitrine **não publicada/inexistente** → `notFound()` (404 real) + `noindex`.
+- **Conteúdo suficiente** (`lib/seo/storefront-content.ts`): itens ativos **ou** descrição **ou** (localização **e** contato). Vitrine publicada sem isso renderiza (200) mas fica `noindex` e fora do sitemap.
+
+Metadata e dados estruturados:
+
+- Vitrine: título/descrição locais ("[negócio] — [tipo] em [cidade, UF]") em `lib/seo/storefront-metadata.ts`; canonical próprio.
+- JSON-LD (`lib/seo/structured-data.ts`, injetado por `components/seo/JsonLd.tsx`): o `@type` **varia por `businessType`** (serviços → `ProfessionalService`; produtos/ambos → `LocalBusiness` + `OfferCatalog`) + `BreadcrumbList`; landing usa `Organization` + `WebSite`. **Só reflete o que a vitrine mostra** — telefone, endereço, redes e catálogo entram apenas quando publicados. `serializeJsonLd` escapa `<` (XSS).
 
 ## Auth.js / NextAuth
 
@@ -190,7 +205,7 @@ O plano é armazenado em `ProviderProfile.plan`, usando `PlanTier`:
 Limites `FREE`:
 
 - 3 itens ativos;
-- 10 pedidos de orçamento por mês;
+- 50 pedidos de orçamento por mês (teto anti-abuso, não gatilho de upgrade — quem bate é o cliente final);
 - 5 propostas por mês;
 - 1 template de proposta.
 
@@ -203,7 +218,6 @@ Limites `FREE`:
 - Propostas públicas usam `publicToken`, não ID interno.
 - Perfil público só aparece se `isPublished=true`.
 - Itens públicos só aparecem se `isActive=true`.
-- Páginas públicas de Pix validam que o pedido pertence ao perfil indicado pelo slug e usam o valor congelado em `fixedServiceAmount`.
 - Upload/remoção de imagem e geração de PDF validam autenticação, plano quando aplicável e ownership.
 - Webhook Stripe valida `stripe-signature` antes de alterar plano ou assinatura.
 - Proposta expirada não pode ser aprovada/recusada.
@@ -231,6 +245,7 @@ Limites `FREE`:
 
 ```bash
 npm test                   # unit + actions, sem banco real
+npm run test:coverage      # unit + actions com relatório de cobertura (gera coverage/, ignorado no git)
 npm run test:integration   # integração com banco real
 npm run test:e2e           # E2E Playwright (exige dev server rodando)
 npm run test:e2e:ui        # Playwright com UI interativa
@@ -268,5 +283,5 @@ O Playwright usa o dev server na porta 3000 com `reuseExistingServer: true`.
 - O fluxo de proposta usa editor dinâmico de itens, mantendo o cálculo do total no servidor.
 - Históricos, notas internas e templates já possuem UI nas áreas correspondentes, mas ainda não existe uma página dedicada de detalhe do pedido.
 - Rate limiting in-memory no middleware não sobrevive a reinicializações e não é compartilhado entre instâncias. Adequado para single-instance; exige Redis/Upstash em produção multi-instância.
-- Pagamento Pix obrigatório expira em 48h (`PIX_PAYMENT_EXPIRY_HOURS` em `lib/utils/date.ts`): a página de reserva mostra o prazo e passa a exibir "Código Pix expirado" depois dele. `pixReservationRequestedAt` permanece no banco; não há limpeza automática de pagamentos abandonados.
+- O pagamento antecipado obrigatório via Pix para itens `FIXED` (rota de reserva, actions `markPixReservationPaid`/`reopenPixReservation`/`markPixReservationClientPaid`, emails e visão de dashboard) foi removido. As colunas `fixedServiceAmount`, `pixReservationRequestedAt`, `pixReservationPaidAt`, `pixReservationClientPaidAt` e o valor de enum `REQUIRE_PIX_PAYMENT` permanecem no schema como resíduo legado (não são mais lidos nem escritos pela aplicação); uma migration de limpeza é follow-up pendente.
 - Imagens de serviço dependem de MinIO/S3 local em desenvolvimento. O bucket deve existir com leitura pública. Em produção, configurar as variáveis `S3_*` descritas em `.env.example`.

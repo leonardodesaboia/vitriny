@@ -27,7 +27,6 @@ type ServiceItemProps = {
 const saleModeBadge: Record<ServiceSaleMode, string> = {
   CUSTOM: "bg-paper-soft text-ink-muted border border-paper-soft",
   FIXED_REQUEST: "bg-mint text-leaf border border-mint",
-  FIXED_PIX: "bg-mint text-leaf border border-mint",
 };
 
 function formatPrice(price: string | null): string | null {
@@ -106,9 +105,14 @@ export function ServiceItem({
             {service.name}
           </p>
           <div className="mt-1.5 flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${CATALOG_ITEM_TYPE_BADGE[service.itemType]}`}>
-              {CATALOG_ITEM_TYPE_LABEL[service.itemType]}
-            </span>
+            {/* itemType é ruído quando o negócio vende só um tipo (todo item é
+                igual); só aparece quando ele oferece Produtos E Serviços. O sinal
+                acionável — como o item vende — fica sempre visível. */}
+            {allowItemTypeSelection ? (
+              <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${CATALOG_ITEM_TYPE_BADGE[service.itemType]}`}>
+                {CATALOG_ITEM_TYPE_LABEL[service.itemType]}
+              </span>
+            ) : null}
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${saleModeBadge[saleMode]}`}>
               {SALE_MODE_BADGE_LABEL[saleMode]}
             </span>

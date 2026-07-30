@@ -30,13 +30,15 @@ type BillingCardProps = {
   subscriptionStatus: SubscriptionStatus | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
+  hasActiveSubscription: boolean;
 };
 
 export function BillingCard({
   plan,
   subscriptionStatus,
   currentPeriodEnd,
-  cancelAtPeriodEnd
+  cancelAtPeriodEnd,
+  hasActiveSubscription
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -246,7 +248,7 @@ export function BillingCard({
             ) : (
               <button
                 onClick={handleSubscribe}
-                disabled={pending}
+                disabled={pending || hasActiveSubscription}
                 className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
               >
                 {pending ? "Aguarde..." : "Assinar PRO"}
@@ -266,7 +268,7 @@ export function BillingCard({
             </p>
             <ul className="mt-3 grid gap-2 text-sm text-ink sm:grid-cols-2">
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Itens ativos ilimitados
+                <span className="text-leaf">✓</span> Itens ilimitados na vitrine
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Pedidos ilimitados por mês
@@ -275,10 +277,13 @@ export function BillingCard({
                 <span className="text-leaf">✓</span> Propostas ilimitadas por mês
               </li>
               <li className="flex items-center gap-2">
-                <span className="text-leaf">✓</span> Templates ilimitados
+                <span className="text-leaf">✓</span> Templates de proposta ilimitados
               </li>
               <li className="flex items-center gap-2">
                 <span className="text-leaf">✓</span> Temas visuais para sua página
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="text-leaf">✓</span> Ranking dos itens mais vistos
               </li>
             </ul>
           </div>

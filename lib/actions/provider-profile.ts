@@ -3,9 +3,8 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import type { BusinessType, ProviderThemePreset } from "@prisma/client";
+import type { BusinessType } from "@prisma/client";
 
-import { canUseThemePresets } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
 import { providerProfileSchema } from "@/lib/validations/provider-profile";
 import { requireAuth } from "@/lib/actions/auth-guard";
@@ -24,7 +23,6 @@ export type ProviderProfileFormValues = {
   pixKeyType: string;
   pixHolderName: string;
   pixCity: string;
-  themePreset: ProviderThemePreset;
   businessType: BusinessType;
   address: string;
   instagram: string;
@@ -50,7 +48,6 @@ function formValue(formData: FormData, key: string) {
 function readProviderProfileFormValues(
   formData: FormData
 ): ProviderProfileFormValues {
-  const themePreset = formValue(formData, "themePreset");
   const businessType = formValue(formData, "businessType");
 
   const linkLabels = formData.getAll("linkLabel");
@@ -73,7 +70,6 @@ function readProviderProfileFormValues(
     pixKeyType: formValue(formData, "pixKeyType"),
     pixHolderName: formValue(formData, "pixHolderName"),
     pixCity: formValue(formData, "pixCity"),
-    themePreset: (themePreset || "DEFAULT") as ProviderThemePreset,
     businessType: (businessType || "SERVICES") as BusinessType,
     address: formValue(formData, "address"),
     instagram: formValue(formData, "instagram"),
@@ -101,11 +97,6 @@ export async function saveProviderProfile(
     };
   }
 
-  const currentProfile = await prisma.providerProfile.findUnique({
-    where: { userId },
-    select: { plan: true, themePreset: true }
-  });
-
   const existingSlug = await prisma.providerProfile.findUnique({
     where: { slug: parsed.data.slug },
     select: { userId: true }
@@ -132,10 +123,6 @@ export async function saveProviderProfile(
     ...profileData,
     businessHours: businessHours ?? Prisma.DbNull,
     links: sanitizedLinks.length > 0 ? sanitizedLinks : Prisma.DbNull,
-    themePreset:
-      currentProfile?.plan && canUseThemePresets(currentProfile.plan)
-        ? parsed.data.themePreset
-        : currentProfile?.themePreset ?? "DEFAULT"
   };
 
   try {

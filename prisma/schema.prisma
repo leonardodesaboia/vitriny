@@ -105,6 +105,8 @@ model ProviderProfile {
   state        String?
   plan         PlanTier @default(FREE)
   themePreset  ProviderThemePreset @default(DEFAULT)
+  brandColor   ProviderBrandColor @default(FOREST)
+  brandFont    ProviderBrandFont  @default(CLASSIC)
   stripeCustomerId     String?             @unique
   stripeSubscriptionId String?             @unique
   stripePriceId        String?
@@ -350,6 +352,26 @@ enum ProviderThemePreset {
   CREATIVE
   PREMIUM
   BOLD
+}
+
+enum ProviderBrandColor {
+  FOREST
+  OCEAN
+  ROSE
+  GOLD
+  SLATE
+  LAVENDER
+  TERRACOTTA
+  TEAL
+}
+
+enum ProviderBrandFont {
+  CLASSIC
+  MODERN
+  ELEGANT
+  GEOMETRIC
+  FRIENDLY
+  EDITORIAL
 }
 
 enum SubscriptionStatus {

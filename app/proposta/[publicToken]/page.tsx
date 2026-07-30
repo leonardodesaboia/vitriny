@@ -5,9 +5,12 @@ import { ProposalResponseActions } from "@/components/proposals/ProposalResponse
 import { CopyButton } from "@/components/ui/CopyButton";
 import { prisma } from "@/lib/prisma";
 import { createPixPayment } from "@/lib/pix";
-import { getPublicThemePreset } from "@/lib/theme-presets";
+import { getBrandAppearance } from "@/lib/brand-appearance";
 import { formatPhoneBR } from "@/lib/utils/phone";
 import { isProposalExpired } from "@/lib/utils/date";
+import { privateMetadata } from "@/lib/seo/metadata";
+
+export const metadata = privateMetadata("Proposta");
 
 type PublicProposalPageProps = {
   params: Promise<{
@@ -79,7 +82,8 @@ export default async function PublicProposalPage({
         select: {
           businessName: true,
           plan: true,
-          themePreset: true,
+          brandColor: true,
+          brandFont: true,
           email: true,
           phone: true,
           city: true,
@@ -153,15 +157,17 @@ export default async function PublicProposalPage({
         description: `Entrada ${proposal.provider.businessName}`,
       })
     : null;
-  const theme = getPublicThemePreset(
+  const appearance = getBrandAppearance(
     proposal.provider.plan,
-    proposal.provider.themePreset,
+    proposal.provider.brandColor,
+    proposal.provider.brandFont,
   );
 
   return (
     <main
       className="min-h-screen bg-paper px-4 py-12 text-ink font-jakarta sm:px-6"
-      data-brand-theme={theme.id}
+      data-brand-color={appearance.color}
+      data-brand-font={appearance.font}
     >
       <div className="mx-auto max-w-3xl">
         {/* Document header */}

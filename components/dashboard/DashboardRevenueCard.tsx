@@ -15,8 +15,7 @@ export function DashboardRevenueCard({ summary }: DashboardRevenueCardProps) {
         {summary.total}
       </p>
       <p className="mt-2 text-xs text-ink-muted">
-        {summary.approved} em propostas aprovadas · {summary.pixConfirmed} em
-        pedidos Pix confirmados
+        Em propostas aprovadas no mês
       </p>
     </Card>
   );

@@ -30,17 +30,6 @@ describe("getHowItWorksContent", () => {
     expect(steps[2].title).toBe("O negócio entra em contato");
   });
 
-  it("retorna fluxo PIX quando há apenas FIXED/REQUIRE_PIX_PAYMENT", () => {
-    const { title, steps } = getHowItWorksContent([
-      { pricingType: "FIXED", fixedServiceCheckoutMode: "REQUIRE_PIX_PAYMENT" }
-    ]);
-    expect(title).toBe("Simples e rápido");
-    expect(steps).toHaveLength(3);
-    expect(steps[0].title).toBe("Preencha seus dados");
-    expect(steps[1].title).toBe("Realize o pagamento Pix");
-    expect(steps[2].title).toBe("Confirmação manual");
-  });
-
   it("retorna fluxo MISTO quando há CUSTOM e FIXED", () => {
     const { title, steps } = getHowItWorksContent([
       { pricingType: "CUSTOM", fixedServiceCheckoutMode: null },

@@ -94,7 +94,7 @@ Planos:
 Limites do plano `FREE`:
 
 - até 3 itens ativos;
-- até 10 pedidos por mês;
+- até 50 pedidos por mês;
 - até 5 propostas por mês;
 - até 1 template de proposta.
 
@@ -102,13 +102,15 @@ O plano `PRO` não possui limites práticos no MVP. As regras ficam centralizada
 
 Importante: o Pix do cliente final é manual. O Vitriny mostra chave Pix, código copia e cola e QR Code, mas não processa dinheiro nem confirma pagamento automaticamente. Stripe continua sendo usado apenas para assinatura do prestador.
 
-## Feature PRO: Tema visual da aplicação
+## Personalização visual
 
-Usuários no plano PRO podem escolher um tema visual para a aplicação: dashboard do profissional e fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido, pagamento Pix e proposta pública em `/proposta/[publicToken]`. Os temas disponíveis são `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`.
+Usuários no plano PRO escolhem a paleta e a tipografia independentemente. A combinação é aplicada ao dashboard do profissional e ao fluxo público do cliente, incluindo perfil em `/u/[slug]`, formulário de pedido e proposta pública em `/proposta/[publicToken]`.
 
-Usuários FREE sempre usam o tema `DEFAULT`. Se um usuário PRO escolher um tema e depois voltar para FREE, o valor permanece salvo no banco, mas a aplicação renderiza `DEFAULT` enquanto o plano não for PRO.
+Paletas disponíveis: `FOREST` (Verde), `OCEAN` (Azul), `ROSE` (Rosa), `GOLD` (Dourado), `SLATE` (Grafite), `LAVENDER` (Lavanda), `TERRACOTTA` (Terracota) e `TEAL` (Turquesa). Tipografias disponíveis: `CLASSIC` (Fraunces + Jakarta), `MODERN` (Jakarta), `ELEGANT` (Playfair Display + Jakarta), `GEOMETRIC` (Space Grotesk), `FRIENDLY` (Nunito Sans) e `EDITORIAL` (Lora + Jakarta).
 
-Os temas alteram apenas tokens globais de cor e fonte via CSS variables. Eles não trocam layout, espaçamento ou classes específicas de cada componente. As regras ficam centralizadas em `lib/theme-presets.ts` e `app/globals.css`. Não há editor visual livre, CSS customizado, upload de banner ou drag-and-drop nesta etapa.
+Usuários FREE escolhem entre o kit inicial de cores `FOREST`, `OCEAN` e `TERRACOTTA` e fontes `CLASSIC` e `MODERN`. Se um usuário PRO voltar para FREE, escolhas fora desse kit permanecem salvas no banco, mas a aplicação usa `FOREST` ou `CLASSIC` até o PRO ser reativado.
+
+A personalização é aplicada e persistida automaticamente ao clicar, sem botão de salvar na aba Aparência. Ela altera tokens globais via CSS variables e os atributos `data-brand-color` e `data-brand-font`. Não troca layout ou espaçamento e não permite CSS, URLs de fontes ou cores arbitrárias. As regras ficam centralizadas em `lib/brand-appearance.ts`, `lib/actions/brand-appearance.ts` e `app/globals.css`.
 
 ## Feature de billing
 
@@ -274,7 +276,7 @@ npx prisma validate
 6. Usuário cadastra serviços em `/dashboard/servicos`.
 7. Cliente acessa `/u/[slug]`.
 8. Cliente envia pedido em `/u/[slug]/orcamento`.
-   Quando o item com preço fixo exige pagamento, segue obrigatoriamente para `/u/[slug]/reserva/[requestId]`. `/u/[slug]/pagamento/[requestId]` permanece apenas para links legados.
+   Para itens de preço fixo, o negócio combina o pagamento diretamente com o cliente.
 9. Negócio vê o pedido em `/dashboard/pedidos`.
 10. Negócio cria proposta em `/dashboard/propostas/nova?requestId=...`.
 11. Cliente acessa `/proposta/[publicToken]`.

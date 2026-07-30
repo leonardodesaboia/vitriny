@@ -68,7 +68,9 @@ Campos importantes:
 
 - `slug`: URL pública em `/u/[slug]`.
 - `plan`: plano comercial (`FREE` ou `PRO`) usado para limites de uso.
-- `themePreset`: preset visual salvo para dashboard do profissional e fluxo público do cliente. O valor default é `DEFAULT`.
+- `brandColor`: paleta salva independentemente (`FOREST`, `OCEAN`, `ROSE`, `GOLD`, `SLATE`, `LAVENDER`, `TERRACOTTA` ou `TEAL`). Default `FOREST`.
+- `brandFont`: tipografia salva independentemente (`CLASSIC`, `MODERN`, `ELEGANT`, `GEOMETRIC`, `FRIENDLY` ou `EDITORIAL`). Default `CLASSIC`.
+- `themePreset`: campo legado mantido temporariamente para compatibilidade da migração; não é usado pela aplicação nova.
 - `isPublished`: controla se o perfil aparece publicamente.
 - `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
 - `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para entrada de proposta e pagamento antecipado de serviço fixo.
@@ -97,7 +99,7 @@ Campos importantes:
 - `basePrice`: `Decimal? @db.Decimal(10, 2)`.
 - `isActive`: controla se aparece publicamente.
 - `pricingType`: tipo de precificação (`FIXED` ou `CUSTOM`). Default `CUSTOM`. Controla se o serviço tem preço fixo exibido publicamente ou se está sob orçamento.
-- `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. `REQUEST_ONLY` = apenas pedido normal; `REQUIRE_PIX_PAYMENT` = o cliente precisa pagar via Pix para concluir a solicitação.
+- `fixedServiceCheckoutMode`: `FixedServiceCheckoutMode @default(REQUEST_ONLY)`. Só se aplica a serviços `FIXED`. A aplicação grava e usa `REQUEST_ONLY`; o valor legado `REQUIRE_PIX_PAYMENT` permanece no schema para compatibilidade de dados, mas é tratado como solicitação normal.
 - `requiresSchedulingDetails`: quando `true`, formulário público exibe campos de data, horário e local.
 - `imageUrl String?` / `imageStorageKey String?`: imagem do serviço. Upload via `POST /api/services/[id]/image`, remoção via `DELETE`. Exibida publicamente em qualquer plano (foto por item é FREE).
 
@@ -145,9 +147,7 @@ Campos:
 - `desiredDate`, `desiredTime`, `location` — nullable no banco para retrocompatibilidade, mas obrigatórios na aplicação quando o serviço usa `requiresSchedulingDetails`;
 - status;
 - vínculo com `ProviderProfile`.
-- `fixedServiceAmount Decimal? @db.Decimal(10, 2)` — snapshot do `basePrice` quando um pedido exige pagamento antecipado. Imutável após criação; páginas de Pix usam este valor, nunca o preço atual do serviço.
-- `pixReservationRequestedAt DateTime?` — campo legado preenchido quando o pedido entra no pagamento Pix obrigatório; o nome é mantido para compatibilidade de dados.
-- `pixReservationPaidAt DateTime?` — preenchido manualmente pelo prestador ao confirmar recebimento do Pix.
+- `fixedServiceAmount Decimal? @db.Decimal(10, 2)`, `pixReservationRequestedAt DateTime?`, `pixReservationPaidAt DateTime?` e `pixReservationClientPaidAt DateTime?` — campos legados do fluxo de reserva Pix removido. Permanecem no schema para compatibilidade de dados, mas não são lidos nem escritos pela aplicação.
 
 Observação: pedidos novos salvam o serviço escolhido em `serviceId` e mantêm `description` como o texto enviado pelo cliente. O prefixo legado com ID do serviço pode existir apenas em pedidos antigos.
 
@@ -269,16 +269,31 @@ Ambos usam Decimal.
 - `SIMPLE`
 - `ITEMIZED`
 
-### ProviderThemePreset
+### ProviderBrandColor
 
-- `DEFAULT`
-- `CLEAN`
-- `BEAUTY`
-- `CREATIVE`
-- `PREMIUM`
-- `BOLD`
+- `FOREST`
+- `OCEAN`
+- `ROSE`
+- `GOLD`
+- `SLATE`
+- `LAVENDER`
+- `TERRACOTTA`
+- `TEAL`
 
-O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o dashboard do profissional e o fluxo público do cliente usam `DEFAULT` mesmo que outro valor esteja salvo. O preset controla tokens globais de cor e fonte, não estilos individuais de componentes.
+### ProviderBrandFont
+
+- `CLASSIC`
+- `MODERN`
+- `ELEGANT`
+- `GEOMETRIC`
+- `FRIENDLY`
+- `EDITORIAL`
+
+O `PRO` aplica qualquer combinação salva. O `FREE` tem um kit inicial — cores `FOREST`/`OCEAN`/`TERRACOTTA` e fontes `CLASSIC`/`MODERN`: aplica a escolha salva quando ela está no kit e cai no padrão (`FOREST`/`CLASSIC`) fora dele (ex.: uma escolha PRO preservada após downgrade). A resolução é feita por `getBrandAppearance` usando `isBrandColorAvailable`/`isBrandFontAvailable`. A migration converte presets antigos: `CLEAN`/`CREATIVE` para `OCEAN`, `BEAUTY` para `ROSE`, `PREMIUM` para `GOLD`, `BOLD` para `FOREST`; fontes antigas modernas viram `MODERN`.
+
+### ProviderThemePreset (legado)
+
+Enum mantida temporariamente junto ao campo `themePreset` para permitir rollout e rollback seguros. O código da aplicação não usa mais esse preset combinado.
 
 ### ServicePricingType
 
@@ -294,10 +309,10 @@ O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o
 
 ### FixedServiceCheckoutMode
 
-Controla o fluxo de conversão de serviços com `pricingType = FIXED`.
+Enum legado do fluxo de conversão de serviços com `pricingType = FIXED`.
 
-- `REQUEST_ONLY` (default): cliente envia apenas um pedido normal. Compatível com todos os serviços antigos.
-- `REQUIRE_PIX_PAYMENT`: exibe um único CTA "Pagar com Pix". O cliente precisa pagar antecipadamente e o prestador confirma manualmente.
+- `REQUEST_ONLY` (default): cliente envia apenas um pedido normal.
+- `REQUIRE_PIX_PAYMENT`: valor legado. É degradado para `REQUEST_ONLY` pela aplicação; o fluxo de pagamento antecipado foi removido.
 
 Serviços `CUSTOM` sempre ficam com `REQUEST_ONLY` (forçado na action).
 
@@ -326,16 +341,14 @@ Observação: `EXPIRED` existe no enum de proposta, mas a página pública calcu
 - Notas internas de pedido devem ser acessíveis apenas pelo prestador dono do pedido.
 - Templates de proposta pertencem a um prestador e não devem ser acessados por outros usuários.
 - Uma proposta pública deve ser acessada por `publicToken`.
-- Pix é manual: o Vitriny gera código Pix/QR Code estático com dados do prestador, mas não processa dinheiro nem recebe confirmação automática.
+- Pix manual é usado apenas na entrada de proposta aprovada: o Vitriny gera código Pix/QR Code estático com dados do prestador, mas não processa dinheiro nem recebe confirmação automática.
 - Token de redefinição de senha é de uso único e expira em 1 hora.
 - Senha de usuário sempre armazenada como hash bcrypt, nunca texto puro.
 - Serviço com `pricingType = FIXED` deve ter `basePrice > 0` (validado em Zod, não constraint no banco).
 - Serviços antigos sem `pricingType` explícito ficam como `CUSTOM` pelo default.
 - Itens antigos ficam como `SERVICE` pelo default de `itemType`.
 - `QuoteRequest.description` é nullable; pedidos de serviços FIXED não exigem descrição do cliente.
-- `fixedServiceAmount` é um snapshot imutável do `basePrice` no momento em que o pagamento antecipado é criado. Nunca atualizar após criação do pedido.
-- `pixReservationPaidAt` só pode ser preenchido pelo prestador autenticado dono do pedido (`markPixReservationPaid`). Nunca expor ao cliente público.
-- Pedidos antigos têm `fixedServiceAmount`, `pixReservationRequestedAt` e `pixReservationPaidAt` todos `null` — retrocompatibilidade garantida.
+- Os campos legados `fixedServiceAmount`, `pixReservationRequestedAt`, `pixReservationPaidAt` e `pixReservationClientPaidAt` não são usados em pedidos novos. Dados históricos são preservados.
 - `fixedServiceCheckoutMode` é forçado como `REQUEST_ONLY` para serviços `CUSTOM` na action, independente do que o formulário enviar.
 - `itemType` é visual e organizacional. Não altera regras de preço, Pix, proposta, pedido nem limites de plano.
 
