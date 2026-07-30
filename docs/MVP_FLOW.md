@@ -46,9 +46,9 @@ Na interface, produtos e serviços são chamados de itens da vitrine. Os nomes t
 - Acesse `/dashboard/perfil`.
 - Preencha `businessName`, escolha se oferece produtos, serviços ou ambos, informe endereço do perfil, contatos, aparência da página, dados Pix se quiser receber entrada, e marque `isPublished`.
 - Opcionalmente, preencha endereço, redes sociais (`@usuario` ou link) e o horário de funcionamento por dia da semana.
-- Em plano FREE, a aplicação usa o tema padrão. Em plano PRO, escolha um preset visual e salve.
+- Em plano FREE, você escolhe entre 3 cores (`Verde`, `Azul`, `Terracota`) e 2 tipografias (`Clássica`, `Moderna`); as demais aparecem bloqueadas (upsell PRO). Em plano PRO, todas as paletas e tipografias ficam liberadas. Cada escolha é aplicada e salva automaticamente, sem botão de salvar na aba Aparência.
 - Salve.
-- Esperado: dashboard mostra perfil e link `/u/[slug]`; dashboard do profissional e fluxo público do cliente usam o mesmo tema global de cor e fonte.
+- Esperado: dashboard mostra perfil e link `/u/[slug]`; dashboard do profissional e fluxo público do cliente usam a mesma combinação global de paleta e tipografia.
 - Esperado na vitrine pública: badge "Aberto agora"/"Fechado" coerente com o relógio local, card com os horários da semana, localização com link "Ver no mapa" e links sociais. Campos não preenchidos não aparecem.
 
 ### 3. Itens da vitrine

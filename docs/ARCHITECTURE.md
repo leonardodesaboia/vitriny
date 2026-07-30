@@ -46,7 +46,7 @@ docs/
 - `lib/service-sale-mode.ts`: helper de UI que mapeia `pricingType` para o tipo `ServiceSaleMode` (`CUSTOM` | `FIXED_REQUEST`). Não existe no banco.
 - `lib/dashboard.ts`: regras puras do onboarding, das visões rápidas de pedidos e da composição imutável da atividade recente.
 - `lib/dashboard-activity.ts`: consultas limitadas e filtradas por prestador que alimentam a timeline da dashboard.
-- `lib/theme-presets.ts`: metadados dos temas visuais da aplicação; as cores e fontes são aplicadas por CSS variables em `app/globals.css`.
+- `lib/brand-appearance.ts`: opções allowlisted e resolução por plano da paleta e tipografia; os tokens são aplicados por CSS variables em `app/globals.css`.
 - `prisma/schema.prisma`: modelo de dados.
 - `types/`: tipos compartilhados entre actions e componentes.
 - `tests/`: testes automatizados (unit, actions, integration, e2e).

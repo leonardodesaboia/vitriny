@@ -68,7 +68,9 @@ Campos importantes:
 
 - `slug`: URL pública em `/u/[slug]`.
 - `plan`: plano comercial (`FREE` ou `PRO`) usado para limites de uso.
-- `themePreset`: preset visual salvo para dashboard do profissional e fluxo público do cliente. O valor default é `DEFAULT`.
+- `brandColor`: paleta salva independentemente (`FOREST`, `OCEAN`, `ROSE`, `GOLD`, `SLATE`, `LAVENDER`, `TERRACOTTA` ou `TEAL`). Default `FOREST`.
+- `brandFont`: tipografia salva independentemente (`CLASSIC`, `MODERN`, `ELEGANT`, `GEOMETRIC`, `FRIENDLY` ou `EDITORIAL`). Default `CLASSIC`.
+- `themePreset`: campo legado mantido temporariamente para compatibilidade da migração; não é usado pela aplicação nova.
 - `isPublished`: controla se o perfil aparece publicamente.
 - `stripeCustomerId`, `stripeSubscriptionId`, `stripePriceId`, `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`: estado local da assinatura Stripe.
 - `pixKey`, `pixKeyType`, `pixHolderName`, `pixCity`: dados Pix do prestador para entrada de proposta e pagamento antecipado de serviço fixo.
@@ -267,16 +269,31 @@ Ambos usam Decimal.
 - `SIMPLE`
 - `ITEMIZED`
 
-### ProviderThemePreset
+### ProviderBrandColor
 
-- `DEFAULT`
-- `CLEAN`
-- `BEAUTY`
-- `CREATIVE`
-- `PREMIUM`
-- `BOLD`
+- `FOREST`
+- `OCEAN`
+- `ROSE`
+- `GOLD`
+- `SLATE`
+- `LAVENDER`
+- `TERRACOTTA`
+- `TEAL`
 
-O preset só é aplicado quando `ProviderProfile.plan === "PRO"`. Para `FREE`, o dashboard do profissional e o fluxo público do cliente usam `DEFAULT` mesmo que outro valor esteja salvo. O preset controla tokens globais de cor e fonte, não estilos individuais de componentes.
+### ProviderBrandFont
+
+- `CLASSIC`
+- `MODERN`
+- `ELEGANT`
+- `GEOMETRIC`
+- `FRIENDLY`
+- `EDITORIAL`
+
+O `PRO` aplica qualquer combinação salva. O `FREE` tem um kit inicial — cores `FOREST`/`OCEAN`/`TERRACOTTA` e fontes `CLASSIC`/`MODERN`: aplica a escolha salva quando ela está no kit e cai no padrão (`FOREST`/`CLASSIC`) fora dele (ex.: uma escolha PRO preservada após downgrade). A resolução é feita por `getBrandAppearance` usando `isBrandColorAvailable`/`isBrandFontAvailable`. A migration converte presets antigos: `CLEAN`/`CREATIVE` para `OCEAN`, `BEAUTY` para `ROSE`, `PREMIUM` para `GOLD`, `BOLD` para `FOREST`; fontes antigas modernas viram `MODERN`.
+
+### ProviderThemePreset (legado)
+
+Enum mantida temporariamente junto ao campo `themePreset` para permitir rollout e rollback seguros. O código da aplicação não usa mais esse preset combinado.
 
 ### ServicePricingType
 

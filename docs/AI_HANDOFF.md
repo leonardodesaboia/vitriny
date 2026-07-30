@@ -86,16 +86,16 @@ O MVP principal está implementado.
 ### Mudanças técnicas anteriores
 
 - a tela de billing deixou de buscar faturas da Stripe no carregamento inicial; agora a página renderiza e o card de faturas faz fetch assíncrono em `/api/billing/invoices` via `components/billing/AsyncInvoiceList.tsx`;
-- a aplicação ganhou temas globais por preset em `lib/theme-presets.ts` + `app/globals.css`, com a regra centralizada em `getPublicThemePreset(plan, savedPreset)`: `PRO` usa o preset salvo e `FREE` sempre cai em `DEFAULT`;
-- os temas alteram apenas tokens globais de cor e fonte via `data-brand-theme`; não trocam layout ou classes específicas por componente; presets atuais: `DEFAULT`, `CLEAN`, `BEAUTY`, `CREATIVE`, `PREMIUM` e `BOLD`;
-- o formulário de perfil ganhou a seção “Aparência da página”; usuários `FREE` veem apenas o tema padrão e o aviso de upgrade, enquanto `PRO` escolhem entre os presets;
+- a personalização visual foi separada em paleta e tipografia em `lib/brand-appearance.ts` + `app/globals.css`, com a regra centralizada em `getBrandAppearance(plan, savedColor, savedFont)`: `PRO` usa qualquer escolha; `FREE` tem um kit inicial (cores `FOREST`/`OCEAN`/`TERRACOTTA`, fontes `CLASSIC`/`MODERN`) e cai no padrão fora dele. O gating por atributo vive em `isBrandColorAvailable`/`isBrandFontAvailable`, espelhado na UI e no servidor; `saveBrandAppearance` **não** chama `revalidatePath` (as páginas que leem a aparência são `force-dynamic`; revalidar reverteria a UI otimista da aba a cada clique);
+- a aparência usa `data-brand-color` e `data-brand-font`; paletas: `FOREST`, `OCEAN`, `ROSE`, `GOLD`, `SLATE`, `LAVENDER`, `TERRACOTTA`, `TEAL`; fontes: `CLASSIC`, `MODERN`, `ELEGANT`, `GEOMETRIC`, `FRIENDLY`, `EDITORIAL`;
+- o formulário de perfil mostra dois grupos independentes, sem painel de prévia; cada clique atualiza a interface e persiste por `lib/actions/brand-appearance.ts`, sem botão de salvar na aba Aparência; usuários `FREE` selecionam o kit liberado e veem as demais opções bloqueadas com badge PRO + link de upgrade;
 - o card de link público do onboarding passou a registrar, em `localStorage`, quando o usuário copiou ou abriu o link, para que o checklist reflita a ação real;
 - cards e listas de pedidos/serviços foram ajustados para lidar melhor com nomes longos, layout fixo e leitura em desktop e mobile; `/dashboard/servicos` usa `min-w-0`, contenção de overflow e inputs `w-full` para evitar quebra horizontal em telas como iPhone 12 Pro;
 - `/dashboard/pedidos` ganhou filtro por status via query string `?status=NEW|REVIEWING|PROPOSAL_SENT|CLOSED`, com contador por aba e fallback para `Todos` quando o status é inválido;
 - `/dashboard` usa agregações do Prisma para métricas mensais e pendências; o onboarding final varia entre serviços `CUSTOM`, `FIXED` ou uma combinação dos dois;
 - os cards da dashboard abrem `/dashboard/pedidos` com filtros por status ou com as visões `?view=MONTH|OPEN|APPROVED_MONTH|DEPOSIT`;
 - a dashboard combina os cinco eventos mais recentes entre novos pedidos, propostas enviadas/aprovadas/recusadas, pagamentos Pix confirmados e entradas confirmadas;
-- a documentação e o schema passaram a registrar o novo campo `ProviderProfile.themePreset`, a enum `ProviderThemePreset` e a migration correspondente.
+- o schema registra `ProviderProfile.brandColor` e `ProviderProfile.brandFont`; `themePreset` permanece temporariamente apenas para compatibilidade de rollout/rollback.
 
 ## Estado atual
 
