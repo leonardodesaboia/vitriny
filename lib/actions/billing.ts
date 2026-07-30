@@ -141,11 +141,12 @@ export async function createCheckoutSession(): Promise<
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, stripeCustomerId: true, plan: true }
+    select: { id: true, stripeCustomerId: true, plan: true, stripeSubscriptionId: true }
   });
 
   if (!profile) return { error: "Dados do negócio não encontrados." };
   if (profile.plan === "PRO") return { error: "Você já tem o plano PRO." };
+  if (profile.stripeSubscriptionId) return { error: "Você já possui uma assinatura ativa." };
 
   let customerId = profile.stripeCustomerId;
 

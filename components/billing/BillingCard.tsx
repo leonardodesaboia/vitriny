@@ -30,13 +30,15 @@ type BillingCardProps = {
   subscriptionStatus: SubscriptionStatus | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
+  hasActiveSubscription: boolean;
 };
 
 export function BillingCard({
   plan,
   subscriptionStatus,
   currentPeriodEnd,
-  cancelAtPeriodEnd
+  cancelAtPeriodEnd,
+  hasActiveSubscription
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -246,7 +248,7 @@ export function BillingCard({
             ) : (
               <button
                 onClick={handleSubscribe}
-                disabled={pending}
+                disabled={pending || hasActiveSubscription}
                 className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
               >
                 {pending ? "Aguarde..." : "Assinar PRO"}
