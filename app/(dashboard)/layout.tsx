@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { getBrandAppearance } from "@/lib/brand-appearance";
 import { prisma } from "@/lib/prisma";
-import { getPublicThemePreset } from "@/lib/theme-presets";
 
 export const dynamic = "force-dynamic";
 
@@ -29,13 +29,22 @@ export default async function DashboardLayout({
     where: { userId: session.user.id },
     select: {
       plan: true,
-      themePreset: true
+      brandColor: true,
+      brandFont: true,
     }
   });
-  const theme = getPublicThemePreset(profile?.plan ?? "FREE", profile?.themePreset);
+  const appearance = getBrandAppearance(
+    profile?.plan ?? "FREE",
+    profile?.brandColor,
+    profile?.brandFont,
+  );
 
   return (
-    <div className="flex min-h-screen bg-paper font-jakarta text-ink" data-brand-theme={theme.id}>
+    <div
+      className="flex min-h-screen bg-paper font-jakarta text-ink"
+      data-brand-color={appearance.color}
+      data-brand-font={appearance.font}
+    >
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-auto pt-16 md:pt-0">{children}</div>
     </div>

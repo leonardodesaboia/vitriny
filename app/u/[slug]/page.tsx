@@ -10,7 +10,7 @@ import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
 import { parseProfileLinks } from "@/lib/profile-links";
 import { normalizeSocialUrl, SOCIAL_LABELS } from "@/lib/social-links";
-import { getPublicThemePreset } from "@/lib/theme-presets";
+import { getBrandAppearance } from "@/lib/brand-appearance";
 import {
   formatPhoneBR,
   phoneToTelHref,
@@ -44,7 +44,8 @@ const getProfile = cache(async (slug: string) => {
       businessHours: true,
       isPublished: true,
       plan: true,
-      themePreset: true,
+      brandColor: true,
+      brandFont: true,
       services: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -204,7 +205,11 @@ export default async function PublicProviderProfilePage({
     whatsappHref: string | null;
   }[];
 
-  const theme = getPublicThemePreset(profile.plan, profile.themePreset);
+  const appearance = getBrandAppearance(
+    profile.plan,
+    profile.brandColor,
+    profile.brandFont,
+  );
 
   const allLinks = [
     ...socialLinks.map((link) => ({ key: link.network, label: link.label, href: link.href, nofollow: false })),
@@ -218,7 +223,8 @@ export default async function PublicProviderProfilePage({
   return (
     <main
       className="min-h-screen bg-paper text-ink font-jakarta"
-      data-brand-theme={theme.id}
+      data-brand-color={appearance.color}
+      data-brand-font={appearance.font}
     >
       <StorefrontViewBeacon slug={slug} />
 

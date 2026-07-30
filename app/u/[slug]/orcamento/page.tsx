@@ -12,7 +12,7 @@ import {
   PUBLIC_LIMIT_ERROR_MESSAGES
 } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
-import { getPublicThemePreset } from "@/lib/theme-presets";
+import { getBrandAppearance } from "@/lib/brand-appearance";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
 
 type PublicQuoteRequestPageProps = {
@@ -60,7 +60,8 @@ export default async function PublicQuoteRequestPage({
       businessName: true,
       isPublished: true,
       plan: true,
-      themePreset: true,
+      brandColor: true,
+      brandFont: true,
       phone: true,
       email: true,
       pixKey: true,
@@ -98,7 +99,11 @@ export default async function PublicQuoteRequestPage({
     : null;
 
   const selectableServices = profile.services;
-  const theme = getPublicThemePreset(profile.plan, profile.themePreset);
+  const appearance = getBrandAppearance(
+    profile.plan,
+    profile.brandColor,
+    profile.brandFont,
+  );
 
   const pageLabel =
     selectedService?.pricingType === "FIXED"
@@ -111,7 +116,8 @@ export default async function PublicQuoteRequestPage({
   return (
     <main
       className="min-h-screen bg-paper px-6 py-12 text-ink font-jakarta"
-      data-brand-theme={theme.id}
+      data-brand-color={appearance.color}
+      data-brand-font={appearance.font}
     >
       {selectedService ? (
         <StorefrontViewBeacon slug={slug} serviceId={selectedService.id} />

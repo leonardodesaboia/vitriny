@@ -18,7 +18,7 @@
   --font-brand-display: var(--font-fraunces);
 }
 
-[data-brand-theme="DEFAULT"] {
+[data-brand-color="FOREST"] {
   --color-paper: 245 240 232;
   --color-paper-soft: 237 232 222;
   --color-ink: 28 25 23;
@@ -28,11 +28,9 @@
   --color-mint: 212 235 217;
   --color-amber: 201 125 63;
   --color-amber-soft: 245 230 211;
-  --font-brand-body: var(--font-jakarta);
-  --font-brand-display: var(--font-fraunces);
 }
 
-[data-brand-theme="CLEAN"] {
+[data-brand-color="OCEAN"] {
   --color-paper: 248 250 252;
   --color-paper-soft: 226 232 240;
   --color-ink: 15 23 42;
@@ -42,39 +40,21 @@
   --color-mint: 224 242 254;
   --color-amber: 217 119 6;
   --color-amber-soft: 254 243 199;
-  --font-brand-body: var(--font-jakarta);
-  --font-brand-display: var(--font-jakarta);
 }
 
-[data-brand-theme="BEAUTY"] {
+[data-brand-color="ROSE"] {
   --color-paper: 255 241 242;
   --color-paper-soft: 255 228 230;
   --color-ink: 41 37 36;
-  --color-ink-muted: 120 113 108;
+  --color-ink-muted: 115 105 102;
   --color-leaf: 190 18 60;
   --color-leaf-hover: 159 18 57;
   --color-mint: 255 228 230;
   --color-amber: 194 65 12;
   --color-amber-soft: 255 237 213;
-  --font-brand-body: var(--font-jakarta);
-  --font-brand-display: var(--font-fraunces);
 }
 
-[data-brand-theme="CREATIVE"] {
-  --color-paper: 236 254 255;
-  --color-paper-soft: 207 250 254;
-  --color-ink: 15 23 42;
-  --color-ink-muted: 71 85 105;
-  --color-leaf: 192 38 211;
-  --color-leaf-hover: 162 28 175;
-  --color-mint: 217 249 157;
-  --color-amber: 8 145 178;
-  --color-amber-soft: 207 250 254;
-  --font-brand-body: var(--font-jakarta);
-  --font-brand-display: var(--font-jakarta);
-}
-
-[data-brand-theme="PREMIUM"] {
+[data-brand-color="GOLD"] {
   --color-paper: 245 245 244;
   --color-paper-soft: 231 229 228;
   --color-ink: 28 25 23;
@@ -84,22 +64,84 @@
   --color-mint: 254 243 199;
   --color-amber: 180 83 9;
   --color-amber-soft: 254 243 199;
+}
+
+[data-brand-color="SLATE"] {
+  --color-paper: 248 250 252;
+  --color-paper-soft: 226 232 240;
+  --color-ink: 15 23 42;
+  --color-ink-muted: 71 85 105;
+  --color-leaf: 51 65 85;
+  --color-leaf-hover: 30 41 59;
+  --color-mint: 226 232 240;
+  --color-amber: 100 116 139;
+  --color-amber-soft: 241 245 249;
+}
+
+[data-brand-color="LAVENDER"] {
+  --color-paper: 250 245 255;
+  --color-paper-soft: 243 232 255;
+  --color-ink: 46 16 101;
+  --color-ink-muted: 91 77 121;
+  --color-leaf: 109 40 217;
+  --color-leaf-hover: 91 33 182;
+  --color-mint: 237 233 254;
+  --color-amber: 147 51 234;
+  --color-amber-soft: 243 232 255;
+}
+
+[data-brand-color="TERRACOTTA"] {
+  --color-paper: 255 247 237;
+  --color-paper-soft: 254 226 202;
+  --color-ink: 67 20 7;
+  --color-ink-muted: 124 69 46;
+  --color-leaf: 154 52 18;
+  --color-leaf-hover: 124 45 18;
+  --color-mint: 254 215 170;
+  --color-amber: 194 65 12;
+  --color-amber-soft: 255 237 213;
+}
+
+[data-brand-color="TEAL"] {
+  --color-paper: 240 253 250;
+  --color-paper-soft: 204 251 241;
+  --color-ink: 19 78 74;
+  --color-ink-muted: 17 94 89;
+  --color-leaf: 15 118 110;
+  --color-leaf-hover: 17 94 89;
+  --color-mint: 204 251 241;
+  --color-amber: 13 148 136;
+  --color-amber-soft: 204 251 241;
+}
+
+[data-brand-font="CLASSIC"] {
   --font-brand-body: var(--font-jakarta);
   --font-brand-display: var(--font-fraunces);
 }
 
-[data-brand-theme="BOLD"] {
-  --color-paper: 255 247 237;
-  --color-paper-soft: 254 215 170;
-  --color-ink: 24 24 27;
-  --color-ink-muted: 82 82 91;
-  --color-leaf: 220 38 38;
-  --color-leaf-hover: 185 28 28;
-  --color-mint: 254 202 202;
-  --color-amber: 234 88 12;
-  --color-amber-soft: 255 237 213;
+[data-brand-font="MODERN"] {
   --font-brand-body: var(--font-jakarta);
   --font-brand-display: var(--font-jakarta);
+}
+
+[data-brand-font="ELEGANT"] {
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-playfair);
+}
+
+[data-brand-font="GEOMETRIC"] {
+  --font-brand-body: var(--font-space-grotesk);
+  --font-brand-display: var(--font-space-grotesk);
+}
+
+[data-brand-font="FRIENDLY"] {
+  --font-brand-body: var(--font-nunito);
+  --font-brand-display: var(--font-nunito);
+}
+
+[data-brand-font="EDITORIAL"] {
+  --font-brand-body: var(--font-jakarta);
+  --font-brand-display: var(--font-lora);
 }
 
 * {

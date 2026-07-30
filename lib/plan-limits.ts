@@ -83,10 +83,6 @@ export const canUseServiceImages = (plan: PlanTier) =>
 export const canUseBrandCustomization = (plan: PlanTier) =>
   PLAN_FEATURES[plan].brandCustomization;
 
-// Compatibilidade temporária enquanto a interface migra dos presets para
-// escolhas independentes de cor e tipografia.
-export const canUseThemePresets = canUseBrandCustomization;
-
 export const canUseStorefrontAnalytics = (plan: PlanTier) =>
   PLAN_FEATURES[plan].storefrontAnalytics;
 
