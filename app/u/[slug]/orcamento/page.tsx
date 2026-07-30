@@ -14,6 +14,9 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getBrandAppearance } from "@/lib/brand-appearance";
 import { phoneToWhatsAppNumber } from "@/lib/utils/phone";
+import { privateMetadata } from "@/lib/seo/metadata";
+
+export const metadata = privateMetadata("Pedir orçamento");
 
 type PublicQuoteRequestPageProps = {
   params: Promise<{

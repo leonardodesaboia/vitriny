@@ -1,5 +1,9 @@
 import Link from "next/link";
 
+import { privateMetadata } from "@/lib/seo/metadata";
+
+export const metadata = privateMetadata("Página não encontrada");
+
 export default function NotFound() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-paper px-6 font-jakarta text-ink">

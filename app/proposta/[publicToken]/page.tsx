@@ -8,6 +8,9 @@ import { createPixPayment } from "@/lib/pix";
 import { getBrandAppearance } from "@/lib/brand-appearance";
 import { formatPhoneBR } from "@/lib/utils/phone";
 import { isProposalExpired } from "@/lib/utils/date";
+import { privateMetadata } from "@/lib/seo/metadata";
+
+export const metadata = privateMetadata("Proposta");
 
 type PublicProposalPageProps = {
   params: Promise<{

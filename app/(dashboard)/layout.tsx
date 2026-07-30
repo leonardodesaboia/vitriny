@@ -3,6 +3,9 @@ import { auth } from "@/auth";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { getBrandAppearance } from "@/lib/brand-appearance";
 import { prisma } from "@/lib/prisma";
+import { PRIVATE_METADATA } from "@/lib/seo/metadata";
+
+export const metadata = PRIVATE_METADATA;
 
 export const dynamic = "force-dynamic";
 
