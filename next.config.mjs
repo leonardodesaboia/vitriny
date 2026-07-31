@@ -17,6 +17,8 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Gera um build auto-contido em .next/standalone para uma imagem Docker enxuta.
+  output: "standalone",
   outputFileTracingRoot: projectRoot,
   devIndicators: false,
   serverExternalPackages: ["@react-pdf/renderer"],

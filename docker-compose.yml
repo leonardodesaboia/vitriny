@@ -8,9 +8,18 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vitriny}
       POSTGRES_DB: vitriny
     ports:
-      - "5432:5432"
+      # Em produção, mantenha o banco fechado pra internet. Remova este mapeamento
+      # ou use 127.0.0.1:5432:5432 pra expor só localmente.
+      - "127.0.0.1:5432:5432"
     volumes:
       - vitriny-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vitriny -d vitriny"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - vitriny
 
   minio:
     image: minio/minio:latest
@@ -21,8 +30,10 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
     ports:
-      - "9000:9000" # S3 API
-      - "9001:9001" # Console web
+      # Não exposto publicamente: o acesso público às imagens passa pelo Caddy
+      # (cdn.SEU-DOMINIO). Console só via localhost/túnel SSH se precisar.
+      - "127.0.0.1:9000:9000" # S3 API
+      - "127.0.0.1:9001:9001" # Console web
     volumes:
       - vitriny-minio-data:/data
     healthcheck:
@@ -30,6 +41,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - vitriny
 
   # Cria o bucket automaticamente na primeira execução
   minio-init:
@@ -47,7 +60,52 @@ services:
         mc mb --ignore-existing local/vitriny &&
         mc anonymous set download local/vitriny
       "
+    networks:
+      - vitriny
+
+  app:
+    build:
+      context: .
+      target: runner
+    image: vitriny-app
+    container_name: vitriny-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    # O próprio container aplica as migrations no start (docker-entrypoint.sh),
+    # por isso só precisa do Postgres saudável e do bucket criado.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    networks:
+      - vitriny
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: vitriny-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      CDN_DOMAIN: ${CDN_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - vitriny-caddy-data:/data
+      - vitriny-caddy-config:/config
+    networks:
+      - vitriny
+
+networks:
+  vitriny:
 
 volumes:
   vitriny-postgres-data:
   vitriny-minio-data:
+  vitriny-caddy-data:
+  vitriny-caddy-config:
