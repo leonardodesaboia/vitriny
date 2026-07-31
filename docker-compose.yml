@@ -79,27 +79,16 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
+    # Porta interna do app. No Easypanel, aponte o domínio pra este serviço
+    # nesta porta (o Traefik do painel faz o proxy + TLS).
+    expose:
+      - "3000"
     networks:
       - vitriny
 
-  caddy:
-    image: caddy:2-alpine
-    container_name: vitriny-caddy
-    restart: unless-stopped
-    depends_on:
-      - app
-    ports:
-      - "80:80"
-      - "443:443"
-    environment:
-      DOMAIN: ${DOMAIN}
-      CDN_DOMAIN: ${CDN_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - vitriny-caddy-data:/data
-      - vitriny-caddy-config:/config
-    networks:
-      - vitriny
+# Proxy/TLS: no Easypanel é o Traefik do painel (não coloque Caddy aqui, ele
+# briga pelas portas 80/443). Pra VPS crua, use o override:
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
 
 networks:
   vitriny:
@@ -107,5 +96,3 @@ networks:
 volumes:
   vitriny-postgres-data:
   vitriny-minio-data:
-  vitriny-caddy-data:
-  vitriny-caddy-config:

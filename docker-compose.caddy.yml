@@ -1,0 +1,28 @@
+# Override APENAS pra VPS crua (sem Easypanel/Traefik). Adiciona o Caddy como
+# reverse proxy + TLS automático. Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
+#
+# NÃO use no Easypanel: lá o Traefik do painel já ocupa as portas 80/443.
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: vitriny-caddy
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      CDN_DOMAIN: ${CDN_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - vitriny-caddy-data:/data
+      - vitriny-caddy-config:/config
+    networks:
+      - vitriny
+
+volumes:
+  vitriny-caddy-data:
+  vitriny-caddy-config:

@@ -12,32 +12,24 @@ Dois caminhos abaixo:
 
 ## A) Easypanel (Hostinger)
 
-O Easypanel usa Traefik por baixo: **reverse proxy e TLS (Let's Encrypt) são
-automáticos**. Você cria 3 serviços no painel.
+O Easypanel roda **este `docker-compose.yml`** direto (App do tipo **Compose**),
+já buildando a imagem do `app`. O **proxy + TLS (Let's Encrypt) é do Traefik do
+painel** — por isso o compose base **não tem Caddy** (ele brigaria pelas portas
+80/443). O compose sobe 4 serviços: `postgres`, `minio`, `minio-init` e `app`.
 
-### 1. Postgres
-Crie um serviço de template **Postgres**. Anote usuário, senha e o **nome do
-host interno** (o próprio nome do serviço, ex.: `vitriny_postgres`).
+### 1. Criar o serviço Compose
+- App do tipo **Compose**, apontando pro repositório Git (usa o `docker-compose.yml`).
 
-### 2. MinIO
-Crie um serviço **MinIO** (template, ou imagem `minio/minio`). Defina
-`MINIO_ROOT_USER` / `MINIO_ROOT_PASSWORD`. Exponha um domínio pro MinIO (aba
-Domains) — é a URL pública das imagens. Crie o bucket `vitriny` e deixe-o com
-leitura pública (`download`) — via console do MinIO ou `mc`.
-
-### 3. App (este repositório)
-- **Source**: aponte pro repositório Git.
-- **Build**: tipo **Dockerfile** (o Easypanel builda a última stage, `runner`).
-- **Domains**: adicione um domínio. **Sem domínio próprio ainda?** Use o
-  subdomínio temporário que o Easypanel gera (baseado no IP, já com HTTPS).
-- **Environment**: cole as variáveis (ver bloco abaixo).
-
-### Variáveis de ambiente (aba Environment do App)
-Use os **nomes internos dos serviços** como host de banco/MinIO e o **domínio
-público** nas URLs. Gere o segredo com `openssl rand -base64 33`.
+### 2. Environment (o painel materializa o `.env`)
+Na aba **Environment** cole as variáveis abaixo — o Easypanel grava um `.env`
+que o compose lê via `env_file`. Hosts de banco/MinIO usam o **nome do serviço**
+do compose (`postgres`, `minio`). Gere o segredo com `openssl rand -base64 33`.
 
 ```
-DATABASE_URL=postgresql://USER:SENHA@vitriny_postgres:5432/vitriny
+POSTGRES_PASSWORD=uma-senha-forte
+MINIO_ROOT_USER=um-usuario
+MINIO_ROOT_PASSWORD=uma-senha-forte
+DATABASE_URL=postgresql://vitriny:uma-senha-forte@postgres:5432/vitriny
 AUTH_SECRET=<openssl rand -base64 33>
 AUTH_URL=https://SEU-DOMINIO
 AUTH_TRUST_HOST=true
@@ -51,30 +43,43 @@ STRIPE_PRO_PRICE_ID=...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
 NEXT_PUBLIC_APP_URL=https://SEU-DOMINIO
 TZ=America/Sao_Paulo
-S3_ENDPOINT=http://vitriny_minio:9000
+S3_ENDPOINT=http://minio:9000
 S3_REGION=us-east-1
-S3_ACCESS_KEY_ID=<MINIO_ROOT_USER>
-S3_SECRET_ACCESS_KEY=<MINIO_ROOT_PASSWORD>
+S3_ACCESS_KEY_ID=<= MINIO_ROOT_USER>
+S3_SECRET_ACCESS_KEY=<= MINIO_ROOT_PASSWORD>
 S3_BUCKET_NAME=vitriny
 S3_PUBLIC_BASE_URL=https://SEU-DOMINIO-DO-MINIO/vitriny
 S3_FORCE_PATH_STYLE=true
 ```
 
+> `POSTGRES_PASSWORD` tem que bater com a senha dentro da `DATABASE_URL`, e
+> `S3_ACCESS_KEY_ID`/`S3_SECRET_ACCESS_KEY` com `MINIO_ROOT_USER`/`_PASSWORD`.
+
+### 3. Domínios (aba Domains do painel)
+Aponte os domínios pros serviços do compose, **na porta interna certa**:
+- **app** → porta **3000** (a interface / API).
+- **minio** → porta **9000** (URL pública das imagens; casa com `S3_PUBLIC_BASE_URL`).
+
+**Sem domínio próprio ainda?** Use os subdomínios temporários que o Easypanel
+gera (baseados no IP, já com HTTPS) — um pro `app`, outro pro `minio` — e coloque
+essas URLs em `AUTH_URL`/`NEXT_PUBLIC_APP_URL` e `S3_PUBLIC_BASE_URL`.
+
 ### 4. Deploy
-Clique em **Deploy**. No start, o container aplica as migrations e sobe. Veja o
-log — deve aparecer `[entrypoint] Aplicando migrations do Prisma...`.
+Clique em **Deploy**. No start, o `app` aplica as migrations e sobe. Confira o
+log do serviço `app`: deve aparecer `[entrypoint] Aplicando migrations do
+Prisma...` → `All migrations have been successfully applied.` → `✓ Ready`.
 
 ### 5. Serviços externos
 - **Google OAuth**: redirect `https://SEU-DOMINIO/api/auth/callback/google`.
-- **Stripe webhook**: endpoint `https://SEU-DOMINIO/...` (confira o caminho em
-  `app/`), copie o `whsec_...` pro `STRIPE_WEBHOOK_SECRET` e redeploy.
+- **Stripe webhook**: endpoint `https://SEU-DOMINIO/api/stripe/webhook`, copie o
+  `whsec_...` pro `STRIPE_WEBHOOK_SECRET` e redeploy.
 - **Resend**: verifique o domínio de envio do `EMAIL_FROM`.
 
 ### Aplicar o domínio próprio depois
 1. Comprar o domínio → registro **A** apontando pro IP da VPS.
-2. App → aba **Domains** → adicionar o domínio (TLS sai automático).
+2. Aba **Domains** → adicionar o domínio no serviço `app` (TLS automático).
 3. Trocar `AUTH_URL`, `NEXT_PUBLIC_APP_URL` (e `S3_PUBLIC_BASE_URL` se mudar o
-   domínio do MinIO) → **Deploy**.
+   domínio do MinIO) no Environment → **Deploy**.
 4. Atualizar redirect do Google e URL do webhook do Stripe.
 
 > ⚠️ `NEXT_PUBLIC_*` são embutidas **no build**. Trocar de domínio exige um
@@ -85,14 +90,18 @@ log — deve aparecer `[entrypoint] Aplicando migrations do Prisma...`.
 
 ## B) Docker Compose na unha (VPS crua)
 
-Sobe tudo (app, Postgres, MinIO, Caddy) num único compose. Use se **não** estiver
-no Easypanel.
+Sobe tudo (app, Postgres, MinIO) e adiciona o **Caddy** via override, pra ter
+proxy + TLS. Use só se **não** estiver no Easypanel (lá o Traefik já cuida disso).
 
 1. Instalar Docker: `curl -fsSL https://get.docker.com | sh`
 2. Dois registros **A** (`app.` e `cdn.`) → IP da VPS.
 3. `cp .env.production.example .env` e preencher (host do banco = `postgres`,
-   `S3_ENDPOINT=http://minio:9000`, `AUTH_TRUST_HOST=true`).
-4. `docker compose up -d --build`
+   `S3_ENDPOINT=http://minio:9000`, `AUTH_TRUST_HOST=true`, além de `DOMAIN` e
+   `CDN_DOMAIN` usados pelo Caddy).
+4. Subir com o override do Caddy:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+   ```
 
 Ordem garantida: `postgres` (healthy) → `minio-init` (bucket) → `app` (aplica
 migrations no start) → `caddy` (emite TLS). Logs: `docker compose logs -f app caddy`.
