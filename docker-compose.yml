@@ -7,10 +7,6 @@ services:
       POSTGRES_USER: vitriny
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vitriny}
       POSTGRES_DB: vitriny
-    ports:
-      # Em produção, mantenha o banco fechado pra internet. Remova este mapeamento
-      # ou use 127.0.0.1:5432:5432 pra expor só localmente.
-      - "127.0.0.1:5432:5432"
     volumes:
       - vitriny-postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -18,8 +14,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    networks:
-      - vitriny
 
   minio:
     image: minio/minio:latest
@@ -29,11 +23,6 @@ services:
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-    ports:
-      # Não exposto publicamente: o acesso público às imagens passa pelo Caddy
-      # (cdn.SEU-DOMINIO). Console só via localhost/túnel SSH se precisar.
-      - "127.0.0.1:9000:9000" # S3 API
-      - "127.0.0.1:9001:9001" # Console web
     volumes:
       - vitriny-minio-data:/data
     healthcheck:
@@ -41,8 +30,6 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    networks:
-      - vitriny
 
   # Cria o bucket automaticamente na primeira execução
   minio-init:
@@ -60,15 +47,16 @@ services:
         mc mb --ignore-existing local/vitriny &&
         mc anonymous set download local/vitriny
       "
-    networks:
-      - vitriny
 
   app:
     build:
       context: .
       target: runner
     image: vitriny-app
-    container_name: vitriny-app
+    # O proxy (Traefik) do Easypanel roteia o domínio pro host "vitriny_vitriny"
+    # (nome do stack). Este container_name faz o app atender exatamente por esse
+    # nome na rede, senão dá Bad Gateway. Porta interna: 3000.
+    container_name: vitriny_vitriny
     restart: unless-stopped
     env_file:
       - .env
@@ -79,19 +67,13 @@ services:
         condition: service_healthy
       minio-init:
         condition: service_completed_successfully
-    # Porta interna do app. No Easypanel, aponte o domínio pra este serviço
-    # nesta porta (o Traefik do painel faz o proxy + TLS).
     expose:
       - "3000"
-    networks:
-      - vitriny
 
-# Proxy/TLS: no Easypanel é o Traefik do painel (não coloque Caddy aqui, ele
-# briga pelas portas 80/443). Pra VPS crua, use o override:
+# Sem rede customizada: os serviços usam a rede default do compose, que é onde o
+# proxy do Easypanel se conecta pra alcançar o app.
+# Proxy/TLS: no Easypanel é o Traefik do painel. Pra VPS crua, use o override:
 #   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d
-
-networks:
-  vitriny:
 
 volumes:
   vitriny-postgres-data:

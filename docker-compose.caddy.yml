@@ -20,8 +20,6 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - vitriny-caddy-data:/data
       - vitriny-caddy-config:/config
-    networks:
-      - vitriny
 
 volumes:
   vitriny-caddy-data:
