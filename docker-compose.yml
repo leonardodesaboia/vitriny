@@ -1,7 +1,6 @@
 services:
   postgres:
     image: postgres:16
-    container_name: vitriny-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: vitriny
@@ -17,7 +16,6 @@ services:
 
   minio:
     image: minio/minio:latest
-    container_name: vitriny-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -34,7 +32,6 @@ services:
   # Cria o bucket automaticamente na primeira execução
   minio-init:
     image: minio/mc:latest
-    container_name: vitriny-minio-init
     depends_on:
       minio:
         condition: service_healthy
@@ -53,10 +50,8 @@ services:
       context: .
       target: runner
     image: vitriny-app
-    # O proxy (Traefik) do Easypanel roteia o domínio pro host "vitriny_vitriny"
-    # (nome do stack). Este container_name faz o app atender exatamente por esse
-    # nome na rede, senão dá Bad Gateway. Porta interna: 3000.
-    container_name: vitriny_vitriny
+    # Sem container_name fixo: o Easypanel nomeia/roteia o serviço "app" do jeito
+    # dele (o domínio deve apontar pra "Serviço Compose = app", porta 3000).
     restart: unless-stopped
     env_file:
       - .env
