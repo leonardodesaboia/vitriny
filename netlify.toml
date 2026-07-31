@@ -5,5 +5,5 @@
 # Exclude documentation and local dev files from secrets scanning.
 # These files contain placeholder/example values intentionally, not real secrets.
 [build.environment]
-  SECRETS_SCAN_OMIT_KEYS = "AUTH_URL,NEXT_PUBLIC_APP_URL"
+  SECRETS_SCAN_OMIT_KEYS = "AUTH_URL,NEXT_PUBLIC_APP_URL,S3_BUCKET_NAME"
   SECRETS_SCAN_OMIT_PATHS = ".env.example,README.md,docker-compose.yml,docs,tests,playwright.config.ts,vitest.integration.config.ts,.netlify"
