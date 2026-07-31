@@ -64,11 +64,13 @@ services:
         condition: service_completed_successfully
     expose:
       - "3000"
-    # Swarm (Easypanel): resolve o nome do serviço direto pros IPs dos tasks, sem
-    # passar pela VIP. Evita o 502 do Traefik quando o load-balancer (IPVS) da VIP
-    # fica em estado quebrado após rolling updates. O Traefik já faz o LB dele.
-    deploy:
-      endpoint_mode: dnsrr
+    # NOTA (Easypanel/Swarm): o app PRECISA rodar em `endpoint_mode: dnsrr`, pois o
+    # load-balancer VIP do Swarm não roteia para serviços em múltiplas redes overlay
+    # (Traefik dá 502). PORÉM o Easypanel IGNORA o bloco `deploy:` do compose e
+    # recria o serviço em `vip` a cada Deploy — por isso o dnsrr NÃO é declarado
+    # aqui, e sim garantido por um systemd no host (vitriny-dnsrr-guard.service),
+    # que reaplica dnsrr após cada deploy. Detalhes e runbook:
+    # docs/DEPLOY_TROUBLESHOOTING_EASYPANEL.md
 
 # Sem rede customizada: os serviços usam a rede default do compose, que é onde o
 # proxy do Easypanel se conecta pra alcançar o app.
