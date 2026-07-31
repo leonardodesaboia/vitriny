@@ -64,6 +64,11 @@ services:
         condition: service_completed_successfully
     expose:
       - "3000"
+    # Swarm (Easypanel): resolve o nome do serviço direto pros IPs dos tasks, sem
+    # passar pela VIP. Evita o 502 do Traefik quando o load-balancer (IPVS) da VIP
+    # fica em estado quebrado após rolling updates. O Traefik já faz o LB dele.
+    deploy:
+      endpoint_mode: dnsrr
 
 # Sem rede customizada: os serviços usam a rede default do compose, que é onde o
 # proxy do Easypanel se conecta pra alcançar o app.
