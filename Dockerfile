@@ -19,6 +19,13 @@ FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# NEXT_PUBLIC_* são embutidas no bundle pelo `next build`, então precisam
+# chegar via --build-arg (o .env com os segredos fica de fora da imagem por
+# causa do .dockerignore, e só chega em runtime via env_file no compose).
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 # O script "build" já roda `prisma generate && next build --webpack`.
 RUN npm run build
 # Este projeto não usa a pasta public/ (assets vêm do App Router). Garante que

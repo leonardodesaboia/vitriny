@@ -85,6 +85,13 @@ Prisma...` → `All migrations have been successfully applied.` → `✓ Ready`.
 > ⚠️ `NEXT_PUBLIC_*` são embutidas **no build**. Trocar de domínio exige um
 > **novo Deploy** (rebuild) — não basta editar a env em runtime. No Easypanel
 > todo Deploy rebuilda, então é só editar e clicar em Deploy.
+>
+> O `.env` com os segredos fica de fora do contexto de build (`.dockerignore`),
+> então `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` e `NEXT_PUBLIC_APP_URL` chegam ao
+> `next build` via `build.args` no `docker-compose.yml` (que o Compose resolve
+> a partir do `.env` que o Easypanel grava do lado da imagem antes do build).
+> Sem isso, o Next embute `undefined` no bundle do navegador e a tela de
+> assinatura quebra com "Algo deu errado".
 
 ---
 

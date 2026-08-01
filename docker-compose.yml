@@ -49,6 +49,12 @@ services:
     build:
       context: .
       target: runner
+      # NEXT_PUBLIC_* precisam ser passadas como build arg: o .dockerignore
+      # exclui o .env do contexto (segredos não vão pra imagem), então sem
+      # isso o `next build` embute "undefined" no bundle do navegador.
+      args:
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     image: vitriny-app
     # Sem container_name fixo: o Easypanel nomeia/roteia o serviço "app" do jeito
     # dele (o domínio deve apontar pra "Serviço Compose = app", porta 3000).
