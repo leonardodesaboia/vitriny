@@ -107,3 +107,80 @@ describe("requireProviderProfile", () => {
     );
   });
 });
+
+describe("resolveEffectivePlan", () => {
+  it("mantém PRO quando ainda não venceu", async () => {
+    const { db } = await setup();
+    const future = new Date(Date.now() + 1000 * 60 * 60 * 24);
+
+    const { resolveEffectivePlan } = await import("@/lib/actions/auth-guard");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      currentPeriodEnd: future
+    });
+
+    expect(result).toEqual({ plan: "PRO", currentPeriodEnd: future });
+    expect(db.providerProfile.update).not.toHaveBeenCalled();
+  });
+
+  it("mantém PRO quando há assinatura Stripe, mesmo com currentPeriodEnd vencido", async () => {
+    const { db } = await setup();
+    const past = new Date("2020-01-01");
+
+    const { resolveEffectivePlan } = await import("@/lib/actions/auth-guard");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: "sub_123",
+      currentPeriodEnd: past
+    });
+
+    expect(result).toEqual({ plan: "PRO", currentPeriodEnd: past });
+    expect(db.providerProfile.update).not.toHaveBeenCalled();
+  });
+
+  it("rebaixa pra FREE e persiste quando o Pix manual venceu", async () => {
+    const { db } = await setup();
+    db.providerProfile.update.mockResolvedValue({});
+    const past = new Date("2020-01-01");
+
+    const { resolveEffectivePlan } = await import("@/lib/actions/auth-guard");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      currentPeriodEnd: past
+    });
+
+    expect(result).toEqual({ plan: "FREE", currentPeriodEnd: null });
+    expect(db.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: "profile-1" },
+      data: { plan: "FREE", currentPeriodEnd: null }
+    });
+  });
+});
+
+describe("requireProviderProfile com auto-rebaixamento", () => {
+  it("devolve plan FREE já corrigido quando o Pix manual venceu", async () => {
+    const { auth, db } = await setup();
+    auth.mockResolvedValue(makeSession("user-1") as never);
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        currentPeriodEnd: new Date("2020-01-01")
+      })
+    );
+    db.providerProfile.update.mockResolvedValue({});
+
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    const result = await requireProviderProfile();
+
+    expect(result.profile?.plan).toBe("FREE");
+    expect(db.providerProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { plan: "FREE", currentPeriodEnd: null } })
+    );
+  });
+});

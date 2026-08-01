@@ -83,6 +83,12 @@ export function makePrismaMock() {
       updateMany: vi.fn()
     },
     proposalStatusHistory: { create: vi.fn() },
+    proPixPayment: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      findMany: vi.fn(),
+      update: vi.fn()
+    },
     $transaction: vi.fn()
   };
 
@@ -105,6 +111,8 @@ export function makeProfile(overrides = {}) {
     id: "profile-1",
     plan: "FREE" as const,
     businessType: "SERVICES" as const,
+    stripeSubscriptionId: null as string | null,
+    currentPeriodEnd: null as Date | null,
     ...overrides
   };
 }

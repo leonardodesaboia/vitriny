@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makeFormData, makePrismaMock, type PrismaMock } from "../helpers";
+import { makeFormData, makePrismaMock, makeProfile, type PrismaMock } from "../helpers";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/actions/auth-guard", () => ({
@@ -358,7 +358,7 @@ describe("updateQuoteRequestDescription", () => {
   it("atualiza a observação de um pedido do próprio prestador", async () => {
     const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
     vi.mocked(requireProviderProfile).mockResolvedValue({
-      profile: { id: "profile-1", plan: "FREE", businessType: "SERVICES" },
+      profile: makeProfile({ id: "profile-1", plan: "FREE" }),
       userId: "user-1"
     });
     db.quoteRequest.findFirst.mockResolvedValue({ id: "request-1" });
