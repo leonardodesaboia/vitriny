@@ -18,7 +18,7 @@ import { PublicLinkCard } from "@/components/onboarding/PublicLinkCard";
 import { getRecentDashboardActivity } from "@/lib/dashboard-activity";
 import {
   buildMonthlyRevenueSummary,
-  buildOnboardingOutcomeStep,
+  buildOnboardingOutcomeSteps,
   buildStorefrontViewsSummary,
   mergeItemViewRanking,
   type TopItem
@@ -67,6 +67,7 @@ export default async function DashboardPage() {
     monthlyProposals,
     pendingProposalDeposits,
     fixedRequestCount,
+    customRequestCount,
     approvedRevenue
   ] = profile
     ? await prisma.$transaction([
@@ -115,6 +116,12 @@ export default async function DashboardPage() {
             service: { pricingType: "FIXED" }
           }
         }),
+        prisma.quoteRequest.count({
+          where: {
+            providerId: profile.id,
+            service: { pricingType: "CUSTOM" }
+          }
+        }),
         prisma.proposal.aggregate({
           _sum: { totalAmount: true },
           where: {
@@ -124,7 +131,7 @@ export default async function DashboardPage() {
           }
         })
       ])
-    : [0, 0, 0, 0, 0, 0, 0, 0, null];
+    : [0, 0, 0, 0, 0, 0, 0, 0, 0, null];
 
   const recentActivity = profile
     ? await getRecentDashboardActivity(profile.id)
@@ -192,7 +199,8 @@ export default async function DashboardPage() {
   const limits = profile ? getPlanLimits(profile.plan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
   const activeServicesCount = activeServices.length;
-  const onboardingOutcomeStep = buildOnboardingOutcomeStep({
+  const onboardingOutcomeSteps = buildOnboardingOutcomeSteps({
+    customRequestCount,
     fixedRequestCount,
     hasActiveCustomService: activeServices.some(
       (service) => service.pricingType === "CUSTOM"
@@ -249,7 +257,7 @@ export default async function DashboardPage() {
       isCopyStep: true,
       actionLabel: "Copiar link"
     },
-    onboardingOutcomeStep
+    ...onboardingOutcomeSteps
   ];
 
   const metrics: DashboardMetric[] = [

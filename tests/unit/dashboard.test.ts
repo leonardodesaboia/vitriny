@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildMonthlyRevenueSummary,
   buildRecentDashboardActivity,
-  buildOnboardingOutcomeStep,
+  buildOnboardingOutcomeSteps,
   dashboardRequestViewWhere,
   matchesDashboardRequestView,
   parseDashboardRequestView
@@ -103,31 +103,53 @@ describe("buildRecentDashboardActivity", () => {
   });
 });
 
-describe("buildOnboardingOutcomeStep", () => {
-  it("orienta serviço CUSTOM para a primeira proposta", () => {
-    expect(
-      buildOnboardingOutcomeStep({
-        fixedRequestCount: 0,
-        hasActiveCustomService: true,
-        hasActiveFixedService: false,
-        proposalCount: 0
-      })
-    ).toMatchObject({
+describe("buildOnboardingOutcomeSteps", () => {
+  it("orienta serviço CUSTOM a receber o primeiro pedido antes de propor", () => {
+    const steps = buildOnboardingOutcomeSteps({
+      customRequestCount: 0,
+      fixedRequestCount: 0,
+      hasActiveCustomService: true,
+      hasActiveFixedService: false,
+      proposalCount: 0
+    });
+
+    expect(steps.map((step) => step.id)).toEqual(["custom-request", "proposal"]);
+    expect(steps[0]).toMatchObject({
+      done: false,
+      id: "custom-request",
+      label: "Receber primeiro pedido"
+    });
+    expect(steps[1]).toMatchObject({
       done: false,
       id: "proposal",
       label: "Criar primeira proposta"
     });
   });
 
+  it("marca o pedido CUSTOM como concluído e mantém a proposta pendente", () => {
+    const steps = buildOnboardingOutcomeSteps({
+      customRequestCount: 1,
+      fixedRequestCount: 0,
+      hasActiveCustomService: true,
+      hasActiveFixedService: false,
+      proposalCount: 0
+    });
+
+    expect(steps[0].done).toBe(true);
+    expect(steps[1].done).toBe(false);
+  });
+
   it("orienta serviço FIXED para o primeiro pedido sem exigir proposta", () => {
-    expect(
-      buildOnboardingOutcomeStep({
-        fixedRequestCount: 1,
-        hasActiveCustomService: false,
-        hasActiveFixedService: true,
-        proposalCount: 0
-      })
-    ).toMatchObject({
+    const steps = buildOnboardingOutcomeSteps({
+      customRequestCount: 0,
+      fixedRequestCount: 1,
+      hasActiveCustomService: false,
+      hasActiveFixedService: true,
+      proposalCount: 0
+    });
+
+    expect(steps).toHaveLength(1);
+    expect(steps[0]).toMatchObject({
       done: true,
       id: "fixed-request",
       label: "Receber primeiro pedido"
@@ -136,23 +158,24 @@ describe("buildOnboardingOutcomeStep", () => {
 
   it("aceita proposta ou pedido FIXED quando o prestador oferece os dois tipos", () => {
     const base = {
+      customRequestCount: 0,
       hasActiveCustomService: true,
       hasActiveFixedService: true
     };
 
     expect(
-      buildOnboardingOutcomeStep({
+      buildOnboardingOutcomeSteps({
         ...base,
         fixedRequestCount: 0,
         proposalCount: 1
-      }).done
+      })[0].done
     ).toBe(true);
     expect(
-      buildOnboardingOutcomeStep({
+      buildOnboardingOutcomeSteps({
         ...base,
         fixedRequestCount: 1,
         proposalCount: 0
-      }).done
+      })[0].done
     ).toBe(true);
   });
 });

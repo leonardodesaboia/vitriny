@@ -99,6 +99,7 @@ type DashboardRequest = {
 };
 
 type OnboardingOutcomeInput = {
+  customRequestCount: number;
   fixedRequestCount: number;
   hasActiveCustomService: boolean;
   hasActiveFixedService: boolean;
@@ -131,45 +132,63 @@ export const DASHBOARD_REQUEST_VIEW_LABELS: Record<
   OPEN: "Pedidos em aberto"
 };
 
-export function buildOnboardingOutcomeStep({
+export function buildOnboardingOutcomeSteps({
+  customRequestCount,
   fixedRequestCount,
   hasActiveCustomService,
   hasActiveFixedService,
   proposalCount
-}: OnboardingOutcomeInput): DashboardOnboardingOutcomeStep {
+}: OnboardingOutcomeInput): DashboardOnboardingOutcomeStep[] {
   if (hasActiveFixedService && !hasActiveCustomService) {
-    return {
-      actionLabel: "Ver pedidos",
-      description:
-        "Quando um cliente solicitar um item com preço fixo, o pedido aparecerá no painel.",
-      done: fixedRequestCount > 0,
-      href: "/dashboard/pedidos",
-      id: "fixed-request",
-      label: "Receber primeiro pedido"
-    };
+    return [
+      {
+        actionLabel: "Ver pedidos",
+        description:
+          "Quando um cliente solicitar um item com preço fixo, o pedido aparecerá no painel.",
+        done: fixedRequestCount > 0,
+        href: "/dashboard/pedidos",
+        id: "fixed-request",
+        label: "Receber primeiro pedido"
+      }
+    ];
   }
 
   if (hasActiveCustomService && !hasActiveFixedService) {
-    return {
-      actionLabel: "Ir para pedidos",
-      description:
-        "Responda um pedido com uma proposta e envie o link para o cliente.",
-      done: proposalCount > 0,
-      href: "/dashboard/pedidos",
-      id: "proposal",
-      label: "Criar primeira proposta"
-    };
+    // Sob consulta exige um pedido antes de dar pra propor: sem isso, "criar
+    // proposta" aparece como próximo passo sem nada pra responder.
+    return [
+      {
+        actionLabel: "Ver pedidos",
+        description:
+          "Quando um cliente solicitar um item sob consulta, o pedido aparecerá no painel.",
+        done: customRequestCount > 0,
+        href: "/dashboard/pedidos",
+        id: "custom-request",
+        label: "Receber primeiro pedido"
+      },
+      {
+        actionLabel: "Ir para pedidos",
+        description:
+          "Responda um pedido com uma proposta e envie o link para o cliente.",
+        done: proposalCount > 0,
+        href: "/dashboard/pedidos",
+        id: "proposal",
+        label: "Criar primeira proposta"
+      }
+    ];
   }
 
-  return {
-    actionLabel: "Ir para pedidos",
-    description:
-      "Atenda um pedido de preço fixo ou envie uma proposta para um item sob consulta.",
-    done: fixedRequestCount > 0 || proposalCount > 0,
-    href: "/dashboard/pedidos",
-    id: "first-service",
-    label: "Concluir primeiro atendimento"
-  };
+  return [
+    {
+      actionLabel: "Ir para pedidos",
+      description:
+        "Atenda um pedido de preço fixo ou envie uma proposta para um item sob consulta.",
+      done: fixedRequestCount > 0 || proposalCount > 0,
+      href: "/dashboard/pedidos",
+      id: "first-service",
+      label: "Concluir primeiro atendimento"
+    }
+  ];
 }
 
 const formatBRL = (value: number) =>
