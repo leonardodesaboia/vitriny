@@ -139,6 +139,21 @@ model ProviderProfile {
   proposals         Proposal[]
   proposalTemplates ProposalTemplate[]
   storefrontViews   StorefrontView[]
+  proPixPayments    ProPixPayment[]
+}
+
+model ProPixPayment {
+  id                String    @id @default(cuid())
+  providerProfileId String
+  amount            Decimal   @db.Decimal(10, 2)
+  requestedAt       DateTime  @default(now())
+  clientPaidAt      DateTime?
+  confirmedAt       DateTime?
+  updatedAt         DateTime  @updatedAt
+
+  providerProfile ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)
+
+  @@index([providerProfileId])
 }
 
 model Service {
