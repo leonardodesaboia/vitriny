@@ -152,3 +152,21 @@ export function getCurrentMonthRange(referenceDate = new Date()) {
 export function formatUsage(current: number, limit: number | null) {
   return limit === null ? `${current} / ilimitado` : `${current} / ${limit}`;
 }
+
+type OneTimeProProfile = {
+  plan: PlanTier;
+  stripeSubscriptionId: string | null;
+  currentPeriodEnd: Date | null;
+};
+
+// PRO pago via Pix manual (sem assinatura Stripe) não tem cobrança
+// recorrente — vence sozinho. Assinatura Stripe real nunca cai aqui: o
+// próprio webhook mantém currentPeriodEnd atualizado a cada ciclo.
+export function isOneTimeProExpired(profile: OneTimeProProfile): boolean {
+  return (
+    profile.plan === "PRO" &&
+    profile.stripeSubscriptionId === null &&
+    profile.currentPeriodEnd !== null &&
+    profile.currentPeriodEnd < new Date()
+  );
+}
