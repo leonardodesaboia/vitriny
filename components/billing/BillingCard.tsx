@@ -7,11 +7,13 @@ import {
   createCheckoutSession,
   cancelSubscription,
   reactivateSubscription,
-  createSetupIntent
+  createSetupIntent,
+  requestProPixPayment
 } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { SubscriptionModal } from "@/components/billing/SubscriptionModal";
 import { UpdatePaymentModal } from "@/components/billing/UpdatePaymentModal";
+import { ProPixPaymentModal } from "@/components/billing/ProPixPaymentModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -54,6 +56,12 @@ export function BillingCard({
   // Card update modal
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
   const [showCardSuccess, setShowCardSuccess] = useState(false);
+
+  // Pagamento Pix (sem Stripe) — 1 mês, com ou sem assinatura ativa
+  const [pixPayment, setPixPayment] = useState<
+    { copyPasteCode: string; qrCodeDataUrl: string; paymentId: string } | null
+  >(null);
+  const [pixError, setPixError] = useState<string | null>(null);
 
   function handleSubscribe() {
     setError(null);
@@ -124,6 +132,27 @@ export function BillingCard({
     router.refresh();
   }
 
+  function handlePayWithPix() {
+    setPixError(null);
+    startTransition(async () => {
+      const result = await requestProPixPayment();
+      if ("error" in result) {
+        setPixError(result.error);
+        return;
+      }
+      setPixPayment(result);
+    });
+  }
+
+  function handlePixModalClose() {
+    setPixPayment(null);
+  }
+
+  function handlePixConfirmed() {
+    setPixPayment(null);
+    router.refresh();
+  }
+
   const periodEndLabel = currentPeriodEnd
     ? currentPeriodEnd.toLocaleDateString("pt-BR", {
         day: "2-digit",
@@ -147,6 +176,16 @@ export function BillingCard({
           clientSecret={setupClientSecret}
           onClose={handleCardModalClose}
           onSuccess={handleCardSuccess}
+        />
+      ) : null}
+
+      {pixPayment ? (
+        <ProPixPaymentModal
+          copyPasteCode={pixPayment.copyPasteCode}
+          qrCodeDataUrl={pixPayment.qrCodeDataUrl}
+          paymentId={pixPayment.paymentId}
+          onClose={handlePixModalClose}
+          onConfirmed={handlePixConfirmed}
         />
       ) : null}
 
@@ -218,41 +257,71 @@ export function BillingCard({
 
           <div className="flex w-full flex-col items-start gap-2 sm:w-auto">
             {plan === "PRO" ? (
-              <>
-                {cancelAtPeriodEnd ? (
-                  <button
-                    onClick={handleReactivate}
-                    disabled={pending}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
-                  >
-                    {pending ? "Aguarde..." : "Reativar assinatura"}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    disabled={pending}
-                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-red-300 bg-white px-5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 sm:w-44"
-                  >
-                    Cancelar assinatura
-                  </button>
-                )}
+              hasActiveSubscription ? (
+                <>
+                  {cancelAtPeriodEnd ? (
+                    <button
+                      onClick={handleReactivate}
+                      disabled={pending}
+                      className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
+                    >
+                      {pending ? "Aguarde..." : "Reativar assinatura"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      disabled={pending}
+                      className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-red-300 bg-white px-5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 sm:w-44"
+                    >
+                      Cancelar assinatura
+                    </button>
+                  )}
 
-                <button
-                  onClick={handleUpdateCard}
-                  disabled={pending}
-                  className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60 sm:w-44"
-                >
-                  {pending ? "Aguarde..." : "Atualizar cartão"}
-                </button>
-              </>
+                  <button
+                    onClick={handleUpdateCard}
+                    disabled={pending}
+                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60 sm:w-44"
+                  >
+                    {pending ? "Aguarde..." : "Atualizar cartão"}
+                  </button>
+                </>
+              ) : (
+                <div className="flex w-full flex-col gap-2 sm:w-auto">
+                  <p className="text-xs text-ink-muted">
+                    PRO ativo até {periodEndLabel ?? "data não disponível"} · pago via Pix
+                  </p>
+                  <button
+                    onClick={handlePayWithPix}
+                    disabled={pending}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                  >
+                    {pending ? "Aguarde..." : "Renovar mais 1 mês"}
+                  </button>
+                  {pixError ? (
+                    <p className="text-xs font-semibold text-red-700">{pixError}</p>
+                  ) : null}
+                </div>
+              )
             ) : (
-              <button
-                onClick={handleSubscribe}
-                disabled={pending || hasActiveSubscription}
-                className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
-              >
-                {pending ? "Aguarde..." : "Assinar PRO"}
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto">
+                <button
+                  onClick={handleSubscribe}
+                  disabled={pending || hasActiveSubscription}
+                  className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
+                >
+                  {pending ? "Aguarde..." : "Assinar PRO"}
+                </button>
+                <button
+                  onClick={handlePayWithPix}
+                  disabled={pending}
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                >
+                  {pending ? "Aguarde..." : "Pagar 1 mês via Pix"}
+                </button>
+                {pixError ? (
+                  <p className="text-xs font-semibold text-red-700">{pixError}</p>
+                ) : null}
+              </div>
             )}
 
             {error ? (
