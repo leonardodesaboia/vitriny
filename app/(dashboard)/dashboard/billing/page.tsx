@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import { resolveEffectivePlan } from "@/lib/actions/auth-guard";
+import { resolveEffectivePlan } from "@/lib/effective-plan";
 import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { AsyncInvoiceList } from "@/components/billing/AsyncInvoiceList";

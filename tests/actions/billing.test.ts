@@ -422,6 +422,44 @@ describe("requestProPixPayment", () => {
       })
     );
   });
+
+  it("não reaproveita pedido já marcado como pago pelo cliente (clientPaidAt setado) — cria um novo", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    // A query agora exclui clientPaidAt não-nulo, então o mock reflete isso
+    // retornando null (o pedido já informado como pago não deve ser achado).
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-novo-2" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-novo-2"
+    });
+    expect(db.proPixPayment.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ clientPaidAt: null }) })
+    );
+    expect(db.proPixPayment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ providerProfileId: "profile-1", amount: "19.90" })
+      })
+    );
+  });
 });
 
 // ─── markProPixPaymentClientPaid ──────────────────────────────────────────────

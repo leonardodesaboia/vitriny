@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { makePrismaMock, makeSession, type PrismaMock } from "../helpers";
+import { makePrismaMock, type PrismaMock } from "../helpers";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
@@ -17,7 +17,7 @@ beforeEach(async () => {
 
   const authModule = await import("@/auth");
   vi.mocked(authModule.auth).mockResolvedValue(
-    makeSession() ? { user: { id: "user-1", email: "admin@vitriny.app" } } : null
+    { user: { id: "user-1", email: "admin@vitriny.app" } } as never
   );
 });
 

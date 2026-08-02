@@ -211,9 +211,13 @@ export async function requestProPixPayment(): Promise<
   }
 
   // Idempotência: evita códigos Pix duplicados vivos ao mesmo tempo pro
-  // mesmo perfil — reaproveita o pendente em vez de criar outro.
+  // mesmo perfil — reaproveita o pendente em vez de criar outro. Mas se o
+  // usuário já marcou "Já paguei" (clientPaidAt) e o admin ainda não
+  // confirmou, não reaproveita: mostrar o mesmo QR de novo com o botão
+  // ativo sugere que nada foi registrado, quando na verdade já há um
+  // pagamento aguardando confirmação.
   const pending = await prisma.proPixPayment.findFirst({
-    where: { providerProfileId: profile.id, confirmedAt: null },
+    where: { providerProfileId: profile.id, confirmedAt: null, clientPaidAt: null },
     orderBy: { requestedAt: "desc" }
   });
 

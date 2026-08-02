@@ -26,7 +26,7 @@ import {
 import { toDayBucket } from "@/lib/storefront-views";
 import { canUseStorefrontAnalytics, getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
-import { resolveEffectivePlan } from "@/lib/actions/auth-guard";
+import { resolveEffectivePlan } from "@/lib/effective-plan";
 
 export default async function DashboardPage() {
   const session = await auth();

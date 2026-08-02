@@ -237,12 +237,12 @@ export function BillingCard({
             <h2 className="mt-2 font-fraunces text-2xl font-bold text-ink">
               {PLAN_NAMES[plan]}
             </h2>
-            {subscriptionStatus ? (
+            {subscriptionStatus && hasActiveSubscription ? (
               <p className="mt-1 text-sm text-ink-muted">
                 Assinatura: {STATUS_LABELS[subscriptionStatus]}
               </p>
             ) : null}
-            {currentPeriodEnd && plan === "PRO" ? (
+            {currentPeriodEnd && plan === "PRO" && hasActiveSubscription ? (
               cancelAtPeriodEnd ? (
                 <p className="mt-1 text-sm font-medium text-amber-700">
                   Cancela em {periodEndLabel}

@@ -158,6 +158,26 @@ pagamentos). Adicionar em `.env.example` e `docs/DEPLOY.md`.
   silencioso, sem lembrete prévio.
 - Múltiplos admins / sistema de roles — só o e-mail único por env var.
 
+## Débito técnico conhecido
+
+A revisão final de toda a branch (antes do merge) encontrou outros pontos que
+leem `providerProfile.plan` direto pra decisões de limite de plano, sem passar
+pela correção de auto-rebaixamento (`resolveEffectivePlan`/`isOneTimeProExpired`).
+Isso significa que uma conta PRO via Pix manual vencida continua com os
+limites de PRO nesses pontos até ser corrigida — foi **identificado e
+deliberadamente postergado**, não passou batido:
+
+- `lib/actions/proposals.ts`
+- `lib/actions/brand-appearance.ts`
+- `app/api/services/[id]/image/route.ts`
+- `lib/actions/quote-requests.ts`
+- `app/u/[slug]/orcamento/page.tsx`
+- `app/proposta/[publicToken]/page.tsx`
+
+Nesta rodada de correções (pós-revisão final), só a vitrine pública
+(`app/u/[slug]/page.tsx`) foi corrigida, por ser a superfície mais visível e
+sem autenticação. Os demais ficam registrados aqui como trabalho futuro.
+
 ---
 
 ## Anexo: desenho original via Stripe (bloqueado, referência futura)
