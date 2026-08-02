@@ -6,6 +6,8 @@ vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/stripe", () => ({ stripe: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("@/lib/pix", () => ({ createPixPayment: vi.fn() }));
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => fn() }));
+vi.mock("@/lib/email", () => ({ sendProPixPaymentClientPaidEmail: vi.fn() }));
 
 let db: PrismaMock;
 let stripeApi: Record<string, Record<string, ReturnType<typeof vi.fn>>>;
@@ -388,6 +390,73 @@ describe("requestProPixPayment", () => {
         amount: "19.90",
         transactionId: "pix-payment-novo"
       })
+    );
+  });
+});
+
+// ─── markProPixPaymentClientPaid ──────────────────────────────────────────────
+
+describe("markProPixPaymentClientPaid", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("retorna erro quando não autenticado", async () => {
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValue(null);
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ error: "Não autenticado." });
+  });
+
+  it("retorna erro quando o pagamento não pertence ao perfil da sessão", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-de-outro")).toEqual({
+      error: "Pagamento não encontrado."
+    });
+  });
+
+  it("é idempotente quando já foi informado", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-1",
+      clientPaidAt: new Date("2026-01-01")
+    });
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ success: true });
+    expect(db.proPixPayment.update).not.toHaveBeenCalled();
+  });
+
+  it("grava clientPaidAt e agenda o e-mail ao admin", async () => {
+    vi.stubEnv("ADMIN_EMAIL", "admin@vitriny.app");
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Negócio Teste"
+    });
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-1",
+      clientPaidAt: null,
+      amount: "19.90"
+    });
+    db.proPixPayment.update.mockResolvedValue({});
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ success: true });
+
+    expect(db.proPixPayment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "pix-1" },
+        data: expect.objectContaining({ clientPaidAt: expect.any(Date) })
+      })
+    );
+
+    const { sendProPixPaymentClientPaidEmail } = await import("@/lib/email");
+    expect(sendProPixPaymentClientPaidEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ businessName: "Negócio Teste", amount: "19.90" })
     );
   });
 });

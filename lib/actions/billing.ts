@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { auth } from "@/auth";
+import { sendProPixPaymentClientPaidEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { createPixPayment } from "@/lib/pix";
 import { stripe } from "@/lib/stripe";
@@ -250,4 +252,56 @@ export async function requestProPixPayment(): Promise<
     qrCodeDataUrl: pix.qrCodeDataUrl,
     paymentId: payment.id
   };
+}
+
+function appUrl(path: string) {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  return `${baseUrl.replace(/\/$/, "")}${path}`;
+}
+
+export async function markProPixPaymentClientPaid(
+  paymentId: string
+): Promise<{ success: true } | { error: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado." };
+
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true, businessName: true }
+  });
+
+  if (!profile) return { error: "Dados do negócio não encontrados." };
+
+  const payment = await prisma.proPixPayment.findFirst({
+    where: { id: paymentId, providerProfileId: profile.id }
+  });
+
+  if (!payment) return { error: "Pagamento não encontrado." };
+
+  // Idempotente: segundo clique não regrava nem reenvia o e-mail.
+  if (payment.clientPaidAt) return { success: true };
+
+  await prisma.proPixPayment.update({
+    where: { id: payment.id },
+    data: { clientPaidAt: new Date() }
+  });
+
+  after(async () => {
+    if (!process.env.ADMIN_EMAIL) return;
+    try {
+      await sendProPixPaymentClientPaidEmail({
+        to: process.env.ADMIN_EMAIL,
+        businessName: profile.businessName,
+        amount: payment.amount.toString(),
+        dashboardUrl: appUrl("/admin/pix-payments")
+      });
+    } catch (error) {
+      console.error("Falha ao enviar e-mail de pagamento Pix informado.", {
+        error,
+        paymentId: payment.id
+      });
+    }
+  });
+
+  return { success: true };
 }
