@@ -197,6 +197,15 @@ export async function requestProPixPayment(): Promise<
   if (!profile) return { error: "Dados do negócio não encontrados." };
   if (profile.plan === "PRO") return { error: "Você já tem o plano PRO." };
 
+  const pixKey = process.env.VITRINY_PIX_KEY;
+  const pixHolderName = process.env.VITRINY_PIX_HOLDER_NAME;
+  const pixCity = process.env.VITRINY_PIX_CITY;
+  if (!pixKey || !pixHolderName || !pixCity) {
+    return {
+      error: "Pix não está configurado no momento. Tente novamente mais tarde ou fale com o suporte."
+    };
+  }
+
   // Idempotência: evita códigos Pix duplicados vivos ao mesmo tempo pro
   // mesmo perfil — reaproveita o pendente em vez de criar outro.
   const pending = await prisma.proPixPayment.findFirst({
@@ -204,19 +213,33 @@ export async function requestProPixPayment(): Promise<
     orderBy: { requestedAt: "desc" }
   });
 
-  const price = await stripe.prices.retrieve(process.env.STRIPE_PRO_PRICE_ID!);
-  const amount = ((price.unit_amount ?? 0) / 100).toFixed(2);
+  let payment: { id: string };
+  let amount: string;
 
-  const payment =
-    pending ??
-    (await prisma.proPixPayment.create({
+  if (pending) {
+    // Reaproveita o valor já salvo no pedido pendente: o preço do Stripe
+    // pode ter mudado desde que ele foi criado, e o QR/copia-e-cola precisa
+    // continuar consistente com o valor que já está no banco (e que vai
+    // aparecer depois no e-mail/dashboard de confirmação).
+    payment = pending;
+    amount = pending.amount.toString();
+  } else {
+    const price = await stripe.prices.retrieve(process.env.STRIPE_PRO_PRICE_ID!);
+    if (price.unit_amount == null) {
+      return {
+        error: "Não foi possível determinar o valor do plano PRO. Tente novamente ou fale com o suporte."
+      };
+    }
+    amount = (price.unit_amount / 100).toFixed(2);
+    payment = await prisma.proPixPayment.create({
       data: { providerProfileId: profile.id, amount }
-    }));
+    });
+  }
 
   const pix = await createPixPayment({
-    pixKey: process.env.VITRINY_PIX_KEY!,
-    pixHolderName: process.env.VITRINY_PIX_HOLDER_NAME!,
-    pixCity: process.env.VITRINY_PIX_CITY!,
+    pixKey,
+    pixHolderName,
+    pixCity,
     amount,
     transactionId: payment.id,
     description: "Vitriny PRO"
