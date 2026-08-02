@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { createPixPayment } from "@/lib/pix";
 import { stripe } from "@/lib/stripe";
 
 export async function cancelSubscription(): Promise<
@@ -180,4 +181,50 @@ export async function createCheckoutSession(): Promise<
   }
 
   return { clientSecret: checkoutSession.client_secret };
+}
+
+export async function requestProPixPayment(): Promise<
+  { copyPasteCode: string; qrCodeDataUrl: string; paymentId: string } | { error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado." };
+
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true, plan: true }
+  });
+
+  if (!profile) return { error: "Dados do negócio não encontrados." };
+  if (profile.plan === "PRO") return { error: "Você já tem o plano PRO." };
+
+  // Idempotência: evita códigos Pix duplicados vivos ao mesmo tempo pro
+  // mesmo perfil — reaproveita o pendente em vez de criar outro.
+  const pending = await prisma.proPixPayment.findFirst({
+    where: { providerProfileId: profile.id, confirmedAt: null },
+    orderBy: { requestedAt: "desc" }
+  });
+
+  const price = await stripe.prices.retrieve(process.env.STRIPE_PRO_PRICE_ID!);
+  const amount = ((price.unit_amount ?? 0) / 100).toFixed(2);
+
+  const payment =
+    pending ??
+    (await prisma.proPixPayment.create({
+      data: { providerProfileId: profile.id, amount }
+    }));
+
+  const pix = await createPixPayment({
+    pixKey: process.env.VITRINY_PIX_KEY!,
+    pixHolderName: process.env.VITRINY_PIX_HOLDER_NAME!,
+    pixCity: process.env.VITRINY_PIX_CITY!,
+    amount,
+    transactionId: payment.id,
+    description: "Vitriny PRO"
+  });
+
+  return {
+    copyPasteCode: pix.copyPasteCode,
+    qrCodeDataUrl: pix.qrCodeDataUrl,
+    paymentId: payment.id
+  };
 }

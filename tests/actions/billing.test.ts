@@ -5,6 +5,7 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/stripe", () => ({ stripe: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/pix", () => ({ createPixPayment: vi.fn() }));
 
 let db: PrismaMock;
 let stripeApi: Record<string, Record<string, ReturnType<typeof vi.fn>>>;
@@ -23,7 +24,8 @@ beforeEach(async () => {
     paymentMethods: { retrieve: vi.fn() },
     customers: { create: vi.fn() },
     checkout: { sessions: { create: vi.fn() } },
-    billingPortal: { sessions: { create: vi.fn() } }
+    billingPortal: { sessions: { create: vi.fn() } },
+    prices: { retrieve: vi.fn() }
   };
   Object.assign(stripeModule.stripe, stripeApi);
 
@@ -237,6 +239,94 @@ describe("createCheckoutSession", () => {
     expect(stripeApi.customers.create).not.toHaveBeenCalled();
     expect(stripeApi.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({ customer: "cus_existente" })
+    );
+  });
+});
+
+// ─── requestProPixPayment ─────────────────────────────────────────────────────
+
+describe("requestProPixPayment", () => {
+  it("retorna erro quando não autenticado", async () => {
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValue(null);
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({ error: "Não autenticado." });
+  });
+
+  it("retorna erro quando já é PRO", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "PRO",
+      businessName: "Negócio Teste"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({ error: "Você já tem o plano PRO." });
+  });
+
+  it("reaproveita pedido pendente existente em vez de criar outro", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-payment-1",
+      amount: "19.90"
+    });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-1"
+    });
+    expect(db.proPixPayment.create).not.toHaveBeenCalled();
+  });
+
+  it("cria novo pedido quando não há pendente, usando o valor do Stripe", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-novo" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-novo"
+    });
+    expect(db.proPixPayment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ providerProfileId: "profile-1", amount: "19.90" })
+      })
+    );
+    expect(createPixPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pixKey: process.env.VITRINY_PIX_KEY,
+        amount: "19.90",
+        transactionId: "pix-payment-novo"
+      })
     );
   });
 });
