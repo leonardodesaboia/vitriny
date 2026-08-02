@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectivePlan } from "@/lib/actions/auth-guard";
 import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { AsyncInvoiceList } from "@/components/billing/AsyncInvoiceList";
@@ -35,7 +36,11 @@ export default async function BillingPage({
     }
   });
 
-  const limits = profile ? getPlanLimits(profile.plan) : null;
+  const effective = profile ? await resolveEffectivePlan(profile) : null;
+  const plan = effective?.plan ?? profile?.plan ?? "FREE";
+  const currentPeriodEnd = effective?.currentPeriodEnd ?? profile?.currentPeriodEnd ?? null;
+
+  const limits = profile ? getPlanLimits(plan) : null;
   const monthlyQuoteRequests = profile
     ? profile.quoteRequests.filter(
         (r) => r.createdAt >= monthRange.start && r.createdAt < monthRange.end
@@ -94,9 +99,9 @@ export default async function BillingPage({
         <>
           <div className="mt-8">
             <BillingCard
-              plan={profile.plan}
+              plan={plan}
               subscriptionStatus={profile.subscriptionStatus}
-              currentPeriodEnd={profile.currentPeriodEnd}
+              currentPeriodEnd={currentPeriodEnd}
               cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
               hasActiveSubscription={!!profile.stripeSubscriptionId}
             />
@@ -105,7 +110,7 @@ export default async function BillingPage({
           <AsyncInvoiceList />
 
           <PlanUsageCard
-            plan={profile.plan}
+            plan={plan}
             showPlanHeader={false}
             usage={[
               {
