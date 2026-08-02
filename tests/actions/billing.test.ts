@@ -260,15 +260,45 @@ describe("requestProPixPayment", () => {
     expect(await requestProPixPayment()).toEqual({ error: "Não autenticado." });
   });
 
-  it("retorna erro quando já é PRO", async () => {
+  it("retorna erro quando já tem assinatura Stripe ativa", async () => {
     db.providerProfile.findUnique.mockResolvedValue({
       id: "profile-1",
       plan: "PRO",
+      stripeSubscriptionId: "sub_test",
       businessName: "Negócio Teste"
     });
 
     const { requestProPixPayment } = await import("@/lib/actions/billing");
     expect(await requestProPixPayment()).toEqual({ error: "Você já tem o plano PRO." });
+  });
+
+  it("permite renovar mais um mês quando é PRO via Pix manual (sem assinatura Stripe)", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-renovacao" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-renovacao"
+    });
   });
 
   it("retorna erro quando o Pix da Vitriny não está configurado", async () => {

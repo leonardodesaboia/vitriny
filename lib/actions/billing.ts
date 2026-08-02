@@ -193,11 +193,13 @@ export async function requestProPixPayment(): Promise<
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, plan: true }
+    select: { id: true, plan: true, stripeSubscriptionId: true }
   });
 
   if (!profile) return { error: "Dados do negócio não encontrados." };
-  if (profile.plan === "PRO") return { error: "Você já tem o plano PRO." };
+  if (profile.plan === "PRO" && profile.stripeSubscriptionId) {
+    return { error: "Você já tem o plano PRO." };
+  }
 
   const pixKey = process.env.VITRINY_PIX_KEY;
   const pixHolderName = process.env.VITRINY_PIX_HOLDER_NAME;
