@@ -41,6 +41,10 @@ STRIPE_SECRET_KEY=...
 STRIPE_WEBHOOK_SECRET=...
 STRIPE_PRO_PRICE_ID=...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+ADMIN_EMAIL=seu-email@exemplo.com
+VITRINY_PIX_KEY=chave-pix-da-vitriny
+VITRINY_PIX_HOLDER_NAME=Nome do titular
+VITRINY_PIX_CITY=Sua cidade
 NEXT_PUBLIC_APP_URL=https://SEU-DOMINIO
 TZ=America/Sao_Paulo
 S3_ENDPOINT=http://minio:9000
@@ -74,6 +78,11 @@ Prisma...` → `All migrations have been successfully applied.` → `✓ Ready`.
 - **Stripe webhook**: endpoint `https://SEU-DOMINIO/api/stripe/webhook`, copie o
   `whsec_...` pro `STRIPE_WEBHOOK_SECRET` e redeploy.
 - **Resend**: verifique o domínio de envio do `EMAIL_FROM`.
+- **Pix da assinatura PRO**: sem Stripe (Pix no Stripe é mediante convite pra
+  contas BR — ver `docs/superpowers/specs/2026-08-01-pix-assinatura-pro-design.md`).
+  `VITRINY_PIX_KEY`/`_HOLDER_NAME`/`_CITY` são a chave Pix da própria Vitriny, não
+  a do provedor. Pagamentos informados aparecem em `/admin/pix-payments` — só o
+  e-mail em `ADMIN_EMAIL` acessa essa página.
 
 ### Aplicar o domínio próprio depois
 1. Comprar o domínio → registro **A** apontando pro IP da VPS.
