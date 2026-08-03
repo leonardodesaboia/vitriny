@@ -116,3 +116,25 @@ export async function createMpPixSubscription(
 
   return { initPoint: result.init_point };
 }
+
+export async function cancelMpSubscription(): Promise<
+  { success: true } | { error: string }
+> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado." };
+
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { mpPreapprovalId: true }
+  });
+
+  if (!profile?.mpPreapprovalId) return { error: "Assinatura não encontrada." };
+
+  const preApproval = new PreApproval(getMercadoPago());
+  await preApproval.update({
+    id: profile.mpPreapprovalId,
+    body: { status: "cancelled" }
+  });
+
+  return { success: true };
+}

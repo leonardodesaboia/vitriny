@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const preApprovalCreate = vi.fn();
+const preApprovalUpdate = vi.fn();
 vi.mock("mercadopago", () => ({
   MercadoPagoConfig: vi.fn(),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  PreApproval: vi.fn(function (this: any) { this.create = preApprovalCreate; })
+  PreApproval: vi.fn(function (this: any) { this.create = preApprovalCreate; this.update = preApprovalUpdate; })
 }));
 
 const findUnique = vi.fn();
@@ -103,5 +104,31 @@ describe("createMpPixSubscription", () => {
       where: { id: "p1" },
       data: { mpPreapprovalId: "2c93808" }
     });
+  });
+});
+
+describe("cancelMpSubscription", () => {
+  it("chama update com status cancelled", async () => {
+    findUnique.mockResolvedValue({ mpPreapprovalId: "2c93808" });
+    preApprovalUpdate.mockResolvedValue({ id: "2c93808", status: "cancelled" });
+
+    const { cancelMpSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await cancelMpSubscription();
+
+    expect(result).toEqual({ success: true });
+    expect(preApprovalUpdate).toHaveBeenCalledWith({
+      id: "2c93808",
+      body: { status: "cancelled" }
+    });
+  });
+
+  it("erro quando nao ha assinatura MP", async () => {
+    findUnique.mockResolvedValue({ mpPreapprovalId: null });
+
+    const { cancelMpSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await cancelMpSubscription();
+
+    expect("error" in result).toBe(true);
+    expect(preApprovalUpdate).not.toHaveBeenCalled();
   });
 });
