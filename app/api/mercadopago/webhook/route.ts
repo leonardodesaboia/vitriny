@@ -44,14 +44,20 @@ export async function POST(request: Request) {
     const sub = await preApproval.get({ id: preapprovalId });
 
     const plan = resolvePlanFromPreapproval(sub.status ?? "");
+
+    // Status sem plano resolvido (pending/desconhecido): não mexe no perfil —
+    // evitar apagar um cancelamento agendado ou sobrescrever o período.
+    if (plan === null) {
+      return new Response(null, { status: 200 });
+    }
+
     const nextPayment = sub.next_payment_date ? new Date(sub.next_payment_date) : null;
 
     await prisma.providerProfile.updateMany({
       where: { mpPreapprovalId: preapprovalId },
       data: {
-        ...(plan !== null ? { plan } : {}),
-        ...(plan === "FREE" ? { mpPreapprovalId: null } : {}),
-        currentPeriodEnd: plan === "FREE" ? null : nextPayment,
+        plan,
+        ...(plan === "FREE" ? { mpPreapprovalId: null, currentPeriodEnd: null } : { currentPeriodEnd: nextPayment }),
         cancelAtPeriodEnd: false
       }
     });
