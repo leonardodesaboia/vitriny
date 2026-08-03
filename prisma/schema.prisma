@@ -110,6 +110,8 @@ model ProviderProfile {
   stripeCustomerId     String?             @unique
   stripeSubscriptionId String?             @unique
   stripePriceId        String?
+  mpPreapprovalId      String?             @unique
+  mpPayerId            String?
   subscriptionStatus   SubscriptionStatus?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean             @default(false)
