@@ -114,6 +114,7 @@ export function makeProfile(overrides = {}) {
     stripeSubscriptionId: null as string | null,
     mpPreapprovalId: null as string | null,
     currentPeriodEnd: null as Date | null,
+    cancelAtPeriodEnd: false as boolean,
     ...overrides
   };
 }

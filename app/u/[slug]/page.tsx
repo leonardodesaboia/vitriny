@@ -55,6 +55,7 @@ const getProfile = cache(async (slug: string) => {
       stripeSubscriptionId: true,
       mpPreapprovalId: true,
       currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
       brandColor: true,
       brandFont: true,
       services: {
