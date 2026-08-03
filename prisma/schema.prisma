@@ -112,6 +112,7 @@ model ProviderProfile {
   stripePriceId        String?
   mpPreapprovalId      String?             @unique
   mpPayerId            String?
+  mpSubscriptionLockedAt DateTime?
   subscriptionStatus   SubscriptionStatus?
   currentPeriodEnd     DateTime?
   cancelAtPeriodEnd    Boolean             @default(false)
