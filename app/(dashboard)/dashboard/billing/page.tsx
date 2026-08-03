@@ -12,7 +12,7 @@ import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 export default async function BillingPage({
   searchParams
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string; mp?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -23,6 +23,9 @@ export default async function BillingPage({
   const success = params.success === "1";
   const canceled = params.canceled === "1";
   const fromCheckoutRedirect = !!params.session_id;
+  const mpReturn = params.mp === "return";
+
+  const proAmount = Number(process.env.MP_PRO_AMOUNT) || 0;
 
   const monthRange = getCurrentMonthRange();
 
@@ -39,6 +42,8 @@ export default async function BillingPage({
   const effective = profile ? await resolveEffectivePlan(profile) : null;
   const plan = effective?.plan ?? profile?.plan ?? "FREE";
   const currentPeriodEnd = effective?.currentPeriodEnd ?? profile?.currentPeriodEnd ?? null;
+
+  const payerEmail = profile?.email ?? session.user.email ?? "";
 
   const limits = profile ? getPlanLimits(plan) : null;
   const monthlyQuoteRequests = profile
@@ -80,6 +85,14 @@ export default async function BillingPage({
         </div>
       ) : null}
 
+      {mpReturn ? (
+        <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+          <p className="text-sm font-semibold text-green-800">
+            Estamos confirmando seu pagamento. Seu plano é atualizado em instantes.
+          </p>
+        </div>
+      ) : null}
+
       {!profile || !limits ? (
         <div className="mt-8 rounded-xl border border-paper-soft bg-white p-6 shadow-card">
           <h2 className="font-fraunces text-xl font-bold text-ink">
@@ -103,7 +116,9 @@ export default async function BillingPage({
               subscriptionStatus={profile.subscriptionStatus}
               currentPeriodEnd={currentPeriodEnd}
               cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
-              hasActiveSubscription={!!profile.stripeSubscriptionId}
+              hasActiveSubscription={!!(profile.stripeSubscriptionId ?? profile.mpPreapprovalId)}
+              payerEmail={payerEmail}
+              proAmount={proAmount}
             />
           </div>
 

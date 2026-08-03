@@ -112,6 +112,7 @@ export function makeProfile(overrides = {}) {
     plan: "FREE" as const,
     businessType: "SERVICES" as const,
     stripeSubscriptionId: null as string | null,
+    mpPreapprovalId: null as string | null,
     currentPeriodEnd: null as Date | null,
     ...overrides
   };

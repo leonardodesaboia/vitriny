@@ -31,6 +31,7 @@ export async function requireProviderProfile() {
       plan: true,
       businessType: true,
       stripeSubscriptionId: true,
+      mpPreapprovalId: true,
       currentPeriodEnd: true
     }
   });

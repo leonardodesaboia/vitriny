@@ -4,16 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
 import {
-  createCheckoutSession,
-  cancelSubscription,
-  reactivateSubscription,
-  createSetupIntent,
-  requestProPixPayment
-} from "@/lib/actions/billing";
+  cancelMpSubscription,
+  createMpPixSubscription
+} from "@/lib/actions/mp-billing";
+import { reactivateSubscription } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
-import { SubscriptionModal } from "@/components/billing/SubscriptionModal";
-import { UpdatePaymentModal } from "@/components/billing/UpdatePaymentModal";
-import { ProPixPaymentModal } from "@/components/billing/ProPixPaymentModal";
+import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -33,6 +29,8 @@ type BillingCardProps = {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   hasActiveSubscription: boolean;
+  payerEmail: string;
+  proAmount: number;
 };
 
 export function BillingCard({
@@ -40,45 +38,43 @@ export function BillingCard({
   subscriptionStatus,
   currentPeriodEnd,
   cancelAtPeriodEnd,
-  hasActiveSubscription
+  hasActiveSubscription,
+  payerEmail,
+  proAmount
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Subscription checkout modal
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Cancel confirmation inline state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // Card update modal
-  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
-  const [showCardSuccess, setShowCardSuccess] = useState(false);
-
-  // Pagamento Pix (sem Stripe) — 1 mês, com ou sem assinatura ativa
-  const [pixPayment, setPixPayment] = useState<
-    { copyPasteCode: string; qrCodeDataUrl: string; paymentId: string } | null
-  >(null);
-  const [pixError, setPixError] = useState<string | null>(null);
+  // MP Card Brick modal
+  const [showCardModal, setShowCardModal] = useState(false);
 
   function handleSubscribe() {
     setError(null);
+    setShowCardModal(true);
+  }
+
+  function handlePayWithPix() {
+    setError(null);
     startTransition(async () => {
-      const result = await createCheckoutSession();
+      const result = await createMpPixSubscription(payerEmail);
       if ("error" in result) {
         setError(result.error);
         return;
       }
-      setClientSecret(result.clientSecret);
+      window.location.href = result.initPoint;
     });
   }
 
   function handleConfirmCancel() {
     setError(null);
     startTransition(async () => {
-      const result = await cancelSubscription();
+      const result = await cancelMpSubscription();
       if ("error" in result) {
         setError(result.error);
         return;
@@ -100,59 +96,6 @@ export function BillingCard({
     });
   }
 
-  function handleUpdateCard() {
-    setError(null);
-    startTransition(async () => {
-      const result = await createSetupIntent();
-      if ("error" in result) {
-        setError(result.error);
-        return;
-      }
-      setSetupClientSecret(result.clientSecret);
-    });
-  }
-
-  function handleModalClose() {
-    setClientSecret(null);
-  }
-
-  function handleSuccess() {
-    setClientSecret(null);
-    setShowSuccess(true);
-    router.refresh();
-  }
-
-  function handleCardModalClose() {
-    setSetupClientSecret(null);
-  }
-
-  function handleCardSuccess() {
-    setSetupClientSecret(null);
-    setShowCardSuccess(true);
-    router.refresh();
-  }
-
-  function handlePayWithPix() {
-    setPixError(null);
-    startTransition(async () => {
-      const result = await requestProPixPayment();
-      if ("error" in result) {
-        setPixError(result.error);
-        return;
-      }
-      setPixPayment(result);
-    });
-  }
-
-  function handlePixModalClose() {
-    setPixPayment(null);
-  }
-
-  function handlePixConfirmed() {
-    setPixPayment(null);
-    router.refresh();
-  }
-
   const periodEndLabel = currentPeriodEnd
     ? currentPeriodEnd.toLocaleDateString("pt-BR", {
         day: "2-digit",
@@ -163,29 +106,20 @@ export function BillingCard({
 
   return (
     <>
-      {clientSecret ? (
-        <SubscriptionModal
-          clientSecret={clientSecret}
-          onClose={handleModalClose}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
-
-      {setupClientSecret ? (
-        <UpdatePaymentModal
-          clientSecret={setupClientSecret}
-          onClose={handleCardModalClose}
-          onSuccess={handleCardSuccess}
-        />
-      ) : null}
-
-      {pixPayment ? (
-        <ProPixPaymentModal
-          copyPasteCode={pixPayment.copyPasteCode}
-          qrCodeDataUrl={pixPayment.qrCodeDataUrl}
-          paymentId={pixPayment.paymentId}
-          onClose={handlePixModalClose}
-          onConfirmed={handlePixConfirmed}
+      {showCardModal ? (
+        <MpSubscriptionModal
+          amount={proAmount}
+          payerEmail={payerEmail}
+          onClose={() => setShowCardModal(false)}
+          onSuccess={() => {
+            setShowCardModal(false);
+            setShowSuccess(true);
+            router.refresh();
+          }}
+          onError={(m) => {
+            setShowCardModal(false);
+            setError(m);
+          }}
         />
       ) : null}
 
@@ -217,14 +151,6 @@ export function BillingCard({
             <p className="text-sm font-semibold text-green-800">
               Assinatura realizada com sucesso! Seu plano será atualizado em
               instantes.
-            </p>
-          </div>
-        ) : null}
-
-        {showCardSuccess ? (
-          <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-            <p className="text-sm font-semibold text-green-800">
-              Cartão atualizado com sucesso!
             </p>
           </div>
         ) : null}
@@ -276,30 +202,12 @@ export function BillingCard({
                       Cancelar assinatura
                     </button>
                   )}
-
-                  <button
-                    onClick={handleUpdateCard}
-                    disabled={pending}
-                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60 sm:w-44"
-                  >
-                    {pending ? "Aguarde..." : "Atualizar cartão"}
-                  </button>
                 </>
               ) : (
                 <div className="flex w-full flex-col gap-2 sm:w-auto">
                   <p className="text-xs text-ink-muted">
                     PRO ativo até {periodEndLabel ?? "data não disponível"} · pago via Pix
                   </p>
-                  <button
-                    onClick={handlePayWithPix}
-                    disabled={pending}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
-                  >
-                    {pending ? "Aguarde..." : "Renovar mais 1 mês"}
-                  </button>
-                  {pixError ? (
-                    <p className="text-xs font-semibold text-red-700">{pixError}</p>
-                  ) : null}
                 </div>
               )
             ) : (
@@ -309,18 +217,15 @@ export function BillingCard({
                   disabled={pending || hasActiveSubscription}
                   className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
                 >
-                  {pending ? "Aguarde..." : "Assinar PRO"}
+                  {pending ? "Aguarde..." : "Assinar com cartão"}
                 </button>
                 <button
                   onClick={handlePayWithPix}
                   disabled={pending}
                   className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
                 >
-                  {pending ? "Aguarde..." : "Pagar 1 mês via Pix"}
+                  {pending ? "Aguarde..." : "Assinar com Pix"}
                 </button>
-                {pixError ? (
-                  <p className="text-xs font-semibold text-red-700">{pixError}</p>
-                ) : null}
               </div>
             )}
 

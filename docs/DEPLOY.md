@@ -41,6 +41,10 @@ STRIPE_SECRET_KEY=...
 STRIPE_WEBHOOK_SECRET=...
 STRIPE_PRO_PRICE_ID=...
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=...
+MP_ACCESS_TOKEN=...
+MP_WEBHOOK_SECRET=...
+MP_PRO_AMOUNT=19.90
+NEXT_PUBLIC_MP_PUBLIC_KEY=...
 ADMIN_EMAIL=seu-email@exemplo.com
 VITRINY_PIX_KEY=chave-pix-da-vitriny
 VITRINY_PIX_HOLDER_NAME=Nome do titular
@@ -77,6 +81,9 @@ Prisma...` → `All migrations have been successfully applied.` → `✓ Ready`.
 - **Google OAuth**: redirect `https://SEU-DOMINIO/api/auth/callback/google`.
 - **Stripe webhook**: endpoint `https://SEU-DOMINIO/api/stripe/webhook`, copie o
   `whsec_...` pro `STRIPE_WEBHOOK_SECRET` e redeploy.
+- **Mercado Pago webhook**: cadastrar o webhook em `https://SEU-DOMINIO/api/mercadopago/webhook` 
+  (evento de assinatura / preapproval), copiar o secret da assinatura para `MP_WEBHOOK_SECRET` 
+  e fazer redeploy.
 - **Resend**: verifique o domínio de envio do `EMAIL_FROM`.
 - **Pix da assinatura PRO**: sem Stripe (Pix no Stripe é mediante convite pra
   contas BR — ver `docs/superpowers/specs/2026-08-01-pix-assinatura-pro-design.md`).
@@ -96,8 +103,8 @@ Prisma...` → `All migrations have been successfully applied.` → `✓ Ready`.
 > todo Deploy rebuilda, então é só editar e clicar em Deploy.
 >
 > O `.env` com os segredos fica de fora do contexto de build (`.dockerignore`),
-> então `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` e `NEXT_PUBLIC_APP_URL` chegam ao
-> `next build` via `build.args` no `docker-compose.yml` (que o Compose resolve
+> então `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_MP_PUBLIC_KEY` e `NEXT_PUBLIC_APP_URL` 
+> chegam ao `next build` via `build.args` no `docker-compose.yml` (que o Compose resolve
 > a partir do `.env` que o Easypanel grava do lado da imagem antes do build).
 > Sem isso, o Next embute `undefined` no bundle do navegador e a tela de
 > assinatura quebra com "Algo deu errado".

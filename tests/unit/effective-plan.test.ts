@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { makePrismaMock } from "../helpers";
+import { isOneTimeProExpired } from "@/lib/plan-limits";
 
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 
@@ -20,6 +21,7 @@ describe("resolveEffectivePlan", () => {
       id: "profile-1",
       plan: "PRO",
       stripeSubscriptionId: null,
+      mpPreapprovalId: null,
       currentPeriodEnd: future
     });
 
@@ -35,6 +37,7 @@ describe("resolveEffectivePlan", () => {
       id: "profile-1",
       plan: "PRO",
       stripeSubscriptionId: "sub_123",
+      mpPreapprovalId: null,
       currentPeriodEnd: past
     });
 
@@ -51,6 +54,7 @@ describe("resolveEffectivePlan", () => {
       id: "profile-1",
       plan: "PRO",
       stripeSubscriptionId: null,
+      mpPreapprovalId: null,
       currentPeriodEnd: past
     });
 
@@ -59,5 +63,43 @@ describe("resolveEffectivePlan", () => {
       where: { id: "profile-1" },
       data: { plan: "FREE", currentPeriodEnd: null }
     });
+  });
+});
+
+describe("isOneTimeProExpired com assinatura MP", () => {
+  const past = new Date(Date.now() - 86_400_000);
+  const future = new Date(Date.now() + 86_400_000);
+
+  it("PRO com preapproval MP ativa NAO expira mesmo com data passada", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "2c93808",
+        currentPeriodEnd: past
+      })
+    ).toBe(false);
+  });
+
+  it("PRO avulso (sem assinatura) e vencido expira", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: past
+      })
+    ).toBe(true);
+  });
+
+  it("PRO avulso ainda dentro do prazo NAO expira", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: future
+      })
+    ).toBe(false);
   });
 });
