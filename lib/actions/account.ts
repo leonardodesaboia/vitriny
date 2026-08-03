@@ -1,9 +1,11 @@
 "use server";
 
 import crypto from "node:crypto";
+import { PreApproval } from "mercadopago";
 
 import { signOut } from "@/auth";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { deleteFromStorage } from "@/lib/storage";
@@ -33,6 +35,7 @@ export async function deleteAccount(): Promise<ActionResult> {
           id: true,
           slug: true,
           stripeSubscriptionId: true,
+          mpPreapprovalId: true,
           services: {
             select: { id: true, imageStorageKey: true }
           }
@@ -56,6 +59,29 @@ export async function deleteAccount(): Promise<ActionResult> {
       console.error("Falha ao cancelar assinatura na exclusão de conta.", {
         error,
         userId: user.id
+      });
+      return {
+        error:
+          "Não foi possível cancelar sua assinatura. Tente novamente ou cancele em Assinatura antes de excluir a conta."
+      };
+    }
+  }
+
+  if (profile?.mpPreapprovalId) {
+    try {
+      const preApproval = new PreApproval(getMercadoPago());
+      const cancelled = await preApproval.update({
+        id: profile.mpPreapprovalId,
+        body: { status: "cancelled" }
+      });
+      if (cancelled.status !== "cancelled") {
+        throw new Error(`Status inesperado ao cancelar assinatura MP: ${cancelled.status}`);
+      }
+    } catch (error) {
+      console.error("Falha ao cancelar assinatura MP na exclusão de conta.", {
+        userId: user.id,
+        errorName: error instanceof Error ? error.name : "UnknownError",
+        errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
       });
       return {
         error:

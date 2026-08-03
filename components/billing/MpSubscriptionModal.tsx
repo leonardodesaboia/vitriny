@@ -19,29 +19,38 @@ export function MpSubscriptionModal({ amount, payerEmail, onClose, onSuccess, on
   }, []);
 
   async function handleSubmit(formData: ICardPaymentFormData<ICardPaymentBrickPayer>) {
-    const result = await createMpCardSubscription(formData.token, payerEmail);
-    if ("error" in result) {
-      onError(result.error);
-      return;
+    try {
+      const submittedEmail = formData.payer.email?.trim() || payerEmail;
+      const result = await createMpCardSubscription(formData.token, submittedEmail);
+      if ("error" in result) {
+        onError(result.error);
+        return;
+      }
+      onSuccess();
+    } catch {
+      onError("Não foi possível processar o pagamento. Tente novamente.");
     }
-    onSuccess();
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-2 sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
     >
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+      <div className="my-auto max-h-[calc(100dvh-1rem)] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-4 shadow-xl sm:max-h-[calc(100dvh-2rem)] sm:p-6">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="font-fraunces text-xl font-bold text-ink">Assinar PRO</h3>
-          <button onClick={onClose} className="text-ink-muted hover:text-ink" aria-label="Fechar">
+          <button
+            onClick={onClose}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-2xl text-ink-muted transition hover:bg-paper hover:text-ink"
+            aria-label="Fechar"
+          >
             ×
           </button>
         </div>
         <CardPayment
-          initialization={{ amount }}
+          initialization={{ amount, payer: { email: payerEmail } }}
           onSubmit={handleSubmit}
           onError={() => onError("Não foi possível validar o cartão. Tente novamente.")}
         />

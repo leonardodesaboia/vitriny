@@ -3,10 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
-import {
-  cancelMpSubscription,
-  createMpPixSubscription
-} from "@/lib/actions/mp-billing";
+import { cancelMpSubscription } from "@/lib/actions/mp-billing";
 import { reactivateSubscription } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
@@ -57,18 +54,6 @@ export function BillingCard({
   function handleSubscribe() {
     setError(null);
     setShowCardModal(true);
-  }
-
-  function handlePayWithPix() {
-    setError(null);
-    startTransition(async () => {
-      const result = await createMpPixSubscription(payerEmail);
-      if ("error" in result) {
-        setError(result.error);
-        return;
-      }
-      window.location.href = result.initPoint;
-    });
   }
 
   function handleConfirmCancel() {
@@ -218,13 +203,6 @@ export function BillingCard({
                   className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
                 >
                   {pending ? "Aguarde..." : "Assinar com cartão"}
-                </button>
-                <button
-                  onClick={handlePayWithPix}
-                  disabled={pending}
-                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
-                >
-                  {pending ? "Aguarde..." : "Assinar com Pix"}
                 </button>
               </div>
             )}
