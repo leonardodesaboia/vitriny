@@ -12,7 +12,7 @@
 
 ## Decisões de arquitetura (leia antes de executar)
 
-1. **Redirect para `init_point`, não checkout embutido (v1).** O Stripe hoje usa Elements embutido. O Pix Automático exige autorização no app do banco do pagador — não há como embutir isso. Para não manter dois fluxos divergentes, **v1 usa o `init_point` (checkout hospedado do MP) para cartão E Pix**. Checkout de cartão embutido (MP Bricks/tokenização) fica como enhancement futuro. Isso reduz drasticamente a superfície PCI e o risco da migração.
+1. **Cartão embutido via Checkout Bricks; Pix Automático via redirect.** Decisão do dono: pagamento dentro do app. O **cartão** usa o **Card Payment Brick** do MP (campo em iframe seguro do MP → PCI baixa, SAQ A, equivalente ao Stripe Elements de hoje): o frontend gera um `card_token`, o backend cria a `preapproval` com `card_token_id` + `status: "authorized"` — assinatura ativa **na hora, sem redirect**. O **Pix Automático** não pode ser embutido (autorização acontece no app do banco do pagador, regra do BC), então continua como opção secundária que **redireciona** para o `init_point` da preapproval `pending`. Ambos coexistem no mesmo modal de assinatura.
 
 2. **Campos gateway-neutros.** Adicionamos `mpPreapprovalId` e `mpPayerId` ao `ProviderProfile`. Reaproveitamos `subscriptionStatus`, `currentPeriodEnd`, `cancelAtPeriodEnd`, `plan`. Os campos `stripe*` ficam como legado (não lidos no fluxo novo).
 
@@ -359,13 +359,15 @@ git commit -m "feat: considera assinatura MP na expiracao e resolucao de plano"
 
 ---
 
-## Task 5: Server Action — criar assinatura MP (retorna init_point) (TDD)
+## Task 5: Server Actions — assinatura por cartão (Bricks) e Pix (redirect) (TDD)
 
 **Files:**
 - Create: `lib/actions/mp-billing.ts`
 - Test: `tests/actions/mp-billing.test.ts`
 
-Cria a preapproval no MP com `auto_recurring` mensal em BRL, status `pending` (sem card token — o pagador escolhe cartão ou Pix Automático no `init_point`), `external_reference` = id do perfil, e `back_url` para a billing. Persiste `mpPreapprovalId` e retorna `init_point`.
+Duas actions no mesmo arquivo, ambas com `auto_recurring` mensal em BRL e `external_reference` = id do perfil:
+- `createMpCardSubscription(cardToken, payerEmail)`: recebe o `card_token` gerado pelo Card Payment Brick no frontend, cria a preapproval com `card_token_id` + `status: "authorized"` — assinatura ativa **na hora, sem redirect**. Persiste `mpPreapprovalId`, ativa PRO e grava `currentPeriodEnd`.
+- `createMpPixSubscription(payerEmail)`: cria a preapproval `pending` (sem cartão) e retorna `init_point` para redirecionar ao Pix Automático (autorização no banco).
 
 - [ ] **Step 1: Escrever o teste que falha**
 
@@ -393,42 +395,84 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_APP_URL = "https://app.test";
 });
 
-describe("createMpSubscription", () => {
-  it("cria preapproval e retorna init_point", async () => {
+describe("createMpCardSubscription", () => {
+  it("cria assinatura autorizada por cartao e ativa PRO", async () => {
     findUnique.mockResolvedValue({
-      id: "p1",
-      plan: "FREE",
-      mpPreapprovalId: null,
-      stripeSubscriptionId: null
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null
+    });
+    preApprovalCreate.mockResolvedValue({
+      id: "2c93808",
+      status: "authorized",
+      next_payment_date: "2026-09-03T00:00:00.000Z"
+    });
+
+    const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
+
+    expect(result).toEqual({ success: true });
+    expect(preApprovalCreate).toHaveBeenCalledWith({
+      body: expect.objectContaining({
+        card_token_id: "card-token-abc",
+        status: "authorized",
+        payer_email: "payer@test.com",
+        external_reference: "p1"
+      })
+    });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: {
+        mpPreapprovalId: "2c93808",
+        plan: "PRO",
+        subscriptionStatus: "ACTIVE",
+        currentPeriodEnd: new Date("2026-09-03T00:00:00.000Z")
+      }
+    });
+  });
+
+  it("retorna erro quando o MP nao autoriza o cartao", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null
+    });
+    preApprovalCreate.mockResolvedValue({ id: "2c93808", status: "pending" });
+
+    const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
+
+    expect("error" in result).toBe(true);
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("bloqueia quem ja e PRO com assinatura MP ativa", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "PRO", mpPreapprovalId: "2c93808", stripeSubscriptionId: null
+    });
+
+    const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
+
+    expect("error" in result).toBe(true);
+    expect(preApprovalCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("createMpPixSubscription", () => {
+  it("cria preapproval pending e retorna initPoint", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null
     });
     preApprovalCreate.mockResolvedValue({
       id: "2c93808",
       init_point: "https://mp.test/checkout/2c93808"
     });
 
-    const { createMpSubscription } = await import("@/lib/actions/mp-billing");
-    const result = await createMpSubscription("payer@test.com");
+    const { createMpPixSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixSubscription("payer@test.com");
 
     expect(result).toEqual({ initPoint: "https://mp.test/checkout/2c93808" });
     expect(update).toHaveBeenCalledWith({
       where: { id: "p1" },
       data: { mpPreapprovalId: "2c93808" }
     });
-  });
-
-  it("bloqueia quem ja e PRO com assinatura MP ativa", async () => {
-    findUnique.mockResolvedValue({
-      id: "p1",
-      plan: "PRO",
-      mpPreapprovalId: "2c93808",
-      stripeSubscriptionId: null
-    });
-
-    const { createMpSubscription } = await import("@/lib/actions/mp-billing");
-    const result = await createMpSubscription("payer@test.com");
-
-    expect("error" in result).toBe(true);
-    expect(preApprovalCreate).not.toHaveBeenCalled();
   });
 });
 ```
@@ -438,7 +482,7 @@ describe("createMpSubscription", () => {
 Run: `npx vitest run tests/actions/mp-billing.test.ts`
 Expected: FAIL com "Cannot find module '@/lib/actions/mp-billing'".
 
-- [ ] **Step 3: Implementar a action**
+- [ ] **Step 3: Implementar as actions**
 
 ```typescript
 // lib/actions/mp-billing.ts
@@ -449,28 +493,84 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { getMercadoPago } from "@/lib/mercadopago";
 
-export async function createMpSubscription(
-  payerEmail: string
-): Promise<{ initPoint: string } | { error: string }> {
+async function loadSubscribableProfile() {
   const session = await auth();
-  if (!session?.user?.id) return { error: "Não autenticado." };
+  if (!session?.user?.id) return { error: "Não autenticado." as const };
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
     select: { id: true, plan: true, mpPreapprovalId: true, stripeSubscriptionId: true }
   });
 
-  if (!profile) return { error: "Dados do negócio não encontrados." };
+  if (!profile) return { error: "Dados do negócio não encontrados." as const };
   if (profile.plan === "PRO" && (profile.mpPreapprovalId || profile.stripeSubscriptionId)) {
-    return { error: "Você já tem uma assinatura PRO ativa." };
+    return { error: "Você já tem uma assinatura PRO ativa." as const };
   }
+  return { profile };
+}
 
+function proAmount(): number | null {
   const amount = Number(process.env.MP_PRO_AMOUNT);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return { error: "Valor do plano não configurado." };
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+export async function createMpCardSubscription(
+  cardToken: string,
+  payerEmail: string
+): Promise<{ success: true } | { error: string }> {
+  const loaded = await loadSubscribableProfile();
+  if ("error" in loaded) return loaded;
+  const { profile } = loaded;
+
+  const amount = proAmount();
+  if (amount === null) return { error: "Valor do plano não configurado." };
+
+  const preApproval = new PreApproval(getMercadoPago());
+  const result = await preApproval.create({
+    body: {
+      reason: "Vitriny PRO",
+      external_reference: profile.id,
+      payer_email: payerEmail,
+      card_token_id: cardToken,
+      auto_recurring: {
+        frequency: 1,
+        frequency_type: "months",
+        transaction_amount: amount,
+        currency_id: "BRL"
+      },
+      back_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+      status: "authorized"
+    }
+  });
+
+  if (!result.id || result.status !== "authorized") {
+    return { error: "Não foi possível confirmar o cartão. Verifique os dados e tente novamente." };
   }
 
-  const backUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?mp=return`;
+  await prisma.providerProfile.update({
+    where: { id: profile.id },
+    data: {
+      mpPreapprovalId: result.id,
+      plan: "PRO",
+      subscriptionStatus: "ACTIVE",
+      currentPeriodEnd: result.next_payment_date
+        ? new Date(result.next_payment_date)
+        : null
+    }
+  });
+
+  return { success: true };
+}
+
+export async function createMpPixSubscription(
+  payerEmail: string
+): Promise<{ initPoint: string } | { error: string }> {
+  const loaded = await loadSubscribableProfile();
+  if ("error" in loaded) return loaded;
+  const { profile } = loaded;
+
+  const amount = proAmount();
+  if (amount === null) return { error: "Valor do plano não configurado." };
 
   const preApproval = new PreApproval(getMercadoPago());
   const result = await preApproval.create({
@@ -484,7 +584,7 @@ export async function createMpSubscription(
         transaction_amount: amount,
         currency_id: "BRL"
       },
-      back_url: backUrl,
+      back_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?mp=return`,
       status: "pending"
     }
   });
@@ -505,13 +605,13 @@ export async function createMpSubscription(
 - [ ] **Step 4: Rodar e ver passar**
 
 Run: `npx vitest run tests/actions/mp-billing.test.ts`
-Expected: PASS (2 testes).
+Expected: PASS (4 testes).
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add lib/actions/mp-billing.ts tests/actions/mp-billing.test.ts
-git commit -m "feat: cria assinatura Mercado Pago retornando init_point"
+git commit -m "feat: assinatura Mercado Pago por cartao (Bricks) e Pix (redirect)"
 ```
 
 ---
@@ -695,27 +795,93 @@ git commit -m "feat: webhook Mercado Pago com validacao de assinatura e ativacao
 
 ---
 
-## Task 8: UI — botão "Assinar PRO" via Mercado Pago (redirect)
+## Task 8: UI — assinatura via Bricks (cartão embutido) + Pix (redirect)
 
 **Files:**
+- Modify: `package.json` (add `@mercadopago/sdk-react`)
+- Create: `components/billing/MpSubscriptionModal.tsx`
 - Modify: `components/billing/BillingCard.tsx`
 - Modify: `app/(dashboard)/dashboard/billing/page.tsx`
 
-Substituir o `handleSubscribe` (Stripe Elements) por um handler que chama `createMpSubscription` e **redireciona** para o `initPoint`. O botão "Pagar 1 mês via Pix" (manual, `develop`) é removido do caminho FREE, já que o MP passa a cobrir Pix.
+Cartão: modal com o **Card Payment Brick** do MP (iframe seguro → PCI baixa), que gera um `card_token` e chama `createMpCardSubscription`. Pix Automático: botão que chama `createMpPixSubscription` e redireciona ao `initPoint`. Os botões de Stripe Elements e Pix manual (`develop`) saem do bloco FREE.
 
-- [ ] **Step 1: Trocar o handler de assinatura**
+- [ ] **Step 1: Instalar o SDK React do Bricks**
 
-Em `components/billing/BillingCard.tsx`, substituir o import e o `handleSubscribe`:
+Run: `npm install @mercadopago/sdk-react`
+Expected: `@mercadopago/sdk-react` em `dependencies`.
 
-```typescript
-import { createMpSubscription, cancelMpSubscription } from "@/lib/actions/mp-billing";
+- [ ] **Step 2: Criar o modal com o Card Payment Brick** em `components/billing/MpSubscriptionModal.tsx`:
+
+```tsx
+"use client";
+
+import { useEffect } from "react";
+import { initMercadoPago, CardPayment } from "@mercadopago/sdk-react";
+import { createMpCardSubscription } from "@/lib/actions/mp-billing";
+
+type Props = {
+  amount: number;
+  payerEmail: string;
+  onClose: () => void;
+  onSuccess: () => void;
+  onError: (message: string) => void;
+};
+
+export function MpSubscriptionModal({ amount, payerEmail, onClose, onSuccess, onError }: Props) {
+  useEffect(() => {
+    initMercadoPago(process.env.NEXT_PUBLIC_MP_PUBLIC_KEY!, { locale: "pt-BR" });
+  }, []);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-fraunces text-xl font-bold text-ink">Assinar PRO</h3>
+          <button onClick={onClose} className="text-ink-muted hover:text-ink" aria-label="Fechar">
+            ×
+          </button>
+        </div>
+        <CardPayment
+          initialization={{ amount }}
+          onSubmit={async ({ formData }) => {
+            const result = await createMpCardSubscription(formData.token, payerEmail);
+            if ("error" in result) {
+              onError(result.error);
+              return;
+            }
+            onSuccess();
+          }}
+          onError={() => onError("Não foi possível validar o cartão. Tente novamente.")}
+        />
+      </div>
+    </div>
+  );
+}
 ```
 
+Nota: o `CardPayment` brick recebe no `onSubmit` um `{ formData }` cujo `formData.token` é o card token de uso único; os campos do cartão vivem em iframes protegidos do MP (PCI SAQ A). O `NEXT_PUBLIC_MP_PUBLIC_KEY` é a public key da conta (Task 9).
+
+- [ ] **Step 3: Ligar o BillingCard**
+
+Em `components/billing/BillingCard.tsx`:
+- Trocar os imports de billing Stripe por:
 ```typescript
-function handleSubscribe() {
+import { createMpPixSubscription, cancelMpSubscription } from "@/lib/actions/mp-billing";
+import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
+```
+- Adicionar `payerEmail: string` e `proAmount: number` às `BillingCardProps` e ao destructuring.
+- Adicionar estado: `const [showCardModal, setShowCardModal] = useState(false);`
+- Trocar `handleSubscribe` para abrir o modal: `function handleSubscribe() { setError(null); setShowCardModal(true); }`
+- Adicionar o handler de Pix (redirect):
+```typescript
+function handlePayWithPix() {
   setError(null);
   startTransition(async () => {
-    const result = await createMpSubscription(payerEmail);
+    const result = await createMpPixSubscription(payerEmail);
     if ("error" in result) {
       setError(result.error);
       return;
@@ -724,31 +890,38 @@ function handleSubscribe() {
   });
 }
 ```
+- Em `handleConfirmCancel`, trocar `cancelSubscription()` por `cancelMpSubscription()`.
+- Renderizar o modal:
+```tsx
+{showCardModal ? (
+  <MpSubscriptionModal
+    amount={proAmount}
+    payerEmail={payerEmail}
+    onClose={() => setShowCardModal(false)}
+    onSuccess={() => { setShowCardModal(false); setShowSuccess(true); router.refresh(); }}
+    onError={(m) => { setShowCardModal(false); setError(m); }}
+  />
+) : null}
+```
 
-Adicionar `payerEmail: string` às `BillingCardProps` e ao destructuring do componente.
+- [ ] **Step 4: Ajustar o bloco FREE (dois botões)**
 
-- [ ] **Step 2: Trocar o cancelamento para MP**
+No JSX do bloco `plan === "FREE"` (linhas ~306-325), remover os botões de Stripe Elements e de Pix manual (`requestProPixPayment`) e o `pixError`. Deixar dois botões: `Assinar com cartão` (`onClick={handleSubscribe}`) e `Assinar com Pix` (`onClick={handlePayWithPix}`). Remover os imports não usados (`createCheckoutSession`, `createSetupIntent`, `requestProPixPayment`, `SubscriptionModal`, `UpdatePaymentModal`, `ProPixPaymentModal`) se ficarem órfãos.
 
-Substituir a chamada em `handleConfirmCancel` de `cancelSubscription()` para `cancelMpSubscription()`.
+- [ ] **Step 5: Passar payerEmail e proAmount na página**
 
-- [ ] **Step 3: Remover o caminho de Pix manual do bloco FREE**
+Em `app/(dashboard)/dashboard/billing/page.tsx`, resolver o e-mail (`ProviderProfile.email ?? User.email`) e `proAmount = Number(process.env.MP_PRO_AMOUNT)`, passando `payerEmail` e `proAmount` ao `<BillingCard />`. Tratar `searchParams.mp === "return"` com o aviso "Estamos confirmando seu pagamento. Seu plano é atualizado em instantes." (o webhook confirma o Pix de forma assíncrona).
 
-No JSX do bloco `plan === "FREE"` (linhas ~306-325), remover o botão "Pagar 1 mês via Pix" e o `pixError`, deixando só "Assinar PRO" (que agora cobre cartão + Pix via MP). Trocar o texto do botão para `"Assinar PRO (Pix ou cartão)"`.
-
-- [ ] **Step 4: Passar payerEmail na página**
-
-Em `app/(dashboard)/dashboard/billing/page.tsx`, buscar o e-mail (`ProviderProfile.email ?? User.email`) e passar `payerEmail` ao `<BillingCard />`. Tratar `searchParams.mp === "return"` mostrando um aviso "Estamos confirmando seu pagamento. Seu plano é atualizado em instantes." (o webhook confirma de forma assíncrona).
-
-- [ ] **Step 5: Verificar build**
+- [ ] **Step 6: Verificar build**
 
 Run: `npm run build`
 Expected: build passa.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add components/billing/BillingCard.tsx "app/(dashboard)/dashboard/billing/page.tsx"
-git commit -m "feat: botao Assinar PRO redireciona para checkout Mercado Pago"
+git add package.json package-lock.json components/billing/MpSubscriptionModal.tsx components/billing/BillingCard.tsx "app/(dashboard)/dashboard/billing/page.tsx"
+git commit -m "feat: assinatura PRO com Card Brick embutido e Pix por redirect"
 ```
 
 ---
@@ -766,7 +939,10 @@ git commit -m "feat: botao Assinar PRO redireciona para checkout Mercado Pago"
 MP_ACCESS_TOKEN="APP_USR-..."
 MP_WEBHOOK_SECRET="..."
 MP_PRO_AMOUNT="19.90"
+NEXT_PUBLIC_MP_PUBLIC_KEY="APP_USR-..."
 ```
+
+> `NEXT_PUBLIC_MP_PUBLIC_KEY` é embutida no bundle do navegador (Card Brick). Como o deploy é Docker/Easypanel, ela precisa chegar ao `next build` via `build.args` no `docker-compose.yml` — mesmo tratamento das outras `NEXT_PUBLIC_*` (ver nota no `docs/DEPLOY.md`).
 
 - [ ] **Step 2: Documentar no DEPLOY.md**
 
@@ -861,5 +1037,6 @@ git commit -m "refactor: remove caminho Stripe/Pix manual do fluxo de assinatura
 
 - **Cobertura do spec:** client (T1), resolução de plano (T2), schema (T3), expiração/effective-plan (T4), criar assinatura Pix+cartão via init_point (T5), cancelar (T6), webhook assinado (T7), UI redirect (T8), envs/deploy (T9), preço (T10), suíte (T11), cutover (T12). ✅
 - **Pix Automático:** entregue via `init_point` da preapproval `pending` (T5) — o pagador escolhe cartão ou Pix Automático no checkout do MP; a disponibilidade do método é config de conta (T0), não código.
-- **Consistência de tipos:** `mpPreapprovalId`/`mpPayerId` usados igual em schema (T3), effective-plan (T4), actions (T5/T6) e webhook (T7). `resolvePlanFromPreapproval` mesma assinatura em T2 e T7. `createMpSubscription(payerEmail)` mesma assinatura em T5 e T8.
+- **Consistência de tipos:** `mpPreapprovalId`/`mpPayerId` usados igual em schema (T3), effective-plan (T4), actions (T5/T6) e webhook (T7). `resolvePlanFromPreapproval` mesma assinatura em T2 e T7. `createMpCardSubscription(cardToken, payerEmail)` e `createMpPixSubscription(payerEmail)` definidas em T5 e consumidas em T8 (via `MpSubscriptionModal` e botão Pix).
+- **Checkout:** cartão embutido via Card Payment Brick (`@mercadopago/sdk-react`, `NEXT_PUBLIC_MP_PUBLIC_KEY`), assinatura `authorized` na hora; Pix Automático via redirect ao `init_point` da preapproval `pending`. Decisão registrada na seção de arquitetura.
 - **Riscos conhecidos:** (a) confirmar `type` exato do evento de assinatura no painel MP (assumido `subscription_preapproval`) — validar no simulador na nota da T7; (b) redirect substitui o Elements embutido — decisão registrada na seção de arquitetura.
