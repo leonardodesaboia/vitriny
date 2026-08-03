@@ -26,6 +26,7 @@ import {
 import { toDayBucket } from "@/lib/storefront-views";
 import { canUseStorefrontAnalytics, getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectivePlan } from "@/lib/effective-plan";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -48,6 +49,9 @@ export default async function DashboardPage() {
       id: true,
       isPublished: true,
       plan: true,
+      stripeSubscriptionId: true,
+      mpPreapprovalId: true,
+      currentPeriodEnd: true,
       services: {
         select: {
           isActive: true,
@@ -57,6 +61,8 @@ export default async function DashboardPage() {
       slug: true
     }
   });
+
+  const effectivePlan = profile ? (await resolveEffectivePlan(profile)).plan : "FREE";
 
   const [
     monthlyQuoteRequests,
@@ -174,7 +180,7 @@ export default async function DashboardPage() {
   });
 
   const canSeeItemViews = profile
-    ? canUseStorefrontAnalytics(profile.plan)
+    ? canUseStorefrontAnalytics(effectivePlan)
     : false;
 
   let topItems: TopItem[] = [];
@@ -196,7 +202,7 @@ export default async function DashboardPage() {
     topItems = mergeItemViewRanking(itemViewGroups, itemNames);
   }
 
-  const limits = profile ? getPlanLimits(profile.plan) : null;
+  const limits = profile ? getPlanLimits(effectivePlan) : null;
   const activeServices = profile?.services.filter((service) => service.isActive) ?? [];
   const activeServicesCount = activeServices.length;
   const onboardingOutcomeSteps = buildOnboardingOutcomeSteps({
@@ -368,7 +374,7 @@ export default async function DashboardPage() {
 
       {profile && limits ? (
         <PlanUsageCard
-          plan={profile.plan}
+          plan={effectivePlan}
           usage={[
             {
               current: activeServicesCount,

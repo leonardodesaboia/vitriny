@@ -10,6 +10,7 @@ import {
   isPaidPlan,
   formatUsage,
   getCurrentMonthRange,
+  isOneTimeProExpired,
   PLAN_LIMITS,
   PLAN_LIMIT_ERROR_CODES,
   PLAN_PRICES
@@ -186,5 +187,63 @@ describe("PLAN_LIMIT_ERROR_CODES", () => {
     expect(PLAN_LIMIT_ERROR_CODES.monthlyQuoteRequests).toBe("limit-monthly-quote-requests");
     expect(PLAN_LIMIT_ERROR_CODES.monthlyProposals).toBe("limit-monthly-proposals");
     expect(PLAN_LIMIT_ERROR_CODES.proposalTemplates).toBe("limit-proposal-templates");
+  });
+});
+
+describe("isOneTimeProExpired", () => {
+  it("retorna false quando o plano é FREE", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "FREE",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: new Date("2020-01-01")
+      })
+    ).toBe(false);
+  });
+
+  it("retorna false quando é PRO com assinatura Stripe ativa, mesmo com currentPeriodEnd no passado", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: "sub_123",
+        mpPreapprovalId: null,
+        currentPeriodEnd: new Date("2020-01-01")
+      })
+    ).toBe(false);
+  });
+
+  it("retorna false quando é PRO via Pix manual mas ainda dentro do período", () => {
+    const future = new Date(Date.now() + 1000 * 60 * 60 * 24);
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: future
+      })
+    ).toBe(false);
+  });
+
+  it("retorna true quando é PRO via Pix manual e currentPeriodEnd já passou", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: new Date("2020-01-01")
+      })
+    ).toBe(true);
+  });
+
+  it("retorna false quando currentPeriodEnd é null (nunca teve período definido)", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        currentPeriodEnd: null
+      })
+    ).toBe(false);
   });
 });

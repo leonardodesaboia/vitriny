@@ -4,14 +4,12 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
 import {
-  createCheckoutSession,
-  cancelSubscription,
-  reactivateSubscription,
-  createSetupIntent
-} from "@/lib/actions/billing";
+  cancelMpSubscription,
+  createMpPixSubscription
+} from "@/lib/actions/mp-billing";
+import { reactivateSubscription } from "@/lib/actions/billing";
 import { PLAN_NAMES } from "@/lib/plan-limits";
-import { SubscriptionModal } from "@/components/billing/SubscriptionModal";
-import { UpdatePaymentModal } from "@/components/billing/UpdatePaymentModal";
+import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -31,6 +29,8 @@ type BillingCardProps = {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   hasActiveSubscription: boolean;
+  payerEmail: string;
+  proAmount: number;
 };
 
 export function BillingCard({
@@ -38,39 +38,43 @@ export function BillingCard({
   subscriptionStatus,
   currentPeriodEnd,
   cancelAtPeriodEnd,
-  hasActiveSubscription
+  hasActiveSubscription,
+  payerEmail,
+  proAmount
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Subscription checkout modal
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
 
   // Cancel confirmation inline state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // Card update modal
-  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(null);
-  const [showCardSuccess, setShowCardSuccess] = useState(false);
+  // MP Card Brick modal
+  const [showCardModal, setShowCardModal] = useState(false);
 
   function handleSubscribe() {
     setError(null);
+    setShowCardModal(true);
+  }
+
+  function handlePayWithPix() {
+    setError(null);
     startTransition(async () => {
-      const result = await createCheckoutSession();
+      const result = await createMpPixSubscription(payerEmail);
       if ("error" in result) {
         setError(result.error);
         return;
       }
-      setClientSecret(result.clientSecret);
+      window.location.href = result.initPoint;
     });
   }
 
   function handleConfirmCancel() {
     setError(null);
     startTransition(async () => {
-      const result = await cancelSubscription();
+      const result = await cancelMpSubscription();
       if ("error" in result) {
         setError(result.error);
         return;
@@ -92,38 +96,6 @@ export function BillingCard({
     });
   }
 
-  function handleUpdateCard() {
-    setError(null);
-    startTransition(async () => {
-      const result = await createSetupIntent();
-      if ("error" in result) {
-        setError(result.error);
-        return;
-      }
-      setSetupClientSecret(result.clientSecret);
-    });
-  }
-
-  function handleModalClose() {
-    setClientSecret(null);
-  }
-
-  function handleSuccess() {
-    setClientSecret(null);
-    setShowSuccess(true);
-    router.refresh();
-  }
-
-  function handleCardModalClose() {
-    setSetupClientSecret(null);
-  }
-
-  function handleCardSuccess() {
-    setSetupClientSecret(null);
-    setShowCardSuccess(true);
-    router.refresh();
-  }
-
   const periodEndLabel = currentPeriodEnd
     ? currentPeriodEnd.toLocaleDateString("pt-BR", {
         day: "2-digit",
@@ -134,19 +106,20 @@ export function BillingCard({
 
   return (
     <>
-      {clientSecret ? (
-        <SubscriptionModal
-          clientSecret={clientSecret}
-          onClose={handleModalClose}
-          onSuccess={handleSuccess}
-        />
-      ) : null}
-
-      {setupClientSecret ? (
-        <UpdatePaymentModal
-          clientSecret={setupClientSecret}
-          onClose={handleCardModalClose}
-          onSuccess={handleCardSuccess}
+      {showCardModal ? (
+        <MpSubscriptionModal
+          amount={proAmount}
+          payerEmail={payerEmail}
+          onClose={() => setShowCardModal(false)}
+          onSuccess={() => {
+            setShowCardModal(false);
+            setShowSuccess(true);
+            router.refresh();
+          }}
+          onError={(m) => {
+            setShowCardModal(false);
+            setError(m);
+          }}
         />
       ) : null}
 
@@ -182,14 +155,6 @@ export function BillingCard({
           </div>
         ) : null}
 
-        {showCardSuccess ? (
-          <div className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-            <p className="text-sm font-semibold text-green-800">
-              Cartão atualizado com sucesso!
-            </p>
-          </div>
-        ) : null}
-
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-leaf">
@@ -198,12 +163,12 @@ export function BillingCard({
             <h2 className="mt-2 font-fraunces text-2xl font-bold text-ink">
               {PLAN_NAMES[plan]}
             </h2>
-            {subscriptionStatus ? (
+            {subscriptionStatus && hasActiveSubscription ? (
               <p className="mt-1 text-sm text-ink-muted">
                 Assinatura: {STATUS_LABELS[subscriptionStatus]}
               </p>
             ) : null}
-            {currentPeriodEnd && plan === "PRO" ? (
+            {currentPeriodEnd && plan === "PRO" && hasActiveSubscription ? (
               cancelAtPeriodEnd ? (
                 <p className="mt-1 text-sm font-medium text-amber-700">
                   Cancela em {periodEndLabel}
@@ -218,41 +183,50 @@ export function BillingCard({
 
           <div className="flex w-full flex-col items-start gap-2 sm:w-auto">
             {plan === "PRO" ? (
-              <>
-                {cancelAtPeriodEnd ? (
-                  <button
-                    onClick={handleReactivate}
-                    disabled={pending}
-                    className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
-                  >
-                    {pending ? "Aguarde..." : "Reativar assinatura"}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowCancelConfirm(true)}
-                    disabled={pending}
-                    className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-red-300 bg-white px-5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 sm:w-44"
-                  >
-                    Cancelar assinatura
-                  </button>
-                )}
-
-                <button
-                  onClick={handleUpdateCard}
-                  disabled={pending}
-                  className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60 sm:w-44"
-                >
-                  {pending ? "Aguarde..." : "Atualizar cartão"}
-                </button>
-              </>
+              hasActiveSubscription ? (
+                <>
+                  {cancelAtPeriodEnd ? (
+                    <button
+                      onClick={handleReactivate}
+                      disabled={pending}
+                      className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
+                    >
+                      {pending ? "Aguarde..." : "Reativar assinatura"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setShowCancelConfirm(true)}
+                      disabled={pending}
+                      className="inline-flex min-h-9 w-full items-center justify-center rounded-md border border-red-300 bg-white px-5 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:opacity-60 sm:w-44"
+                    >
+                      Cancelar assinatura
+                    </button>
+                  )}
+                </>
+              ) : (
+                <div className="flex w-full flex-col gap-2 sm:w-auto">
+                  <p className="text-xs text-ink-muted">
+                    PRO ativo até {periodEndLabel ?? "data não disponível"} · pago via Pix
+                  </p>
+                </div>
+              )
             ) : (
-              <button
-                onClick={handleSubscribe}
-                disabled={pending || hasActiveSubscription}
-                className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
-              >
-                {pending ? "Aguarde..." : "Assinar PRO"}
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto">
+                <button
+                  onClick={handleSubscribe}
+                  disabled={pending || hasActiveSubscription}
+                  className="inline-flex min-h-9 items-center justify-center rounded-md bg-leaf px-5 text-xs font-semibold text-white transition hover:bg-leaf-hover disabled:opacity-60"
+                >
+                  {pending ? "Aguarde..." : "Assinar com cartão"}
+                </button>
+                <button
+                  onClick={handlePayWithPix}
+                  disabled={pending}
+                  className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                >
+                  {pending ? "Aguarde..." : "Assinar com Pix"}
+                </button>
+              </div>
             )}
 
             {error ? (

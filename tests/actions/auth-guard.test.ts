@@ -107,3 +107,26 @@ describe("requireProviderProfile", () => {
     );
   });
 });
+
+describe("requireProviderProfile com auto-rebaixamento", () => {
+  it("devolve plan FREE já corrigido quando o Pix manual venceu", async () => {
+    const { auth, db } = await setup();
+    auth.mockResolvedValue(makeSession("user-1") as never);
+    db.providerProfile.findUnique.mockResolvedValue(
+      makeProfile({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        currentPeriodEnd: new Date("2020-01-01")
+      })
+    );
+    db.providerProfile.update.mockResolvedValue({});
+
+    const { requireProviderProfile } = await import("@/lib/actions/auth-guard");
+    const result = await requireProviderProfile();
+
+    expect(result.profile?.plan).toBe("FREE");
+    expect(db.providerProfile.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { plan: "FREE", currentPeriodEnd: null } })
+    );
+  });
+});

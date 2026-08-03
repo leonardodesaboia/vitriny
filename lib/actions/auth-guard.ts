@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { resolveEffectivePlan } from "@/lib/effective-plan";
 
 export async function requireAuth(): Promise<string> {
   const session = await auth();
@@ -25,7 +26,22 @@ export async function requireProviderProfile() {
   const userId = await requireAuth();
   const profile = await prisma.providerProfile.findUnique({
     where: { userId },
-    select: { id: true, plan: true, businessType: true }
+    select: {
+      id: true,
+      plan: true,
+      businessType: true,
+      stripeSubscriptionId: true,
+      mpPreapprovalId: true,
+      currentPeriodEnd: true
+    }
   });
-  return { userId, profile };
+
+  if (!profile) return { userId, profile: null };
+
+  const effective = await resolveEffectivePlan(profile);
+
+  return {
+    userId,
+    profile: { ...profile, plan: effective.plan, currentPeriodEnd: effective.currentPeriodEnd }
+  };
 }

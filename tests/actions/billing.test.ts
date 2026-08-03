@@ -1,10 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { makePrismaMock, makeSession, type PrismaMock } from "../helpers";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
 vi.mock("@/lib/stripe", () => ({ stripe: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
+vi.mock("@/lib/pix", () => ({ createPixPayment: vi.fn() }));
+vi.mock("next/server", () => ({ after: (fn: () => unknown) => fn() }));
+vi.mock("@/lib/email", () => ({ sendProPixPaymentClientPaidEmail: vi.fn() }));
 
 let db: PrismaMock;
 let stripeApi: Record<string, Record<string, ReturnType<typeof vi.fn>>>;
@@ -23,7 +26,8 @@ beforeEach(async () => {
     paymentMethods: { retrieve: vi.fn() },
     customers: { create: vi.fn() },
     checkout: { sessions: { create: vi.fn() } },
-    billingPortal: { sessions: { create: vi.fn() } }
+    billingPortal: { sessions: { create: vi.fn() } },
+    prices: { retrieve: vi.fn() }
   };
   Object.assign(stripeModule.stripe, stripeApi);
 
@@ -237,6 +241,290 @@ describe("createCheckoutSession", () => {
     expect(stripeApi.customers.create).not.toHaveBeenCalled();
     expect(stripeApi.checkout.sessions.create).toHaveBeenCalledWith(
       expect.objectContaining({ customer: "cus_existente" })
+    );
+  });
+});
+
+// ─── requestProPixPayment ─────────────────────────────────────────────────────
+
+describe("requestProPixPayment", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("retorna erro quando não autenticado", async () => {
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValue(null);
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({ error: "Não autenticado." });
+  });
+
+  it("retorna erro quando já tem assinatura Stripe ativa", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: "sub_test",
+      businessName: "Negócio Teste"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({ error: "Você já tem o plano PRO." });
+  });
+
+  it("permite renovar mais um mês quando é PRO via Pix manual (sem assinatura Stripe)", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-renovacao" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-renovacao"
+    });
+  });
+
+  it("retorna erro quando o Pix da Vitriny não está configurado", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    // VITRINY_PIX_KEY/HOLDER_NAME/CITY propositalmente não configurados.
+    vi.stubEnv("VITRINY_PIX_KEY", "");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "");
+    vi.stubEnv("VITRINY_PIX_CITY", "");
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({
+      error: "Pix não está configurado no momento. Tente novamente mais tarde ou fale com o suporte."
+    });
+
+    expect(db.proPixPayment.findFirst).not.toHaveBeenCalled();
+    expect(stripeApi.prices.retrieve).not.toHaveBeenCalled();
+    const { createPixPayment } = await import("@/lib/pix");
+    expect(createPixPayment).not.toHaveBeenCalled();
+  });
+
+  it("retorna erro quando o preço PRO no Stripe não tem valor definido", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    // Preço mal configurado no Stripe (ex: tiered/metered) não tem unit_amount.
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: null });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    expect(await requestProPixPayment()).toEqual({
+      error: "Não foi possível determinar o valor do plano PRO. Tente novamente ou fale com o suporte."
+    });
+
+    expect(db.proPixPayment.create).not.toHaveBeenCalled();
+    const { createPixPayment } = await import("@/lib/pix");
+    expect(createPixPayment).not.toHaveBeenCalled();
+  });
+
+  it("reaproveita pedido pendente existente, usando o valor já salvo (não o do Stripe)", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-payment-1",
+      amount: "19.90"
+    });
+    // O preço no Stripe já teria mudado desde que o pedido pendente foi
+    // criado — não deve ser usado nem consultado nesse fluxo de reuso.
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 2990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-1"
+    });
+    expect(db.proPixPayment.create).not.toHaveBeenCalled();
+    expect(stripeApi.prices.retrieve).not.toHaveBeenCalled();
+    expect(createPixPayment).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: "19.90", transactionId: "pix-payment-1" })
+    );
+  });
+
+  it("cria novo pedido quando não há pendente, usando o valor do Stripe", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-novo" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-novo"
+    });
+    expect(db.proPixPayment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ providerProfileId: "profile-1", amount: "19.90" })
+      })
+    );
+    expect(createPixPayment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pixKey: process.env.VITRINY_PIX_KEY,
+        amount: "19.90",
+        transactionId: "pix-payment-novo"
+      })
+    );
+  });
+
+  it("não reaproveita pedido já marcado como pago pelo cliente (clientPaidAt setado) — cria um novo", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      plan: "FREE",
+      businessName: "Negócio Teste"
+    });
+    vi.stubEnv("VITRINY_PIX_KEY", "chave-pix-teste");
+    vi.stubEnv("VITRINY_PIX_HOLDER_NAME", "Vitriny");
+    vi.stubEnv("VITRINY_PIX_CITY", "Sao Paulo");
+    // A query agora exclui clientPaidAt não-nulo, então o mock reflete isso
+    // retornando null (o pedido já informado como pago não deve ser achado).
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+    db.proPixPayment.create.mockResolvedValue({ id: "pix-payment-novo-2" });
+    stripeApi.prices.retrieve.mockResolvedValue({ unit_amount: 1990 });
+    const { createPixPayment } = await import("@/lib/pix");
+    vi.mocked(createPixPayment).mockResolvedValue({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz"
+    });
+
+    const { requestProPixPayment } = await import("@/lib/actions/billing");
+    const result = await requestProPixPayment();
+
+    expect(result).toEqual({
+      copyPasteCode: "codigo-pix",
+      qrCodeDataUrl: "data:image/png;base64,xyz",
+      paymentId: "pix-payment-novo-2"
+    });
+    expect(db.proPixPayment.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ clientPaidAt: null }) })
+    );
+    expect(db.proPixPayment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ providerProfileId: "profile-1", amount: "19.90" })
+      })
+    );
+  });
+});
+
+// ─── markProPixPaymentClientPaid ──────────────────────────────────────────────
+
+describe("markProPixPaymentClientPaid", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("retorna erro quando não autenticado", async () => {
+    const { auth } = await import("@/auth");
+    vi.mocked(auth).mockResolvedValue(null);
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ error: "Não autenticado." });
+  });
+
+  it("retorna erro quando o pagamento não pertence ao perfil da sessão", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
+    db.proPixPayment.findFirst.mockResolvedValue(null);
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-de-outro")).toEqual({
+      error: "Pagamento não encontrado."
+    });
+  });
+
+  it("é idempotente quando já foi informado", async () => {
+    db.providerProfile.findUnique.mockResolvedValue({ id: "profile-1" });
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-1",
+      clientPaidAt: new Date("2026-01-01")
+    });
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ success: true });
+    expect(db.proPixPayment.update).not.toHaveBeenCalled();
+  });
+
+  it("grava clientPaidAt e agenda o e-mail ao admin", async () => {
+    vi.stubEnv("ADMIN_EMAIL", "admin@vitriny.app");
+    db.providerProfile.findUnique.mockResolvedValue({
+      id: "profile-1",
+      businessName: "Negócio Teste"
+    });
+    db.proPixPayment.findFirst.mockResolvedValue({
+      id: "pix-1",
+      clientPaidAt: null,
+      amount: "19.90"
+    });
+    db.proPixPayment.update.mockResolvedValue({});
+
+    const { markProPixPaymentClientPaid } = await import("@/lib/actions/billing");
+    expect(await markProPixPaymentClientPaid("pix-1")).toEqual({ success: true });
+
+    expect(db.proPixPayment.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "pix-1" },
+        data: expect.objectContaining({ clientPaidAt: expect.any(Date) })
+      })
+    );
+
+    const { sendProPixPaymentClientPaidEmail } = await import("@/lib/email");
+    expect(sendProPixPaymentClientPaidEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ businessName: "Negócio Teste", amount: "19.90" })
     );
   });
 });

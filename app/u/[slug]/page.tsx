@@ -6,7 +6,7 @@ import { OpenNowBadge } from "@/components/public/OpenNowBadge";
 import { PoweredByVitriny } from "@/components/public/PoweredByVitriny";
 import { PublicServicesGrid } from "@/components/public/PublicServicesGrid";
 import { StorefrontViewBeacon } from "@/components/public/StorefrontViewBeacon";
-import { canUseServiceImages } from "@/lib/plan-limits";
+import { canUseServiceImages, isOneTimeProExpired } from "@/lib/plan-limits";
 import { formatWeek, parseBusinessHours } from "@/lib/business-hours";
 import { prisma } from "@/lib/prisma";
 import { parseProfileLinks } from "@/lib/profile-links";
@@ -52,6 +52,9 @@ const getProfile = cache(async (slug: string) => {
       businessHours: true,
       isPublished: true,
       plan: true,
+      stripeSubscriptionId: true,
+      mpPreapprovalId: true,
+      currentPeriodEnd: true,
       brandColor: true,
       brandFont: true,
       services: {
@@ -163,6 +166,11 @@ export default async function PublicProviderProfilePage({
 
   if (!profile || !profile.isPublished) notFound();
 
+  // Pix manual vencido rebaixa a marca/imagens nesta leitura sem persistir —
+  // página pública não pode escrever no banco (ver lib/effective-plan.ts
+  // para a correção que grava, usada no dashboard autenticado).
+  const effectivePlan = isOneTimeProExpired(profile) ? "FREE" : profile.plan;
+
   const location = [profile.city, profile.state].filter(Boolean).join(", ");
   // Rótulo do catálogo conforme o tipo do negócio. Ver docs/UX_UI_AUDIT.md P12.
   const catalogLabel =
@@ -233,7 +241,7 @@ export default async function PublicProviderProfilePage({
   }[];
 
   const appearance = getBrandAppearance(
-    profile.plan,
+    effectivePlan,
     profile.brandColor,
     profile.brandFont,
   );
@@ -265,7 +273,7 @@ export default async function PublicProviderProfilePage({
       name: service.name,
       itemType: service.itemType,
     })),
-    image: canUseServiceImages(profile.plan)
+    image: canUseServiceImages(effectivePlan)
       ? (profile.services.find((service) => service.imageUrl)?.imageUrl ?? null)
       : null,
   });
@@ -361,7 +369,7 @@ export default async function PublicProviderProfilePage({
               services={profile.services.map((s) => ({
                 ...s,
                 basePrice: s.basePrice?.toString() ?? null,
-                imageUrl: canUseServiceImages(profile.plan)
+                imageUrl: canUseServiceImages(effectivePlan)
                   ? (s.imageUrl ?? null)
                   : null,
               }))}

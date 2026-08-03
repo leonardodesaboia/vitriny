@@ -88,7 +88,9 @@ export const canUseStorefrontAnalytics = (plan: PlanTier) =>
 
 export const isPaidPlan = (plan: PlanTier) => plan !== "FREE";
 
-// Fonte única do preço exibido na landing (o preço real vive no Stripe).
+// Fonte única do preço exibido na landing. O valor real cobrado vive na env
+// MP_PRO_AMOUNT (usada pelas actions de assinatura do Mercado Pago); manter os
+// dois alinhados.
 export const PLAN_PRICES: Record<PlanTier, string> = {
   FREE: "R$ 0",
   PRO: "R$ 19,90"
@@ -151,4 +153,24 @@ export function getCurrentMonthRange(referenceDate = new Date()) {
 
 export function formatUsage(current: number, limit: number | null) {
   return limit === null ? `${current} / ilimitado` : `${current} / ${limit}`;
+}
+
+type OneTimeProProfile = {
+  plan: PlanTier;
+  stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
+  currentPeriodEnd: Date | null;
+};
+
+// PRO só expira sozinho quando NÃO há assinatura recorrente por trás (nem
+// Stripe nem preapproval MP) e o período venceu. Assinatura recorrente real
+// nunca cai aqui: o webhook mantém currentPeriodEnd atualizado a cada ciclo.
+export function isOneTimeProExpired(profile: OneTimeProProfile): boolean {
+  return (
+    profile.plan === "PRO" &&
+    profile.stripeSubscriptionId === null &&
+    profile.mpPreapprovalId === null &&
+    profile.currentPeriodEnd !== null &&
+    profile.currentPeriodEnd < new Date()
+  );
 }
