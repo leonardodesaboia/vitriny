@@ -196,6 +196,7 @@ describe("isOneTimeProExpired", () => {
       isOneTimeProExpired({
         plan: "FREE",
         stripeSubscriptionId: null,
+        mpPreapprovalId: null,
         currentPeriodEnd: new Date("2020-01-01")
       })
     ).toBe(false);
@@ -206,6 +207,7 @@ describe("isOneTimeProExpired", () => {
       isOneTimeProExpired({
         plan: "PRO",
         stripeSubscriptionId: "sub_123",
+        mpPreapprovalId: null,
         currentPeriodEnd: new Date("2020-01-01")
       })
     ).toBe(false);
@@ -217,6 +219,7 @@ describe("isOneTimeProExpired", () => {
       isOneTimeProExpired({
         plan: "PRO",
         stripeSubscriptionId: null,
+        mpPreapprovalId: null,
         currentPeriodEnd: future
       })
     ).toBe(false);
@@ -227,6 +230,7 @@ describe("isOneTimeProExpired", () => {
       isOneTimeProExpired({
         plan: "PRO",
         stripeSubscriptionId: null,
+        mpPreapprovalId: null,
         currentPeriodEnd: new Date("2020-01-01")
       })
     ).toBe(true);
@@ -237,6 +241,7 @@ describe("isOneTimeProExpired", () => {
       isOneTimeProExpired({
         plan: "PRO",
         stripeSubscriptionId: null,
+        mpPreapprovalId: null,
         currentPeriodEnd: null
       })
     ).toBe(false);

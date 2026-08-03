@@ -156,16 +156,18 @@ export function formatUsage(current: number, limit: number | null) {
 type OneTimeProProfile = {
   plan: PlanTier;
   stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
   currentPeriodEnd: Date | null;
 };
 
-// PRO pago via Pix manual (sem assinatura Stripe) não tem cobrança
-// recorrente — vence sozinho. Assinatura Stripe real nunca cai aqui: o
-// próprio webhook mantém currentPeriodEnd atualizado a cada ciclo.
+// PRO só expira sozinho quando NÃO há assinatura recorrente por trás (nem
+// Stripe nem preapproval MP) e o período venceu. Assinatura recorrente real
+// nunca cai aqui: o webhook mantém currentPeriodEnd atualizado a cada ciclo.
 export function isOneTimeProExpired(profile: OneTimeProProfile): boolean {
   return (
     profile.plan === "PRO" &&
     profile.stripeSubscriptionId === null &&
+    profile.mpPreapprovalId === null &&
     profile.currentPeriodEnd !== null &&
     profile.currentPeriodEnd < new Date()
   );

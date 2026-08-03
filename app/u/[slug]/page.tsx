@@ -53,6 +53,7 @@ const getProfile = cache(async (slug: string) => {
       isPublished: true,
       plan: true,
       stripeSubscriptionId: true,
+      mpPreapprovalId: true,
       currentPeriodEnd: true,
       brandColor: true,
       brandFont: true,

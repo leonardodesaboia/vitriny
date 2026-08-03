@@ -50,6 +50,7 @@ export default async function DashboardPage() {
       isPublished: true,
       plan: true,
       stripeSubscriptionId: true,
+      mpPreapprovalId: true,
       currentPeriodEnd: true,
       services: {
         select: {
