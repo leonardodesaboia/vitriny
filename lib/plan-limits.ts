@@ -88,7 +88,9 @@ export const canUseStorefrontAnalytics = (plan: PlanTier) =>
 
 export const isPaidPlan = (plan: PlanTier) => plan !== "FREE";
 
-// Fonte única do preço exibido na landing (o preço real vive no Stripe).
+// Fonte única do preço exibido na landing. O valor real cobrado vive na env
+// MP_PRO_AMOUNT (usada pelas actions de assinatura do Mercado Pago); manter os
+// dois alinhados.
 export const PLAN_PRICES: Record<PlanTier, string> = {
   FREE: "R$ 0",
   PRO: "R$ 19,90"
