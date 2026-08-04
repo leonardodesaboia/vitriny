@@ -151,7 +151,7 @@ export async function cancelMpSubscription(): Promise<
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { mpPreapprovalId: true }
+    select: { id: true, mpPreapprovalId: true }
   });
 
   if (!profile?.mpPreapprovalId) return { error: "Assinatura não encontrada." };
@@ -160,6 +160,14 @@ export async function cancelMpSubscription(): Promise<
   await preApproval.update({
     id: profile.mpPreapprovalId,
     body: { status: "cancelled" }
+  });
+
+  // Cancelamento no MP é imediato e irreversível (não dá pra "descancelar"
+  // uma preapproval lá). O acesso PRO continua até currentPeriodEnd — quem
+  // rebaixa de verdade é a expiração lazy (lib/plan-limits.ts).
+  await prisma.providerProfile.update({
+    where: { id: profile.id },
+    data: { cancelAtPeriodEnd: true, subscriptionStatus: "CANCELED" }
   });
 
   return { success: true };

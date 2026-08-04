@@ -171,8 +171,8 @@ describe("createMpPixSubscription", () => {
 });
 
 describe("cancelMpSubscription", () => {
-  it("chama update com status cancelled", async () => {
-    findUnique.mockResolvedValue({ mpPreapprovalId: "2c93808" });
+  it("cancela no MP e marca cancelAtPeriodEnd em vez de rebaixar na hora", async () => {
+    findUnique.mockResolvedValue({ id: "p1", mpPreapprovalId: "2c93808" });
     preApprovalUpdate.mockResolvedValue({ id: "2c93808", status: "cancelled" });
 
     const { cancelMpSubscription } = await import("@/lib/actions/mp-billing");
@@ -182,6 +182,10 @@ describe("cancelMpSubscription", () => {
     expect(preApprovalUpdate).toHaveBeenCalledWith({
       id: "2c93808",
       body: { status: "cancelled" }
+    });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { cancelAtPeriodEnd: true, subscriptionStatus: "CANCELED" }
     });
   });
 
