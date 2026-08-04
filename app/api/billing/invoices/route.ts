@@ -1,10 +1,21 @@
 import { NextResponse } from "next/server";
+import { Payment } from "mercadopago";
 
 import { auth } from "@/auth";
+import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
+
+type InvoiceItem = {
+  id: string;
+  created: number;
+  amountPaid: number;
+  currency: string;
+  status: string | null;
+  hostedUrl: string | null;
+};
 
 export async function GET() {
   const session = await auth();
@@ -15,26 +26,50 @@ export async function GET() {
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { stripeCustomerId: true }
+    select: { id: true, stripeCustomerId: true }
   });
 
-  if (!profile?.stripeCustomerId) {
+  if (!profile) {
     return NextResponse.json({ invoices: [] });
   }
 
-  const stripeInvoices = await stripe.invoices.list({
-    customer: profile.stripeCustomerId,
-    limit: 10
-  });
+  const stripeInvoices: InvoiceItem[] = profile.stripeCustomerId
+    ? (await stripe.invoices.list({ customer: profile.stripeCustomerId, limit: 10 })).data.map(
+        (inv) => ({
+          id: inv.id,
+          created: inv.created,
+          amountPaid: inv.amount_paid,
+          currency: inv.currency,
+          status: inv.status ?? null,
+          hostedUrl: inv.hosted_invoice_url ?? null
+        })
+      )
+    : [];
 
-  return NextResponse.json({
-    invoices: stripeInvoices.data.map((inv) => ({
-      id: inv.id,
-      created: inv.created,
-      amountPaid: inv.amount_paid,
-      currency: inv.currency,
-      status: inv.status ?? null,
-      hostedUrl: inv.hosted_invoice_url ?? null
-    }))
-  });
+  let mpInvoices: InvoiceItem[] = [];
+  try {
+    const payment = new Payment(getMercadoPago());
+    const mpSearch = await payment.search({
+      options: { external_reference: profile.id, sort: "date_created", criteria: "desc", limit: 10 }
+    });
+
+    mpInvoices = (mpSearch.results ?? []).map((p) => ({
+      id: String(p.id),
+      created: p.date_created ? Math.floor(new Date(p.date_created).getTime() / 1000) : 0,
+      amountPaid: Math.round((p.transaction_amount ?? 0) * 100),
+      currency: (p.currency_id ?? "BRL").toLowerCase(),
+      status: p.status ?? null,
+      hostedUrl: null
+    }));
+  } catch (error) {
+    console.error("Erro ao buscar pagamentos Mercado Pago para faturas.", {
+      profileId: profile.id,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+  }
+
+  const invoices = [...stripeInvoices, ...mpInvoices].sort((a, b) => b.created - a.created);
+
+  return NextResponse.json({ invoices });
 }

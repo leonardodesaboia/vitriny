@@ -8,7 +8,7 @@ import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { AsyncInvoiceList } from "@/components/billing/AsyncInvoiceList";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
-import { hasActiveRecurringSubscription } from "@/lib/billing-status";
+import { hasActiveRecurringSubscription, resolveSubscriptionGateway } from "@/lib/billing-status";
 
 export default async function BillingPage({
   searchParams
@@ -45,6 +45,14 @@ export default async function BillingPage({
   const currentPeriodEnd = effective?.currentPeriodEnd ?? profile?.currentPeriodEnd ?? null;
 
   const payerEmail = profile?.email ?? session.user.email ?? "";
+
+  const subscriptionGateway = profile
+    ? resolveSubscriptionGateway({
+        stripeSubscriptionId: profile.stripeSubscriptionId,
+        mpPreapprovalId: profile.mpPreapprovalId
+      })
+    : null;
+  const pixAvailable = Boolean(process.env.MP_PRO_PLAN_INIT_POINT);
 
   const limits = profile ? getPlanLimits(plan) : null;
   const monthlyQuoteRequests = profile
@@ -122,8 +130,10 @@ export default async function BillingPage({
                 stripeSubscriptionId: profile.stripeSubscriptionId,
                 mpPreapprovalId: profile.mpPreapprovalId
               })}
+              subscriptionGateway={subscriptionGateway}
               payerEmail={payerEmail}
               proAmount={proAmount}
+              pixAvailable={pixAvailable}
             />
           </div>
 

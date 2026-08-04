@@ -48,6 +48,7 @@ export function makePrismaMock() {
     providerProfile: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       upsert: vi.fn()
     },
     proposalTemplate: {
@@ -114,6 +115,7 @@ export function makeProfile(overrides = {}) {
     stripeSubscriptionId: null as string | null,
     mpPreapprovalId: null as string | null,
     currentPeriodEnd: null as Date | null,
+    cancelAtPeriodEnd: false as boolean,
     ...overrides
   };
 }

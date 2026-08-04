@@ -126,7 +126,15 @@ describe("requireProviderProfile com auto-rebaixamento", () => {
 
     expect(result.profile?.plan).toBe("FREE");
     expect(db.providerProfile.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { plan: "FREE", currentPeriodEnd: null } })
+      expect.objectContaining({
+        data: {
+          plan: "FREE",
+          currentPeriodEnd: null,
+          mpPreapprovalId: null,
+          cancelAtPeriodEnd: false,
+          subscriptionStatus: null
+        }
+      })
     );
   });
 });

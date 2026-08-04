@@ -91,28 +91,28 @@ Executar nesta ordem, mantendo Stripe em coexistência até o cutover:
 - [ ] Na aplicação `Vitriny-app` (`7690447716694963`), cadastrar a URL sandbox `https://SEU-HOMOLOG/api/mercadopago/webhook` e a URL de produção equivalente.
 - [ ] Habilitar os tópicos `subscription_preapproval`, `subscription_authorized_payment` e `payment`.
 - [ ] Copiar o secret gerado para `MP_WEBHOOK_SECRET` no ambiente correspondente.
-- [ ] Estender o handler com TDD para consultar e tratar `subscription_authorized_payment`, atualizar `currentPeriodEnd`/`subscriptionStatus` e processar eventos repetidos de forma idempotente.
+- [x] Estender o handler com TDD para consultar e tratar `subscription_authorized_payment`/`payment`, atualizar `subscriptionStatus` e processar eventos repetidos de forma idempotente (o handler grava `subscriptionStatus` em toda transição e trata `cancelled` como soft-cancel, igual à Server Action).
 - [ ] Confirmar no histórico do MCP/painel entregas HTTP 200 e testar assinatura inválida com HTTP 401.
 
 ### 3. Evitar assinaturas duplicadas ou órfãs
 
-- [ ] Adicionar chave de idempotência estável por tentativa de assinatura.
-- [ ] Proteger chamadas concorrentes e clique duplo para que um perfil não crie duas preapprovals.
-- [ ] Reconciliar ou compensar falha do banco após autorização remota.
-- [ ] Cobrir concorrência entre criação de assinatura e exclusão de conta.
+- [x] Adicionar trava contra concorrência: `lib/mp-subscription-lock.ts` implementa uma trava TTL por perfil (não é chave de idempotência do MP em si, mas cumpre o mesmo papel de impedir duas preapprovals).
+- [x] Proteger chamadas concorrentes e clique duplo para que um perfil não crie duas preapprovals — `createMpCardSubscription` adquire a trava antes de criar a preapproval e permite reativação (nova preapproval) somente quando a assinatura atual está `cancelAtPeriodEnd: true`.
+- [x] Reconciliar falha do banco após autorização remota — a trava é liberada (`releaseSubscriptionLock`) em `finally`, evitando travas órfãs se a escrita local falhar.
+- [x] Cobrir concorrência entre criação de assinatura e exclusão de conta nos dois sentidos — `lib/actions/account.ts` **adquire** a trava (não só a lê) antes de cancelar e a segura até o fim: se uma criação de assinatura já está em andamento, a exclusão aborta; e enquanto a exclusão roda, nenhuma preapproval nova pode ser criada e escapar do cancelamento. Se a exclusão aborta no meio (falha ao cancelar no Stripe ou no MP), a trava é liberada para não bloquear a retentativa.
 
 ### 4. Definir semântica de cancelamento
 
-- [ ] Decidir entre cancelamento imediato ou acesso até `currentPeriodEnd`.
-- [ ] Alinhar `cancelMpSubscription`, `cancelAtPeriodEnd`, `subscriptionStatus`, webhook e texto da UI à decisão.
-- [ ] Para o MVP, cancelamento imediato é a opção mais simples; se for adotado, remover da UI a promessa de acesso até o fim do período.
+- [x] Decidido: **acesso até `currentPeriodEnd`** (não cancelamento imediato — a opção que a seção acima cogitava como "mais simples para o MVP" não foi a adotada).
+- [x] `cancelMpSubscription`, `cancelAtPeriodEnd`, `subscriptionStatus`, webhook e UI alinhados à decisão: `cancelMpSubscription` cancela a preapproval no MP imediatamente mas seta `cancelAtPeriodEnd: true` e mantém PRO local; a expiração lazy rebaixa para FREE quando `currentPeriodEnd` passa (só para assinantes MP com `cancelAtPeriodEnd: true` — assinantes Stripe não são afetados); o webhook aplica o mesmo soft-cancel ao receber `cancelled`, cobrindo cancelamento feito direto no MP.
+- [x] A UI mantém a promessa de acesso até o fim do período (texto do `BillingCard` não prometia cancelamento imediato; nada precisou ser removido).
 
 ### 5. Liberar Pix somente após o gate da conta
 
 - [ ] Solicitar ao Mercado Pago a habilitação de Pix Automático para Assinaturas.
 - [ ] Reabrir o `init_point` do plano e confirmar visualmente que Pix aparece.
-- [ ] Só depois configurar `MP_PRO_PLAN_ID`, validar propagação de `external_reference` e implementar o fluxo por plano.
-- [ ] Manter botão e Server Action Pix bloqueados enquanto o checkout oferecer somente cartão.
+- [x] Fluxo de Pix por plano implementado: `createMpPixSubscription` retorna um redirect real para o `init_point` do plano quando `MP_PRO_PLAN_INIT_POINT` está configurado (env opcional, documentada em `.env.example`); o webhook trata `subscription_authorized_payment`/`payment` e casa por `external_reference` quando `metadata.preapproval_id` está presente no recurso de pagamento (defensivo: no-op quando o payload não tem o formato esperado, já que não foi validado contra um pagamento MP real). Falta apenas configurar `MP_PRO_PLAN_INIT_POINT` e validar contra o `init_point` real — bloqueado pelo gate de conta abaixo.
+- [x] Botão e Server Action Pix continuam bloqueados enquanto o checkout oferecer somente cartão — `pixAvailable` (env-driven) controla a exibição do botão "Assinar com Pix" no `BillingCard`; hoje é `false` em todo ambiente real porque `MP_PRO_PLAN_INIT_POINT` está vazio.
 
 ### 6. Conferir ambientes e credenciais
 
@@ -122,14 +122,12 @@ Executar nesta ordem, mantendo Stripe em coexistência até o cutover:
 
 ### 7. Pendências após cobrança recorrente estável
 
-- [ ] Mostrar faturas/cobranças Mercado Pago; a tela atual consulta apenas Stripe.
-- [ ] Implementar reativação MP e remover dependência Stripe dessa ação.
-- [ ] Gravar `mpPayerId` quando disponível.
+- [x] Mostrar faturas/cobranças Mercado Pago — `/api/billing/invoices` agora também lista pagamentos MP (via `payment.search`, filtrado por `external_reference`), mesclados com as faturas Stripe e ordenados por data decrescente; a busca MP é isolada em try/catch para uma instabilidade no MP não derrubar o endpoint inteiro para lojistas só-Stripe.
+- [x] Implementar reativação MP — "Reativar assinatura" no `BillingCard` reabre o modal do Card Brick para assinantes MP (uma preapproval cancelada é terminal no MP, não dá pra "descancelar"); assinantes Stripe mantêm a reativação de zero-input existente.
+- [x] Gravar `mpPayerId` quando disponível — `createMpCardSubscription` persiste `mpPayerId` a partir do `payer_id` retornado pela preapproval.
 - [ ] Executar o cutover/remover Stripe somente após validar cartão, renovação, falha, cancelamento e webhook em produção.
 
 ## Pendências
 
-1. **Solicitar a habilitação do Pix Automático** para Assinaturas na conta Mercado Pago e repetir o teste do `init_point`. O gate atual está bloqueado.
-2. **Implementar o fluxo de Pix por plano** (seção "Arquitetura correta"), incluindo ajuste do webhook por `external_reference` e novos tópicos.
-3. **Cutover (Task 12):** remover código Stripe/Pix-manual e os modais órfãos (`SubscriptionModal`, `UpdatePaymentModal`, `ProPixPaymentModal`), migração de limpeza dos campos `stripe*`, após MP validado em produção.
-4. **Follow-ups** (revisão final): `cancelMpSubscription` não seta `cancelAtPeriodEnd`; webhook não atualiza `subscriptionStatus`; `mpPayerId` nunca é gravado; "reativar"/"atualizar cartão" ainda apontam pro Stripe; guard de dupla-assinatura no botão Pix; `proAmount` cai em 0 se env ausente.
+1. **Solicitar a habilitação do Pix Automático** para Assinaturas na conta Mercado Pago e repetir o teste do `init_point`. O gate atual está bloqueado — esta é a única pendência restante do fluxo de Pix por plano (o código em si já está implementado, ver seção 5 do checklist).
+2. **Cutover:** remover código Stripe/Pix-manual e os modais órfãos (`SubscriptionModal`, `UpdatePaymentModal`, `ProPixPaymentModal`), migração de limpeza dos campos `stripe*`, após MP validado em produção. Fora do escopo deste plano de hardening; precisa de validação em produção primeiro.

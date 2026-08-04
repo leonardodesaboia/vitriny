@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
-import { cancelMpSubscription } from "@/lib/actions/mp-billing";
+import { cancelMpSubscription, createMpPixSubscription } from "@/lib/actions/mp-billing";
 import { reactivateSubscription } from "@/lib/actions/billing";
+import { resolveReactivationMode } from "@/lib/billing-status";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -26,8 +27,10 @@ type BillingCardProps = {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   hasActiveSubscription: boolean;
+  subscriptionGateway: "stripe" | "mp" | null;
   payerEmail: string;
   proAmount: number;
+  pixAvailable: boolean;
 };
 
 export function BillingCard({
@@ -36,8 +39,10 @@ export function BillingCard({
   currentPeriodEnd,
   cancelAtPeriodEnd,
   hasActiveSubscription,
+  subscriptionGateway,
   payerEmail,
-  proAmount
+  proAmount,
+  pixAvailable
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -48,11 +53,16 @@ export function BillingCard({
   // Cancel confirmation inline state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // MP Card Brick modal
+  // MP Card Brick modal. O mesmo modal serve para assinar do zero e para
+  // reativar — o modo decide o texto (reativar cobra um ciclo novo na hora).
   const [showCardModal, setShowCardModal] = useState(false);
+  const [cardModalMode, setCardModalMode] = useState<"subscribe" | "reactivate">(
+    "subscribe"
+  );
 
   function handleSubscribe() {
     setError(null);
+    setCardModalMode("subscribe");
     setShowCardModal(true);
   }
 
@@ -71,6 +81,13 @@ export function BillingCard({
 
   function handleReactivate() {
     setError(null);
+    if (resolveReactivationMode(subscriptionGateway) === "card-modal") {
+      // Preapproval cancelada no MP é terminal — reativar significa criar
+      // uma nova (novo card_token, cobrança imediata), não "descancelar".
+      setCardModalMode("reactivate");
+      setShowCardModal(true);
+      return;
+    }
     startTransition(async () => {
       const result = await reactivateSubscription();
       if ("error" in result) {
@@ -78,6 +95,18 @@ export function BillingCard({
         return;
       }
       router.refresh();
+    });
+  }
+
+  function handlePayWithPix() {
+    setError(null);
+    startTransition(async () => {
+      const result = await createMpPixSubscription(payerEmail);
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      window.location.href = result.initPoint;
     });
   }
 
@@ -95,6 +124,7 @@ export function BillingCard({
         <MpSubscriptionModal
           amount={proAmount}
           payerEmail={payerEmail}
+          mode={cardModalMode}
           onClose={() => setShowCardModal(false)}
           onSuccess={() => {
             setShowCardModal(false);
@@ -204,6 +234,15 @@ export function BillingCard({
                 >
                   {pending ? "Aguarde..." : "Assinar com cartão"}
                 </button>
+                {pixAvailable ? (
+                  <button
+                    onClick={handlePayWithPix}
+                    disabled={pending || hasActiveSubscription}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                  >
+                    {pending ? "Aguarde..." : "Assinar com Pix"}
+                  </button>
+                ) : null}
               </div>
             )}
 

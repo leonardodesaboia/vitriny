@@ -8,11 +8,13 @@ export type EffectivePlanInput = {
   stripeSubscriptionId: string | null;
   mpPreapprovalId: string | null;
   currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
 };
 
-// PRO comprado via Pix manual (sem assinatura Stripe) não tem cobrança
-// recorrente — vence sozinho. Corrige na leitura em vez de cron: primeiro
-// acesso ao dashboard depois do vencimento já rebaixa e persiste.
+// PRO comprado via Pix manual (sem assinatura) ou com preapproval MP
+// cancelada não tem cobrança recorrente ativa — vence sozinho. Corrige na
+// leitura em vez de cron: primeiro acesso ao dashboard depois do vencimento
+// já rebaixa e persiste, limpando qualquer resquício de assinatura MP.
 export async function resolveEffectivePlan(
   profile: EffectivePlanInput
 ): Promise<{ plan: PlanTier; currentPeriodEnd: Date | null }> {
@@ -22,7 +24,13 @@ export async function resolveEffectivePlan(
 
   await prisma.providerProfile.update({
     where: { id: profile.id },
-    data: { plan: "FREE", currentPeriodEnd: null }
+    data: {
+      plan: "FREE",
+      currentPeriodEnd: null,
+      mpPreapprovalId: null,
+      cancelAtPeriodEnd: false,
+      subscriptionStatus: null
+    }
   });
 
   return { plan: "FREE", currentPeriodEnd: null };
