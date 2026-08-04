@@ -48,6 +48,7 @@ export function makePrismaMock() {
     providerProfile: {
       findUnique: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       upsert: vi.fn()
     },
     proposalTemplate: {
