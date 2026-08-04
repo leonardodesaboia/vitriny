@@ -42,11 +42,23 @@ export async function POST(request: Request) {
   try {
     const preApproval = new PreApproval(getMercadoPago());
     const sub = await preApproval.get({ id: preapprovalId });
+    const status = sub.status ?? "";
 
-    const plan = resolvePlanFromPreapproval(sub.status ?? "");
+    // Cancelamento (nosso, via cancelMpSubscription, ou feito direto no app
+    // do MP) nunca rebaixa na hora: só marca cancelAtPeriodEnd. Quem rebaixa
+    // de verdade é a expiração lazy, quando currentPeriodEnd já tiver
+    // passado — mesma semântica de lib/actions/mp-billing.ts.
+    if (status === "cancelled") {
+      await prisma.providerProfile.updateMany({
+        where: { mpPreapprovalId: preapprovalId },
+        data: { cancelAtPeriodEnd: true, subscriptionStatus: "CANCELED" }
+      });
+      return new Response(null, { status: 200 });
+    }
 
-    // Status sem plano resolvido (pending/desconhecido): não mexe no perfil —
-    // evitar apagar um cancelamento agendado ou sobrescrever o período.
+    const plan = resolvePlanFromPreapproval(status);
+
+    // Status sem plano resolvido (pending/desconhecido): não mexe no perfil.
     if (plan === null) {
       return new Response(null, { status: 200 });
     }
@@ -57,7 +69,10 @@ export async function POST(request: Request) {
       where: { mpPreapprovalId: preapprovalId },
       data: {
         plan,
-        ...(plan === "FREE" ? { mpPreapprovalId: null, currentPeriodEnd: null } : { currentPeriodEnd: nextPayment }),
+        subscriptionStatus: plan === "PRO" ? "ACTIVE" : "CANCELED",
+        ...(plan === "FREE"
+          ? { mpPreapprovalId: null, currentPeriodEnd: null }
+          : { currentPeriodEnd: nextPayment }),
         cancelAtPeriodEnd: false
       }
     });
