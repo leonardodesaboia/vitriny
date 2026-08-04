@@ -281,4 +281,27 @@ describe("deleteAccount", () => {
     expect(db.user.update).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
+
+  it("aborta quando ha uma trava de assinatura ativa", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "maria@example.com",
+      deletedAt: null,
+      providerProfile: {
+        id: "profile-1",
+        slug: "bolos-da-maria",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: null,
+        mpSubscriptionLockedAt: new Date(),
+        services: []
+      }
+    });
+
+    const { deleteAccount } = await import("@/lib/actions/account");
+    const result = await deleteAccount();
+
+    expect(result).toEqual({
+      error: "Uma operação de assinatura está em andamento. Tente novamente em instantes."
+    });
+  });
 });

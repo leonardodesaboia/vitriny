@@ -5,6 +5,7 @@ import { PreApproval } from "mercadopago";
 
 import { signOut } from "@/auth";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import { isSubscriptionLockActive } from "@/lib/mp-subscription-lock";
 import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
@@ -36,6 +37,7 @@ export async function deleteAccount(): Promise<ActionResult> {
           slug: true,
           stripeSubscriptionId: true,
           mpPreapprovalId: true,
+          mpSubscriptionLockedAt: true,
           services: {
             select: { id: true, imageStorageKey: true }
           }
@@ -49,6 +51,10 @@ export async function deleteAccount(): Promise<ActionResult> {
   }
 
   const profile = user.providerProfile;
+
+  if (profile && isSubscriptionLockActive(profile.mpSubscriptionLockedAt)) {
+    return { error: "Uma operação de assinatura está em andamento. Tente novamente em instantes." };
+  }
 
   // Cobrança em primeiro lugar: se o cancelamento falhar, a exclusão aborta —
   // uma conta "excluída" não pode continuar sendo cobrada.
