@@ -29,6 +29,7 @@ beforeEach(() => {
   updateMany.mockResolvedValue({ count: 1 });
   process.env.MP_PRO_AMOUNT = "19.90";
   process.env.NEXT_PUBLIC_APP_URL = "https://app.test";
+  delete process.env.MP_PRO_PLAN_INIT_POINT;
 });
 
 describe("createMpCardSubscription", () => {
@@ -226,6 +227,36 @@ describe("createMpPixSubscription", () => {
     });
     expect(preApprovalCreate).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
+  });
+
+  it("retorna o initPoint do plano com external_reference quando o Pix por plano esta configurado", async () => {
+    process.env.MP_PRO_PLAN_INIT_POINT =
+      "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1";
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
+    });
+
+    const { createMpPixSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixSubscription("payer@test.com");
+
+    expect(result).toEqual({
+      initPoint:
+        "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1&external_reference=p1"
+    });
+    expect(preApprovalCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejeita email invalido mesmo com o Pix por plano configurado", async () => {
+    process.env.MP_PRO_PLAN_INIT_POINT =
+      "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1";
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
+    });
+
+    const { createMpPixSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixSubscription("email-invalido");
+
+    expect(result).toEqual({ error: "Confira o e-mail do pagador." });
   });
 });
 

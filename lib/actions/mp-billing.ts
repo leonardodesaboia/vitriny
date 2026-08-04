@@ -15,6 +15,8 @@ const cardSubscriptionSchema = z.object({
   payerEmail: z.string().trim().toLowerCase().email().max(254)
 });
 
+const payerEmailSchema = z.string().trim().toLowerCase().email().max(254);
+
 type ProfileResult =
   | { error: string }
   | {
@@ -182,10 +184,34 @@ export async function createMpCardSubscription(
 }
 
 export async function createMpPixSubscription(
-  _payerEmail: string
+  payerEmail: string
 ): Promise<{ initPoint: string } | { error: string }> {
-  void _payerEmail;
-  return { error: "Pix Automático ainda não está disponível para esta assinatura." };
+  const loaded = await loadSubscribableProfile();
+  if ("error" in loaded) return loaded;
+  const { profile } = loaded;
+
+  const planInitPoint = process.env.MP_PRO_PLAN_INIT_POINT;
+  if (!planInitPoint) {
+    return { error: "Pix Automático ainda não está disponível para esta assinatura." };
+  }
+
+  if (!payerEmailSchema.safeParse(payerEmail).success) {
+    return { error: "Confira o e-mail do pagador." };
+  }
+
+  let redirectUrl: URL;
+  try {
+    redirectUrl = new URL(planInitPoint);
+  } catch {
+    console.error("MP_PRO_PLAN_INIT_POINT configurado com URL inválida.", { planInitPoint });
+    return { error: "Pix Automático ainda não está disponível para esta assinatura." };
+  }
+  // A preapproval nasce quando o pagador completa o checkout do plano no MP
+  // — não criamos nada via API aqui, só redirecionamos com o id do perfil
+  // pra o webhook (Task 9) conseguir casar a confirmação depois.
+  redirectUrl.searchParams.set("external_reference", profile.id);
+
+  return { initPoint: redirectUrl.toString() };
 }
 
 export async function cancelMpSubscription(): Promise<
