@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/actions/mp-billing", () => ({
   cancelMpSubscription: vi.fn(),
+  createMpPixPayment: vi.fn(),
   createMpPixSubscription: vi.fn()
 }));
 vi.mock("@/lib/actions/billing", () => ({ reactivateSubscription: vi.fn() }));
@@ -23,7 +24,8 @@ const baseProps = {
   hasActiveSubscription: true,
   payerEmail: "profile@test.com",
   proAmount: 19.9,
-  pixAvailable: false
+  pixAvailable: false,
+  mpPixAvailable: false
 };
 
 describe("BillingCard - reativacao por gateway", () => {
@@ -57,7 +59,8 @@ describe("opcoes de pagamento da assinatura FREE", () => {
     hasActiveSubscription: false,
     subscriptionGateway: null,
     payerEmail: "profile@test.com",
-    proAmount: 19.9
+    proAmount: 19.9,
+    mpPixAvailable: false
   };
 
   it("mostra cartao sempre e Pix so quando pixAvailable", async () => {
