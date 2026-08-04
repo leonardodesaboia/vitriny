@@ -52,6 +52,7 @@ export default async function DashboardPage() {
       stripeSubscriptionId: true,
       mpPreapprovalId: true,
       currentPeriodEnd: true,
+      cancelAtPeriodEnd: true,
       services: {
         select: {
           isActive: true,

@@ -10,8 +10,9 @@ vi.mock("mercadopago", () => ({
 
 const findUnique = vi.fn();
 const update = vi.fn();
+const updateMany = vi.fn();
 vi.mock("@/lib/prisma", () => ({
-  prisma: { providerProfile: { findUnique, update } }
+  prisma: { providerProfile: { findUnique, update, updateMany } }
 }));
 
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => ({ user: { id: "u1" } })) }));
@@ -24,18 +25,22 @@ beforeEach(() => {
   vi.clearAllMocks();
   preApprovalCreate.mockReset();
   preApprovalUpdate.mockReset();
+  updateMany.mockReset();
+  updateMany.mockResolvedValue({ count: 1 });
   process.env.MP_PRO_AMOUNT = "19.90";
   process.env.NEXT_PUBLIC_APP_URL = "https://app.test";
+  delete process.env.MP_PRO_PLAN_INIT_POINT;
 });
 
 describe("createMpCardSubscription", () => {
   it("cria assinatura autorizada por cartao e ativa PRO", async () => {
     findUnique.mockResolvedValue({
-      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
     });
     preApprovalCreate.mockResolvedValue({
       id: "2c93808",
       status: "authorized",
+      payer_id: 123456,
       next_payment_date: "2026-09-03T00:00:00.000Z"
     });
 
@@ -51,12 +56,25 @@ describe("createMpCardSubscription", () => {
         external_reference: "p1"
       })
     });
+    expect(updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "p1",
+        OR: [
+          { mpSubscriptionLockedAt: null },
+          { mpSubscriptionLockedAt: { lt: expect.any(Date) } }
+        ]
+      },
+      data: { mpSubscriptionLockedAt: expect.any(Date) }
+    });
     expect(update).toHaveBeenCalledWith({
       where: { id: "p1" },
       data: {
         mpPreapprovalId: "2c93808",
+        mpPayerId: "123456",
         plan: "PRO",
         subscriptionStatus: "ACTIVE",
+        cancelAtPeriodEnd: false,
+        mpSubscriptionLockedAt: null,
         currentPeriodEnd: new Date("2026-09-03T00:00:00.000Z")
       }
     });
@@ -72,7 +90,10 @@ describe("createMpCardSubscription", () => {
     const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
 
     expect("error" in result).toBe(true);
-    expect(update).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { mpSubscriptionLockedAt: null }
+    });
   });
 
   it("retorna erro amigavel quando o SDK do MP falha", async () => {
@@ -88,7 +109,10 @@ describe("createMpCardSubscription", () => {
     expect(result).toEqual({
       error: "Não foi possível processar o cartão agora. Tente novamente."
     });
-    expect(update).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { mpSubscriptionLockedAt: null }
+    });
     expect(consoleError).toHaveBeenCalledWith(
       "Erro ao criar assinatura Mercado Pago por cartão.",
       expect.objectContaining({
@@ -142,13 +166,49 @@ describe("createMpCardSubscription", () => {
 
   it("bloqueia quem ja e PRO com assinatura MP ativa", async () => {
     findUnique.mockResolvedValue({
-      id: "p1", plan: "PRO", mpPreapprovalId: "2c93808", stripeSubscriptionId: null
+      id: "p1", plan: "PRO", mpPreapprovalId: "2c93808", stripeSubscriptionId: null, cancelAtPeriodEnd: false
     });
 
     const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
     const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
 
     expect("error" in result).toBe(true);
+    expect(preApprovalCreate).not.toHaveBeenCalled();
+  });
+
+  it("permite reativar (nova preapproval) quando cancelAtPeriodEnd e true", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "PRO", mpPreapprovalId: "old-preapproval", stripeSubscriptionId: null, cancelAtPeriodEnd: true
+    });
+    preApprovalCreate.mockResolvedValue({
+      id: "new-preapproval",
+      status: "authorized",
+      next_payment_date: "2026-09-03T00:00:00.000Z"
+    });
+
+    const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
+
+    expect(result).toEqual({ success: true });
+    expect(preApprovalCreate).toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: expect.objectContaining({ mpPreapprovalId: "new-preapproval", cancelAtPeriodEnd: false })
+    });
+  });
+
+  it("recusa nova tentativa quando ja ha uma assinatura em andamento (trava ativa)", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
+    });
+    updateMany.mockResolvedValue({ count: 0 });
+
+    const { createMpCardSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpCardSubscription("card-token-abc", "payer@test.com");
+
+    expect(result).toEqual({
+      error: "Já existe uma tentativa de assinatura em andamento. Aguarde um instante e tente novamente."
+    });
     expect(preApprovalCreate).not.toHaveBeenCalled();
   });
 });
@@ -168,11 +228,41 @@ describe("createMpPixSubscription", () => {
     expect(preApprovalCreate).not.toHaveBeenCalled();
     expect(update).not.toHaveBeenCalled();
   });
+
+  it("retorna o initPoint do plano com external_reference quando o Pix por plano esta configurado", async () => {
+    process.env.MP_PRO_PLAN_INIT_POINT =
+      "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1";
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
+    });
+
+    const { createMpPixSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixSubscription("payer@test.com");
+
+    expect(result).toEqual({
+      initPoint:
+        "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1&external_reference=p1"
+    });
+    expect(preApprovalCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejeita email invalido mesmo com o Pix por plano configurado", async () => {
+    process.env.MP_PRO_PLAN_INIT_POINT =
+      "https://www.mercadopago.com.br/subscriptions/checkout?preapproval_plan_id=plan-1";
+    findUnique.mockResolvedValue({
+      id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false
+    });
+
+    const { createMpPixSubscription } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixSubscription("email-invalido");
+
+    expect(result).toEqual({ error: "Confira o e-mail do pagador." });
+  });
 });
 
 describe("cancelMpSubscription", () => {
-  it("chama update com status cancelled", async () => {
-    findUnique.mockResolvedValue({ mpPreapprovalId: "2c93808" });
+  it("cancela no MP e marca cancelAtPeriodEnd em vez de rebaixar na hora", async () => {
+    findUnique.mockResolvedValue({ id: "p1", mpPreapprovalId: "2c93808" });
     preApprovalUpdate.mockResolvedValue({ id: "2c93808", status: "cancelled" });
 
     const { cancelMpSubscription } = await import("@/lib/actions/mp-billing");
@@ -182,6 +272,10 @@ describe("cancelMpSubscription", () => {
     expect(preApprovalUpdate).toHaveBeenCalledWith({
       id: "2c93808",
       body: { status: "cancelled" }
+    });
+    expect(update).toHaveBeenCalledWith({
+      where: { id: "p1" },
+      data: { cancelAtPeriodEnd: true, subscriptionStatus: "CANCELED" }
     });
   });
 

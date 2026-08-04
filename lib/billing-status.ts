@@ -16,3 +16,23 @@ export function hasActiveRecurringSubscription(profile: {
     (profile.stripeSubscriptionId !== null || profile.mpPreapprovalId !== null)
   );
 }
+
+export function resolveSubscriptionGateway(profile: {
+  stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
+}): "stripe" | "mp" | null {
+  if (profile.mpPreapprovalId !== null) return "mp";
+  if (profile.stripeSubscriptionId !== null) return "stripe";
+  return null;
+}
+
+// Decisão de como reativar, separada do componente para ser testável de
+// verdade (os testes de UI aqui usam renderToStaticMarkup, sem cliques).
+// MP: preapproval cancelada é terminal lá, então reativar = abrir o Card
+// Brick e criar uma preapproval nova. Qualquer outro caso (Stripe, ou
+// gateway indefinido) segue o caminho legado da Server Action zero-input.
+export function resolveReactivationMode(
+  gateway: "stripe" | "mp" | null
+): "card-modal" | "stripe-action" {
+  return gateway === "mp" ? "card-modal" : "stripe-action";
+}

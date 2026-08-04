@@ -5,17 +5,39 @@ import { PreApproval } from "mercadopago";
 
 import { signOut } from "@/auth";
 import { requireAuth } from "@/lib/actions/auth-guard";
+import {
+  acquireSubscriptionLock,
+  isSubscriptionLockActive,
+  releaseSubscriptionLock
+} from "@/lib/mp-subscription-lock";
 import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { deleteFromStorage } from "@/lib/storage";
 import type { ActionResult } from "@/types";
 
+const SUBSCRIPTION_IN_PROGRESS_ERROR =
+  "Uma operação de assinatura está em andamento. Tente novamente em instantes.";
+
 function hashEmail(email: string) {
   return crypto
     .createHash("sha256")
     .update(email.trim().toLowerCase())
     .digest("hex");
+}
+
+// Liberar a trava nunca pode mascarar o erro que abortou a exclusão: se falhar,
+// a própria trava expira sozinha em 2 minutos (TTL).
+async function releaseLockQuietly(profileId: string) {
+  try {
+    await releaseSubscriptionLock(profileId);
+  } catch (error) {
+    console.error("Falha ao liberar trava de assinatura na exclusão de conta.", {
+      profileId,
+      errorName: error instanceof Error ? error.name : "UnknownError",
+      errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+  }
 }
 
 // Soft delete: anonimiza a conta e bloqueia o acesso, mas preserva pedidos,
@@ -36,6 +58,7 @@ export async function deleteAccount(): Promise<ActionResult> {
           slug: true,
           stripeSubscriptionId: true,
           mpPreapprovalId: true,
+          mpSubscriptionLockedAt: true,
           services: {
             select: { id: true, imageStorageKey: true }
           }
@@ -50,6 +73,24 @@ export async function deleteAccount(): Promise<ActionResult> {
 
   const profile = user.providerProfile;
 
+  // A exclusão SEGURA a trava enquanto cancela, fechando a corrida nos dois
+  // sentidos: (1) assinar-então-excluir — se `createMpCardSubscription` já está
+  // com a trava, a exclusão aborta em vez de cancelar algo que ainda está
+  // nascendo; (2) excluir-então-assinar — enquanto a exclusão segura a trava,
+  // nenhuma preapproval nova pode ser criada e escapar do cancelamento abaixo
+  // (o snapshot lido acima jamais a veria). Perfil inexistente não tem
+  // assinatura a proteger.
+  if (profile) {
+    // Checagem barata no snapshot já carregado, antes de tentar escrever.
+    if (isSubscriptionLockActive(profile.mpSubscriptionLockedAt)) {
+      return { error: SUBSCRIPTION_IN_PROGRESS_ERROR };
+    }
+    const locked = await acquireSubscriptionLock(profile.id);
+    if (!locked) {
+      return { error: SUBSCRIPTION_IN_PROGRESS_ERROR };
+    }
+  }
+
   // Cobrança em primeiro lugar: se o cancelamento falhar, a exclusão aborta —
   // uma conta "excluída" não pode continuar sendo cobrada.
   if (profile?.stripeSubscriptionId) {
@@ -60,6 +101,7 @@ export async function deleteAccount(): Promise<ActionResult> {
         error,
         userId: user.id
       });
+      await releaseLockQuietly(profile.id);
       return {
         error:
           "Não foi possível cancelar sua assinatura. Tente novamente ou cancele em Assinatura antes de excluir a conta."
@@ -83,6 +125,7 @@ export async function deleteAccount(): Promise<ActionResult> {
         errorName: error instanceof Error ? error.name : "UnknownError",
         errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
       });
+      await releaseLockQuietly(profile.id);
       return {
         error:
           "Não foi possível cancelar sua assinatura. Tente novamente ou cancele em Assinatura antes de excluir a conta."

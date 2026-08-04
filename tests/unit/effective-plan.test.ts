@@ -22,7 +22,8 @@ describe("resolveEffectivePlan", () => {
       plan: "PRO",
       stripeSubscriptionId: null,
       mpPreapprovalId: null,
-      currentPeriodEnd: future
+      currentPeriodEnd: future,
+      cancelAtPeriodEnd: false
     });
 
     expect(result).toEqual({ plan: "PRO", currentPeriodEnd: future });
@@ -38,7 +39,8 @@ describe("resolveEffectivePlan", () => {
       plan: "PRO",
       stripeSubscriptionId: "sub_123",
       mpPreapprovalId: null,
-      currentPeriodEnd: past
+      currentPeriodEnd: past,
+      cancelAtPeriodEnd: false
     });
 
     expect(result).toEqual({ plan: "PRO", currentPeriodEnd: past });
@@ -55,13 +57,67 @@ describe("resolveEffectivePlan", () => {
       plan: "PRO",
       stripeSubscriptionId: null,
       mpPreapprovalId: null,
-      currentPeriodEnd: past
+      currentPeriodEnd: past,
+      cancelAtPeriodEnd: false
     });
 
     expect(result).toEqual({ plan: "FREE", currentPeriodEnd: null });
     expect(db.providerProfile.update).toHaveBeenCalledWith({
       where: { id: "profile-1" },
-      data: { plan: "FREE", currentPeriodEnd: null }
+      data: { plan: "FREE", currentPeriodEnd: null, mpPreapprovalId: null, cancelAtPeriodEnd: false, subscriptionStatus: null }
+    });
+  });
+
+  it("rebaixa e limpa mpPreapprovalId/cancelAtPeriodEnd quando a assinatura MP cancelada venceu", async () => {
+    db.providerProfile.update.mockResolvedValue({});
+    const past = new Date("2020-01-01");
+
+    const { resolveEffectivePlan } = await import("@/lib/effective-plan");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      mpPreapprovalId: "2c93808",
+      currentPeriodEnd: past,
+      cancelAtPeriodEnd: true
+    });
+
+    expect(result).toEqual({ plan: "FREE", currentPeriodEnd: null });
+    expect(db.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: "profile-1" },
+      data: {
+        plan: "FREE",
+        currentPeriodEnd: null,
+        mpPreapprovalId: null,
+        cancelAtPeriodEnd: false,
+        subscriptionStatus: null
+      }
+    });
+  });
+
+  it("rebaixa e limpa quando a assinatura MP cancelada ficou sem currentPeriodEnd", async () => {
+    db.providerProfile.update.mockResolvedValue({});
+
+    const { resolveEffectivePlan } = await import("@/lib/effective-plan");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      mpPreapprovalId: "2c93808",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: true
+    });
+
+    expect(result).toEqual({ plan: "FREE", currentPeriodEnd: null });
+    expect(db.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: "profile-1" },
+      data: {
+        plan: "FREE",
+        currentPeriodEnd: null,
+        mpPreapprovalId: null,
+        cancelAtPeriodEnd: false,
+        subscriptionStatus: null
+      }
     });
   });
 });
@@ -76,7 +132,8 @@ describe("isOneTimeProExpired com assinatura MP", () => {
         plan: "PRO",
         stripeSubscriptionId: null,
         mpPreapprovalId: "2c93808",
-        currentPeriodEnd: past
+        currentPeriodEnd: past,
+        cancelAtPeriodEnd: false
       })
     ).toBe(false);
   });
@@ -87,7 +144,8 @@ describe("isOneTimeProExpired com assinatura MP", () => {
         plan: "PRO",
         stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: past
+        currentPeriodEnd: past,
+        cancelAtPeriodEnd: false
       })
     ).toBe(true);
   });
@@ -98,7 +156,56 @@ describe("isOneTimeProExpired com assinatura MP", () => {
         plan: "PRO",
         stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: future
+        currentPeriodEnd: future,
+        cancelAtPeriodEnd: false
+      })
+    ).toBe(false);
+  });
+
+  it("PRO com preapproval MP marcada para cancelar expira quando o periodo passa", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "2c93808",
+        currentPeriodEnd: past,
+        cancelAtPeriodEnd: true
+      })
+    ).toBe(true);
+  });
+
+  it("PRO com preapproval MP marcada para cancelar mas ainda dentro do prazo NAO expira", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "2c93808",
+        currentPeriodEnd: future,
+        cancelAtPeriodEnd: true
+      })
+    ).toBe(false);
+  });
+
+  it("PRO com preapproval MP cancelada e sem currentPeriodEnd expira na hora (nao ha periodo pago a esperar)", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "2c93808",
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: true
+      })
+    ).toBe(true);
+  });
+
+  it("PRO com assinatura Stripe NAO expira via cancelAtPeriodEnd (fora de escopo, webhook Stripe decide)", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: "sub_123",
+        mpPreapprovalId: null,
+        currentPeriodEnd: past,
+        cancelAtPeriodEnd: true
       })
     ).toBe(false);
   });
