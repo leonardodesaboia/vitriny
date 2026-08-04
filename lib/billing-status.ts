@@ -16,3 +16,12 @@ export function hasActiveRecurringSubscription(profile: {
     (profile.stripeSubscriptionId !== null || profile.mpPreapprovalId !== null)
   );
 }
+
+export function resolveSubscriptionGateway(profile: {
+  stripeSubscriptionId: string | null;
+  mpPreapprovalId: string | null;
+}): "stripe" | "mp" | null {
+  if (profile.mpPreapprovalId !== null) return "mp";
+  if (profile.stripeSubscriptionId !== null) return "stripe";
+  return null;
+}

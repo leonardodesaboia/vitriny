@@ -1,16 +1,77 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
 
-describe("opções de pagamento da assinatura", () => {
-  it("mantém cartão e não expõe Pix enquanto o gate está bloqueado", () => {
-    const billingCard = readFileSync(
-      resolve(process.cwd(), "components/billing/BillingCard.tsx"),
-      "utf8"
+vi.mock("@/lib/actions/mp-billing", () => ({
+  cancelMpSubscription: vi.fn(),
+  createMpPixSubscription: vi.fn()
+}));
+vi.mock("@/lib/actions/billing", () => ({ reactivateSubscription: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() })
+}));
+vi.mock("@mercadopago/sdk-react", () => ({
+  initMercadoPago: vi.fn(),
+  CardPayment: () => null
+}));
+
+const baseProps = {
+  plan: "PRO" as const,
+  subscriptionStatus: "CANCELED" as const,
+  currentPeriodEnd: new Date("2026-09-03"),
+  cancelAtPeriodEnd: true,
+  hasActiveSubscription: true,
+  payerEmail: "profile@test.com",
+  proAmount: 19.9,
+  pixAvailable: false
+};
+
+describe("BillingCard - reativacao por gateway", () => {
+  it("assinante MP cancelado ve o botao de reativar (reabre o Card Brick)", async () => {
+    const { BillingCard } = await import("@/components/billing/BillingCard");
+
+    const html = renderToStaticMarkup(
+      createElement(BillingCard, { ...baseProps, subscriptionGateway: "mp" })
     );
 
-    expect(billingCard).toContain("Assinar com cartão");
-    expect(billingCard).not.toContain("Assinar com Pix");
-    expect(billingCard).not.toContain("createMpPixSubscription");
+    expect(html).toContain("Reativar assinatura");
+  });
+
+  it("assinante Stripe cancelado tambem ve o botao de reativar", async () => {
+    const { BillingCard } = await import("@/components/billing/BillingCard");
+
+    const html = renderToStaticMarkup(
+      createElement(BillingCard, { ...baseProps, subscriptionGateway: "stripe" })
+    );
+
+    expect(html).toContain("Reativar assinatura");
+  });
+});
+
+describe("opcoes de pagamento da assinatura FREE", () => {
+  const freeProps = {
+    plan: "FREE" as const,
+    subscriptionStatus: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+    hasActiveSubscription: false,
+    subscriptionGateway: null,
+    payerEmail: "profile@test.com",
+    proAmount: 19.9
+  };
+
+  it("mostra cartao sempre e Pix so quando pixAvailable", async () => {
+    const { BillingCard } = await import("@/components/billing/BillingCard");
+
+    const withoutPix = renderToStaticMarkup(
+      createElement(BillingCard, { ...freeProps, pixAvailable: false })
+    );
+    expect(withoutPix).toContain("Assinar com cart");
+    expect(withoutPix).not.toContain("Assinar com Pix");
+
+    const withPix = renderToStaticMarkup(
+      createElement(BillingCard, { ...freeProps, pixAvailable: true })
+    );
+    expect(withPix).toContain("Assinar com Pix");
   });
 });
