@@ -21,18 +21,28 @@ vi.mock("mercadopago", () => ({
 }));
 
 const updateMany = vi.fn();
+const proPixFindUnique = vi.fn();
+const grantProPixPeriodFromMp = vi.fn();
 vi.mock("@/lib/prisma", () => ({
-  prisma: { providerProfile: { updateMany } }
+  prisma: {
+    providerProfile: { updateMany },
+    proPixPayment: { findUnique: proPixFindUnique }
+  }
 }));
 
 vi.mock("@/lib/mercadopago", () => ({
   getMercadoPago: vi.fn(() => ({}))
 }));
+vi.mock("@/lib/pro-pix", () => ({ grantProPixPeriodFromMp }));
 
 beforeEach(() => {
   vi.clearAllMocks();
   validate.mockImplementation(() => undefined);
   updateMany.mockResolvedValue({ count: 1 });
+  proPixFindUnique.mockReset();
+  proPixFindUnique.mockResolvedValue(null);
+  grantProPixPeriodFromMp.mockReset();
+  grantProPixPeriodFromMp.mockResolvedValue("granted");
   process.env.MP_WEBHOOK_SECRET = "test-secret";
 });
 
@@ -152,6 +162,38 @@ describe("POST /api/mercadopago/webhook", () => {
     expect(response.status).toBe(200);
     expect(preApprovalGet).not.toHaveBeenCalled();
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it("payment aprovado de Pix único concede 30 dias via helper", async () => {
+    paymentGet.mockResolvedValue({ id: "payment-9", status: "approved", metadata: { pro_pix_payment_id: "row-1" }, external_reference: "profile-1" });
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(makeRequest({ type: "payment", data: { id: "payment-9" } }));
+    expect(response.status).toBe(200);
+    expect(grantProPixPeriodFromMp).toHaveBeenCalledWith("row-1");
+    expect(preApprovalGet).not.toHaveBeenCalled();
+  });
+
+  it("payment de Pix único ainda não aprovado não concede", async () => {
+    paymentGet.mockResolvedValue({ id: "payment-9", status: "pending", metadata: { pro_pix_payment_id: "row-1" }, external_reference: "profile-1" });
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(makeRequest({ type: "payment", data: { id: "payment-9" } }));
+    expect(response.status).toBe(200);
+    expect(grantProPixPeriodFromMp).not.toHaveBeenCalled();
+  });
+
+  it("payment aprovado sem metadata encontra o Pix pelo id da MP", async () => {
+    paymentGet.mockResolvedValue({ id: "payment-9", status: "approved", metadata: {} });
+    proPixFindUnique.mockResolvedValue({ id: "row-1" });
+
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(makeRequest({ type: "payment", data: { id: "payment-9" } }));
+
+    expect(response.status).toBe(200);
+    expect(proPixFindUnique).toHaveBeenCalledWith({
+      where: { mpPaymentId: "payment-9" },
+      select: { id: true }
+    });
+    expect(grantProPixPeriodFromMp).toHaveBeenCalledWith("row-1");
   });
 
   it("subscription_authorized_payment com preapproval_id reivindica perfil ainda sem assinatura MP", async () => {

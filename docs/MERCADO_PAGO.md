@@ -1,11 +1,17 @@
 # Mercado Pago — Assinatura PRO (estado, achados e pendências)
 
-> Última atualização: 2026-08-03. Substitui o Stripe como gateway da assinatura PRO.
+> Última atualização: 2026-08-04. Substitui o Stripe como gateway da assinatura PRO.
 > Plano de implementação: `docs/superpowers/plans/2026-08-03-mercado-pago-migration.md`.
+
+## Pix único via Payments API
+
+Além do fluxo recorrente condicionado ao gate de Pix Automático, o billing agora oferece um Pix avulso de 1 mês quando `MP_PRO_AMOUNT` está configurado. A aplicação cria um pagamento `pix` pela Payments API, persiste `ProPixPayment.mpPaymentId`/`expiresAt`, exibe o QR imediatamente e confirma a liberação de 30 dias exclusivamente pelo webhook `payment` aprovado. O helper `lib/pro-pix.ts` usa uma trava atômica para manter a concessão idempotente; o modal consulta apenas o banco durante o polling.
+
+O fluxo manual `VITRINY_PIX` permanece intacto e fora desta integração.
 
 ## Resumo
 
-A assinatura PRO migrou de Stripe para **Mercado Pago**. O **cartão** está implementado e funcional (checkout **embutido** via Card Brick). O **Pix** está **parcialmente implementado e bloqueado** por uma questão de arquitetura + conta (ver "Pix: achados") e seu botão foi ocultado até o gate liberar. O código Stripe permanece no repositório como legado (coexistência segura), a ser removido no cutover.
+A assinatura PRO migrou de Stripe para **Mercado Pago**. O **cartão** está implementado e funcional (checkout **embutido** via Card Brick). O Pix único via Payments API está disponível; já o **Pix recorrente** continua condicionado ao gate de Pix Automático e seu botão permanece oculto até a conta ser habilitada. O código Stripe permanece no repositório como legado (coexistência segura), a ser removido no cutover.
 
 Decisão de checkout: **Card Payment Brick embutido** para cartão (PCI baixa, dentro do app); Pix **não pode** ser embutido (autorização no app do banco é regra do Banco Central).
 

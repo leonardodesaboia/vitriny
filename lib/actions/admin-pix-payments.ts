@@ -6,8 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdminEmail } from "@/lib/admin";
-
-const PRO_PERIOD_DAYS = 30;
+import { nextProPeriodEnd } from "@/lib/pro-pix";
 
 async function requireAdmin() {
   const session = await auth();
@@ -41,11 +40,7 @@ export async function confirmProPixPayment(
   if (!profile) return { error: "Perfil do negócio não encontrado." };
 
   const now = new Date();
-  // Renovar antes de vencer não perde os dias que já restavam.
-  const base = profile.currentPeriodEnd && profile.currentPeriodEnd > now
-    ? profile.currentPeriodEnd
-    : now;
-  const currentPeriodEnd = new Date(base.getTime() + PRO_PERIOD_DAYS * 24 * 60 * 60 * 1000);
+  const currentPeriodEnd = nextProPeriodEnd(profile.currentPeriodEnd, now);
 
   await prisma.proPixPayment.update({
     where: { id: payment.id },
