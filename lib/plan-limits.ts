@@ -163,20 +163,30 @@ type OneTimeProProfile = {
   cancelAtPeriodEnd: boolean;
 };
 
-// PRO expira sozinho na leitura em dois casos: (1) não há NENHUMA assinatura
-// recorrente por trás (nem Stripe nem MP) e o período venceu — caso do Pix
-// avulso legado; (2) há uma preapproval MP, mas ela foi marcada para
-// cancelar no fim do período (cancelAtPeriodEnd) e o período já passou — a
-// preapproval em si já está cancelada no MP desde o clique em "cancelar",
-// só não limpamos o id local até aqui. Assinantes Stripe nunca caem aqui:
-// o webhook Stripe continua sendo a única fonte de verdade para eles.
+// PRO expira sozinho na leitura em dois casos: (1) há uma preapproval MP, mas
+// ela foi marcada para cancelar no fim do período (cancelAtPeriodEnd) e esse
+// fim já passou — a preapproval em si já está cancelada no MP desde o clique
+// em "cancelar", só não limpamos o id local até aqui; (2) não há NENHUMA
+// assinatura recorrente por trás (nem Stripe nem MP) e o período venceu —
+// caso do Pix avulso legado. Assinantes Stripe nunca caem aqui: o webhook
+// Stripe continua sendo a única fonte de verdade para eles.
+//
+// O ramo MP vem ANTES da regra geral "sem currentPeriodEnd não expira" de
+// propósito: tanto `cancelMpSubscription` quanto o webhook gravam
+// `currentPeriodEnd: null` quando o MP não devolve `next_payment_date`. Numa
+// assinatura MP já cancelada, `currentPeriodEnd: null` significa "não há
+// período pago restante para esperar" — expira agora. Tratá-lo como "não
+// expira" deixaria a conta PRO de graça para sempre.
 export function isOneTimeProExpired(profile: OneTimeProProfile): boolean {
-  if (profile.plan !== "PRO" || profile.currentPeriodEnd === null) return false;
-  if (profile.currentPeriodEnd >= new Date()) return false;
+  if (profile.plan !== "PRO") return false;
 
   if (profile.mpPreapprovalId !== null) {
-    return profile.cancelAtPeriodEnd;
+    if (!profile.cancelAtPeriodEnd) return false;
+    if (profile.currentPeriodEnd === null) return true;
+    return profile.currentPeriodEnd < new Date();
   }
 
+  if (profile.currentPeriodEnd === null) return false;
+  if (profile.currentPeriodEnd >= new Date()) return false;
   return profile.stripeSubscriptionId === null;
 }

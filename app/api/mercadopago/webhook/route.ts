@@ -45,11 +45,23 @@ async function syncPreapproval(preapprovalId: string, externalReference: string 
 
   if (matchedById.count > 0 || !reference || plan !== "PRO") return;
 
-  // Primeira confirmação de uma preapproval nascida no checkout do plano
-  // (Pix por plano): ainda não tem mpPreapprovalId gravado, só existe o
-  // external_reference que mandamos no redirect (createMpPixSubscription).
-  // Só reivindica um perfil que ainda não tem NENHUMA preapproval — nunca
-  // sobrescreve uma diferente já vinculada.
+  // Reivindicação por external_reference. Vale para QUALQUER fluxo de
+  // preapproval que carregue external_reference e ainda não esteja vinculada
+  // localmente — não só o Pix por plano:
+  //
+  // - Pix por plano: a preapproval nasce no checkout do MP (o Vitriny só
+  //   redireciona), então o external_reference do redirect é o único elo.
+  // - Cartão: `createMpCardSubscription` também manda
+  //   `external_reference: profile.id` na criação. Se a preapproval for
+  //   autorizada no MP mas a escrita local falhar (e a compensação de
+  //   cancelamento também falhar), o perfil fica sem `mpPreapprovalId` com uma
+  //   assinatura viva lá. Este bloco cura esse estado no próximo evento.
+  //
+  // Isso é deliberado, não efeito colateral: server-to-server, sem contexto de
+  // sessão, então não passa por `mpSubscriptionLockedAt` — a trava protege
+  // criação concorrente de preapprovals, e aqui a preapproval já existe e já
+  // foi autorizada pelo MP. Só reivindica um perfil que ainda não tem NENHUMA
+  // preapproval — nunca sobrescreve uma diferente já vinculada.
   await prisma.providerProfile.updateMany({
     where: { id: reference, mpPreapprovalId: null },
     data: {

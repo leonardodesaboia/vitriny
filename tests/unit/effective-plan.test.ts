@@ -94,6 +94,32 @@ describe("resolveEffectivePlan", () => {
       }
     });
   });
+
+  it("rebaixa e limpa quando a assinatura MP cancelada ficou sem currentPeriodEnd", async () => {
+    db.providerProfile.update.mockResolvedValue({});
+
+    const { resolveEffectivePlan } = await import("@/lib/effective-plan");
+    const result = await resolveEffectivePlan({
+      id: "profile-1",
+      plan: "PRO",
+      stripeSubscriptionId: null,
+      mpPreapprovalId: "2c93808",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: true
+    });
+
+    expect(result).toEqual({ plan: "FREE", currentPeriodEnd: null });
+    expect(db.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: "profile-1" },
+      data: {
+        plan: "FREE",
+        currentPeriodEnd: null,
+        mpPreapprovalId: null,
+        cancelAtPeriodEnd: false,
+        subscriptionStatus: null
+      }
+    });
+  });
 });
 
 describe("isOneTimeProExpired com assinatura MP", () => {
@@ -158,6 +184,18 @@ describe("isOneTimeProExpired com assinatura MP", () => {
         cancelAtPeriodEnd: true
       })
     ).toBe(false);
+  });
+
+  it("PRO com preapproval MP cancelada e sem currentPeriodEnd expira na hora (nao ha periodo pago a esperar)", () => {
+    expect(
+      isOneTimeProExpired({
+        plan: "PRO",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "2c93808",
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: true
+      })
+    ).toBe(true);
   });
 
   it("PRO com assinatura Stripe NAO expira via cancelAtPeriodEnd (fora de escopo, webhook Stripe decide)", () => {

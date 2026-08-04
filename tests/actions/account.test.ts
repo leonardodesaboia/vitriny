@@ -67,6 +67,9 @@ beforeEach(async () => {
   db.passwordResetToken.deleteMany.mockResolvedValue({});
   db.emailVerificationToken.deleteMany.mockResolvedValue({});
   db.providerProfile.update.mockResolvedValue({});
+  // Trava de assinatura livre por padrão: deleteAccount a adquire antes de
+  // cancelar (ver "aborta quando outra requisicao..." abaixo).
+  db.providerProfile.updateMany.mockResolvedValue({ count: 1 });
   db.service.updateMany.mockResolvedValue({});
 });
 
@@ -303,5 +306,72 @@ describe("deleteAccount", () => {
     expect(result).toEqual({
       error: "Uma operação de assinatura está em andamento. Tente novamente em instantes."
     });
+  });
+
+  it("aborta quando outra requisicao adquire a trava de assinatura durante a exclusao", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "maria@example.com",
+      deletedAt: null,
+      providerProfile: {
+        id: "profile-1",
+        slug: "bolos-da-maria",
+        stripeSubscriptionId: "sub_123",
+        mpPreapprovalId: "mp_123",
+        mpSubscriptionLockedAt: null,
+        services: []
+      }
+    });
+    // Snapshot limpo, mas a trava é reivindicada por outra requisição antes de
+    // conseguirmos pegá-la: updateMany condicional afeta 0 linhas.
+    db.providerProfile.updateMany.mockResolvedValue({ count: 0 });
+
+    const { stripe } = await import("@/lib/stripe");
+    const { deleteAccount } = await import("@/lib/actions/account");
+    const result = await deleteAccount();
+
+    expect(result).toEqual({
+      error: "Uma operação de assinatura está em andamento. Tente novamente em instantes."
+    });
+    expect(stripe.subscriptions.cancel).not.toHaveBeenCalled();
+    expect(preApprovalUpdate).not.toHaveBeenCalled();
+    expect(db.user.update).not.toHaveBeenCalled();
+  });
+
+  it("segura a trava enquanto cancela e a libera quando a exclusao aborta", async () => {
+    db.user.findUnique.mockResolvedValue({
+      id: "user-1",
+      email: "maria@example.com",
+      deletedAt: null,
+      providerProfile: {
+        id: "profile-1",
+        slug: "bolos-da-maria",
+        stripeSubscriptionId: null,
+        mpPreapprovalId: "mp_123",
+        mpSubscriptionLockedAt: null,
+        services: []
+      }
+    });
+    preApprovalUpdate.mockRejectedValue(new Error("mp down"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const { deleteAccount } = await import("@/lib/actions/account");
+    await deleteAccount();
+
+    expect(db.providerProfile.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: "profile-1",
+        OR: [
+          { mpSubscriptionLockedAt: null },
+          { mpSubscriptionLockedAt: { lt: expect.any(Date) } }
+        ]
+      },
+      data: { mpSubscriptionLockedAt: expect.any(Date) }
+    });
+    expect(db.providerProfile.update).toHaveBeenCalledWith({
+      where: { id: "profile-1" },
+      data: { mpSubscriptionLockedAt: null }
+    });
+    consoleError.mockRestore();
   });
 });

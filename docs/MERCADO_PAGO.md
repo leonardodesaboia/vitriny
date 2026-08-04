@@ -99,7 +99,7 @@ Executar nesta ordem, mantendo Stripe em coexistência até o cutover:
 - [x] Adicionar trava contra concorrência: `lib/mp-subscription-lock.ts` implementa uma trava TTL por perfil (não é chave de idempotência do MP em si, mas cumpre o mesmo papel de impedir duas preapprovals).
 - [x] Proteger chamadas concorrentes e clique duplo para que um perfil não crie duas preapprovals — `createMpCardSubscription` adquire a trava antes de criar a preapproval e permite reativação (nova preapproval) somente quando a assinatura atual está `cancelAtPeriodEnd: true`.
 - [x] Reconciliar falha do banco após autorização remota — a trava é liberada (`releaseSubscriptionLock`) em `finally`, evitando travas órfãs se a escrita local falhar.
-- [x] Cobrir concorrência entre criação de assinatura e exclusão de conta — `lib/actions/account.ts` aborta a exclusão se a trava de assinatura estiver ativa para o perfil.
+- [x] Cobrir concorrência entre criação de assinatura e exclusão de conta nos dois sentidos — `lib/actions/account.ts` **adquire** a trava (não só a lê) antes de cancelar e a segura até o fim: se uma criação de assinatura já está em andamento, a exclusão aborta; e enquanto a exclusão roda, nenhuma preapproval nova pode ser criada e escapar do cancelamento. Se a exclusão aborta no meio (falha ao cancelar no Stripe ou no MP), a trava é liberada para não bloquear a retentativa.
 
 ### 4. Definir semântica de cancelamento
 

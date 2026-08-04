@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
 import { cancelMpSubscription, createMpPixSubscription } from "@/lib/actions/mp-billing";
 import { reactivateSubscription } from "@/lib/actions/billing";
+import { resolveReactivationMode } from "@/lib/billing-status";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
@@ -52,11 +53,16 @@ export function BillingCard({
   // Cancel confirmation inline state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  // MP Card Brick modal
+  // MP Card Brick modal. O mesmo modal serve para assinar do zero e para
+  // reativar — o modo decide o texto (reativar cobra um ciclo novo na hora).
   const [showCardModal, setShowCardModal] = useState(false);
+  const [cardModalMode, setCardModalMode] = useState<"subscribe" | "reactivate">(
+    "subscribe"
+  );
 
   function handleSubscribe() {
     setError(null);
+    setCardModalMode("subscribe");
     setShowCardModal(true);
   }
 
@@ -75,9 +81,10 @@ export function BillingCard({
 
   function handleReactivate() {
     setError(null);
-    if (subscriptionGateway === "mp") {
+    if (resolveReactivationMode(subscriptionGateway) === "card-modal") {
       // Preapproval cancelada no MP é terminal — reativar significa criar
       // uma nova (novo card_token, cobrança imediata), não "descancelar".
+      setCardModalMode("reactivate");
       setShowCardModal(true);
       return;
     }
@@ -117,6 +124,7 @@ export function BillingCard({
         <MpSubscriptionModal
           amount={proAmount}
           payerEmail={payerEmail}
+          mode={cardModalMode}
           onClose={() => setShowCardModal(false)}
           onSuccess={() => {
             setShowCardModal(false);

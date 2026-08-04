@@ -47,6 +47,43 @@ describe("MpSubscriptionModal", () => {
     expect(html).toContain("min-h-11 min-w-11");
   });
 
+  it("no modo padrao mostra 'Assinar PRO' e nenhum aviso de cobranca imediata", async () => {
+    const { MpSubscriptionModal } = await import("@/components/billing/MpSubscriptionModal");
+
+    const html = renderToStaticMarkup(
+      createElement(MpSubscriptionModal, {
+        amount: 19.9,
+        payerEmail: "profile@test.com",
+        onClose: vi.fn(),
+        onSuccess: vi.fn(),
+        onError: vi.fn()
+      })
+    );
+
+    expect(html).toContain("Assinar PRO");
+    expect(html).not.toContain("Reativar assinatura PRO");
+    expect(html).not.toContain("cobrado por um novo ciclo");
+  });
+
+  it("no modo reativacao avisa que cobra um ciclo novo e perde os dias restantes", async () => {
+    const { MpSubscriptionModal } = await import("@/components/billing/MpSubscriptionModal");
+
+    const html = renderToStaticMarkup(
+      createElement(MpSubscriptionModal, {
+        amount: 19.9,
+        payerEmail: "profile@test.com",
+        onClose: vi.fn(),
+        onSuccess: vi.fn(),
+        onError: vi.fn(),
+        mode: "reactivate" as const
+      })
+    );
+
+    expect(html).toContain("Reativar assinatura PRO");
+    expect(html).toContain("cobrado por um novo ciclo");
+    expect(html).toContain("dias que restavam do per");
+  });
+
   it("envia para o backend o email preenchido no Card Brick", async () => {
     mocks.createMpCardSubscription.mockResolvedValue({ success: true });
     const onSuccess = vi.fn();
