@@ -1,6 +1,6 @@
 "use server";
 
-import { PreApproval } from "mercadopago";
+import { Payment, PreApproval } from "mercadopago";
 import { z } from "zod";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
@@ -212,6 +212,154 @@ export async function createMpPixSubscription(
   redirectUrl.searchParams.set("external_reference", profile.id);
 
   return { initPoint: redirectUrl.toString() };
+}
+
+const PIX_EXPIRATION_MINUTES = 30;
+
+type MpPixQr = {
+  qrCode: string;
+  qrCodeBase64: string;
+  paymentId: string;
+  expiresAt: string;
+};
+
+async function deleteUnlinkedProPixPayment(paymentId: string, profileId: string): Promise<void> {
+  try {
+    await prisma.proPixPayment.delete({ where: { id: paymentId } });
+  } catch (error) {
+    console.error("Falha ao remover Pix local sem cobrança criada.", {
+      profileId,
+      paymentId,
+      errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+  }
+}
+
+export async function createMpPixPayment(
+  payerEmail: string
+): Promise<MpPixQr | { error: string }> {
+  const loaded = await loadSubscribableProfile();
+  if ("error" in loaded) return loaded;
+  const { profile } = loaded;
+
+  const amount = proAmount();
+  if (amount === null) return { error: "Valor do plano não configurado." };
+  if (!payerEmailSchema.safeParse(payerEmail).success) {
+    return { error: "Confira o e-mail do pagador." };
+  }
+
+  const normalizedEmail = payerEmail.trim().toLowerCase();
+  let payment: Payment;
+  try {
+    payment = new Payment(getMercadoPago());
+  } catch (error) {
+    console.error("Erro ao configurar pagamento Pix Mercado Pago.", {
+      profileId: profile.id,
+      errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+    return { error: "Não foi possível gerar o Pix agora. Tente novamente." };
+  }
+  const pending = await prisma.proPixPayment.findFirst({
+    where: {
+      providerProfileId: profile.id,
+      confirmedAt: null,
+      mpPaymentId: { not: null },
+      expiresAt: { gt: new Date() }
+    },
+    orderBy: { requestedAt: "desc" }
+  });
+
+  if (pending?.mpPaymentId && pending.expiresAt) {
+    try {
+      const existing = await payment.get({ id: pending.mpPaymentId });
+      const data = existing.point_of_interaction?.transaction_data;
+      if (data?.qr_code && data.qr_code_base64) {
+        return {
+          qrCode: data.qr_code,
+          qrCodeBase64: data.qr_code_base64,
+          paymentId: pending.id,
+          expiresAt: pending.expiresAt.toISOString()
+        };
+      }
+    } catch (error) {
+      console.error("Falha ao rebuscar Pix pendente na MP; criando novo.", {
+        profileId: profile.id,
+        errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+  }
+
+  const row = await prisma.proPixPayment.create({
+    data: { providerProfileId: profile.id, amount: amount.toFixed(2) }
+  });
+  const expiresAt = new Date(Date.now() + PIX_EXPIRATION_MINUTES * 60 * 1000);
+
+  let created;
+  try {
+    created = await payment.create({
+      body: {
+        transaction_amount: amount,
+        description: "Vitriny PRO",
+        payment_method_id: "pix",
+        payer: { email: normalizedEmail },
+        external_reference: profile.id,
+        date_of_expiration: expiresAt.toISOString(),
+        metadata: { pro_pix_payment_id: row.id }
+      },
+      requestOptions: { idempotencyKey: row.id }
+    });
+  } catch (error) {
+    console.error("Erro ao criar pagamento Pix Mercado Pago.", {
+      profileId: profile.id,
+      errorMessage: error instanceof Error ? error.message : "Erro desconhecido"
+    });
+    await deleteUnlinkedProPixPayment(row.id, profile.id);
+    return { error: "Não foi possível gerar o Pix agora. Tente novamente." };
+  }
+
+  const data = created.point_of_interaction?.transaction_data;
+  if (!created.id || !data?.qr_code || !data.qr_code_base64) {
+    console.error("Pagamento Pix Mercado Pago sem QR na resposta.", {
+      profileId: profile.id,
+      paymentId: created?.id ?? null
+    });
+    await deleteUnlinkedProPixPayment(row.id, profile.id);
+    return { error: "Não foi possível gerar o Pix agora. Tente novamente." };
+  }
+
+  await prisma.proPixPayment.update({
+    where: { id: row.id },
+    data: { mpPaymentId: String(created.id), expiresAt }
+  });
+
+  return {
+    qrCode: data.qr_code,
+    qrCodeBase64: data.qr_code_base64,
+    paymentId: row.id,
+    expiresAt: expiresAt.toISOString()
+  };
+}
+
+export async function getMpPixPaymentStatus(
+  paymentRowId: string
+): Promise<{ status: "pending" | "confirmed" | "expired" } | { error: string }> {
+  const session = await auth();
+  if (!session?.user?.id) return { error: "Não autenticado." };
+
+  const profile = await prisma.providerProfile.findUnique({
+    where: { userId: session.user.id },
+    select: { id: true }
+  });
+  if (!profile) return { error: "Dados do negócio não encontrados." };
+
+  const row = await prisma.proPixPayment.findFirst({
+    where: { id: paymentRowId, providerProfileId: profile.id },
+    select: { confirmedAt: true, expiresAt: true }
+  });
+  if (!row) return { error: "Pagamento não encontrado." };
+  if (row.confirmedAt) return { status: "confirmed" };
+  if (row.expiresAt && row.expiresAt.getTime() < Date.now()) return { status: "expired" };
+  return { status: "pending" };
 }
 
 export async function cancelMpSubscription(): Promise<

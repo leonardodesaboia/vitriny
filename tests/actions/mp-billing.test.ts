@@ -2,17 +2,29 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const preApprovalCreate = vi.fn();
 const preApprovalUpdate = vi.fn();
+const paymentCreate = vi.fn();
+const paymentGet = vi.fn();
 vi.mock("mercadopago", () => ({
   MercadoPagoConfig: vi.fn(),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  PreApproval: vi.fn(function (this: any) { this.create = preApprovalCreate; this.update = preApprovalUpdate; })
+  PreApproval: vi.fn(function (this: any) { this.create = preApprovalCreate; this.update = preApprovalUpdate; }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Payment: vi.fn(function (this: any) { this.create = paymentCreate; this.get = paymentGet; })
 }));
 
 const findUnique = vi.fn();
 const update = vi.fn();
 const updateMany = vi.fn();
+const proPixCreate = vi.fn();
+const proPixFindFirst = vi.fn();
+const proPixFindUnique = vi.fn();
+const proPixUpdate = vi.fn();
+const proPixDelete = vi.fn();
 vi.mock("@/lib/prisma", () => ({
-  prisma: { providerProfile: { findUnique, update, updateMany } }
+  prisma: {
+    providerProfile: { findUnique, update, updateMany },
+    proPixPayment: { create: proPixCreate, findFirst: proPixFindFirst, findUnique: proPixFindUnique, update: proPixUpdate, delete: proPixDelete }
+  }
 }));
 
 vi.mock("@/auth", () => ({ auth: vi.fn(async () => ({ user: { id: "u1" } })) }));
@@ -25,6 +37,13 @@ beforeEach(() => {
   vi.clearAllMocks();
   preApprovalCreate.mockReset();
   preApprovalUpdate.mockReset();
+  paymentCreate.mockReset();
+  paymentGet.mockReset();
+  proPixCreate.mockReset();
+  proPixFindFirst.mockReset();
+  proPixFindUnique.mockReset();
+  proPixUpdate.mockReset();
+  proPixDelete.mockReset();
   updateMany.mockReset();
   updateMany.mockResolvedValue({ count: 1 });
   process.env.MP_PRO_AMOUNT = "19.90";
@@ -287,5 +306,84 @@ describe("cancelMpSubscription", () => {
 
     expect("error" in result).toBe(true);
     expect(preApprovalUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe("createMpPixPayment", () => {
+  it("cria pagamento Pix na MP e retorna QR", async () => {
+    findUnique.mockResolvedValue({ id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false });
+    proPixFindFirst.mockResolvedValue(null);
+    proPixCreate.mockResolvedValue({ id: "row-1" });
+    paymentCreate.mockResolvedValue({ id: 12345, status: "pending", point_of_interaction: { transaction_data: { qr_code: "COPIA-E-COLA", qr_code_base64: "BASE64PNG" } } });
+    proPixUpdate.mockResolvedValue({});
+
+    const { createMpPixPayment } = await import("@/lib/actions/mp-billing");
+    const result = await createMpPixPayment("payer@test.com");
+    expect(result).toEqual({ qrCode: "COPIA-E-COLA", qrCodeBase64: "BASE64PNG", paymentId: "row-1", expiresAt: expect.any(String) });
+    expect(paymentCreate).toHaveBeenCalledWith(expect.objectContaining({ body: expect.objectContaining({ transaction_amount: 19.9, payment_method_id: "pix", payer: { email: "payer@test.com" }, external_reference: "p1", metadata: { pro_pix_payment_id: "row-1" } }), requestOptions: { idempotencyKey: "row-1" } }));
+    expect(proPixUpdate).toHaveBeenCalledWith({ where: { id: "row-1" }, data: { mpPaymentId: "12345", expiresAt: expect.any(Date) } });
+  });
+
+  it("reaproveita o pendente não-expirado", async () => {
+    findUnique.mockResolvedValue({ id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false });
+    proPixFindFirst.mockResolvedValue({ id: "row-old", mpPaymentId: "999", expiresAt: new Date(Date.now() + 60000) });
+    paymentGet.mockResolvedValue({ id: 999, point_of_interaction: { transaction_data: { qr_code: "OLD-COPIA", qr_code_base64: "OLD-BASE64" } } });
+    const { createMpPixPayment } = await import("@/lib/actions/mp-billing");
+    expect(await createMpPixPayment("payer@test.com")).toEqual({ qrCode: "OLD-COPIA", qrCodeBase64: "OLD-BASE64", paymentId: "row-old", expiresAt: expect.any(String) });
+    expect(paymentCreate).not.toHaveBeenCalled();
+    expect(paymentGet).toHaveBeenCalledWith({ id: "999" });
+  });
+
+  it("bloqueia quem já é PRO", async () => {
+    findUnique.mockResolvedValue({ id: "p1", plan: "PRO", mpPreapprovalId: "sub-1", stripeSubscriptionId: null, cancelAtPeriodEnd: false });
+    const { createMpPixPayment } = await import("@/lib/actions/mp-billing");
+    expect("error" in (await createMpPixPayment("payer@test.com"))).toBe(true);
+    expect(paymentCreate).not.toHaveBeenCalled();
+  });
+
+  it("rejeita email inválido antes de chamar a MP", async () => {
+    findUnique.mockResolvedValue({ id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false });
+    const { createMpPixPayment } = await import("@/lib/actions/mp-billing");
+    expect(await createMpPixPayment("email-invalido")).toEqual({ error: "Confira o e-mail do pagador." });
+    expect(paymentCreate).not.toHaveBeenCalled();
+  });
+
+  it("remove a row local quando a MP falha ao criar o pagamento", async () => {
+    findUnique.mockResolvedValue({ id: "p1", plan: "FREE", mpPreapprovalId: null, stripeSubscriptionId: null, cancelAtPeriodEnd: false });
+    proPixFindFirst.mockResolvedValue(null);
+    proPixCreate.mockResolvedValue({ id: "row-1" });
+    paymentCreate.mockRejectedValue(new Error("MP indisponível"));
+    proPixDelete.mockResolvedValue({});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const { createMpPixPayment } = await import("@/lib/actions/mp-billing");
+    expect(await createMpPixPayment("payer@test.com")).toEqual({
+      error: "Não foi possível gerar o Pix agora. Tente novamente."
+    });
+    expect(proPixDelete).toHaveBeenCalledWith({ where: { id: "row-1" } });
+    consoleError.mockRestore();
+  });
+});
+
+describe("getMpPixPaymentStatus", () => {
+  it("retorna confirmed", async () => {
+    findUnique.mockResolvedValue({ id: "p1" });
+    proPixFindFirst.mockResolvedValue({ id: "row-1", confirmedAt: new Date(), expiresAt: new Date(Date.now() + 60000) });
+    const { getMpPixPaymentStatus } = await import("@/lib/actions/mp-billing");
+    expect(await getMpPixPaymentStatus("row-1")).toEqual({ status: "confirmed" });
+  });
+
+  it("retorna expired", async () => {
+    findUnique.mockResolvedValue({ id: "p1" });
+    proPixFindFirst.mockResolvedValue({ id: "row-1", confirmedAt: null, expiresAt: new Date(Date.now() - 1000) });
+    const { getMpPixPaymentStatus } = await import("@/lib/actions/mp-billing");
+    expect(await getMpPixPaymentStatus("row-1")).toEqual({ status: "expired" });
+  });
+
+  it("retorna pending", async () => {
+    findUnique.mockResolvedValue({ id: "p1" });
+    proPixFindFirst.mockResolvedValue({ id: "row-1", confirmedAt: null, expiresAt: new Date(Date.now() + 60000) });
+    const { getMpPixPaymentStatus } = await import("@/lib/actions/mp-billing");
+    expect(await getMpPixPaymentStatus("row-1")).toEqual({ status: "pending" });
   });
 });
