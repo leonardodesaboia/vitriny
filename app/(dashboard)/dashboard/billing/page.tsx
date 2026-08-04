@@ -53,6 +53,7 @@ export default async function BillingPage({
       })
     : null;
   const pixAvailable = Boolean(process.env.MP_PRO_PLAN_INIT_POINT);
+  const mpPixAvailable = proAmount > 0;
 
   const limits = profile ? getPlanLimits(plan) : null;
   const monthlyQuoteRequests = profile
@@ -134,6 +135,7 @@ export default async function BillingPage({
               payerEmail={payerEmail}
               proAmount={proAmount}
               pixAvailable={pixAvailable}
+              mpPixAvailable={mpPixAvailable}
             />
           </div>
 

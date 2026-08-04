@@ -152,6 +152,8 @@ model ProPixPayment {
   requestedAt       DateTime  @default(now())
   clientPaidAt      DateTime?
   confirmedAt       DateTime?
+  mpPaymentId       String?   @unique
+  expiresAt         DateTime?
   updatedAt         DateTime  @updatedAt
 
   providerProfile ProviderProfile @relation(fields: [providerProfileId], references: [id], onDelete: Cascade)

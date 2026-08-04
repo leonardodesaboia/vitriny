@@ -3,11 +3,16 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlanTier, SubscriptionStatus } from "@prisma/client";
-import { cancelMpSubscription, createMpPixSubscription } from "@/lib/actions/mp-billing";
+import {
+  cancelMpSubscription,
+  createMpPixPayment,
+  createMpPixSubscription
+} from "@/lib/actions/mp-billing";
 import { reactivateSubscription } from "@/lib/actions/billing";
 import { resolveReactivationMode } from "@/lib/billing-status";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
+import { MpPixPaymentModal } from "@/components/billing/MpPixPaymentModal";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 
 const STATUS_LABELS: Record<SubscriptionStatus, string> = {
@@ -31,6 +36,7 @@ type BillingCardProps = {
   payerEmail: string;
   proAmount: number;
   pixAvailable: boolean;
+  mpPixAvailable: boolean;
 };
 
 export function BillingCard({
@@ -42,11 +48,18 @@ export function BillingCard({
   subscriptionGateway,
   payerEmail,
   proAmount,
-  pixAvailable
+  pixAvailable,
+  mpPixAvailable
 }: BillingCardProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [pixQr, setPixQr] = useState<{
+    qrCode: string;
+    qrCodeBase64: string;
+    paymentId: string;
+    expiresAt: string;
+  } | null>(null);
 
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -110,6 +123,18 @@ export function BillingCard({
     });
   }
 
+  function handlePayWithPixOneTime() {
+    setError(null);
+    startTransition(async () => {
+      const result = await createMpPixPayment(payerEmail);
+      if ("error" in result) {
+        setError(result.error);
+        return;
+      }
+      setPixQr(result);
+    });
+  }
+
   const periodEndLabel = currentPeriodEnd
     ? currentPeriodEnd.toLocaleDateString("pt-BR", {
         day: "2-digit",
@@ -134,6 +159,20 @@ export function BillingCard({
           onError={(m) => {
             setShowCardModal(false);
             setError(m);
+          }}
+        />
+      ) : null}
+
+      {pixQr ? (
+        <MpPixPaymentModal
+          qrCode={pixQr.qrCode}
+          qrCodeBase64={pixQr.qrCodeBase64}
+          paymentId={pixQr.paymentId}
+          expiresAt={pixQr.expiresAt}
+          onClose={() => setPixQr(null)}
+          onRegenerate={() => {
+            setPixQr(null);
+            handlePayWithPixOneTime();
           }}
         />
       ) : null}
@@ -241,6 +280,15 @@ export function BillingCard({
                     className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
                   >
                     {pending ? "Aguarde..." : "Assinar com Pix"}
+                  </button>
+                ) : null}
+                {mpPixAvailable ? (
+                  <button
+                    onClick={handlePayWithPixOneTime}
+                    disabled={pending || hasActiveSubscription}
+                    className="inline-flex min-h-9 items-center justify-center rounded-md border border-paper-soft bg-white px-5 text-xs font-semibold text-ink transition hover:border-leaf hover:text-leaf disabled:opacity-60"
+                  >
+                    {pending ? "Aguarde..." : "Pagar 1 mês via Pix"}
                   </button>
                 ) : null}
               </div>

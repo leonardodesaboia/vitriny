@@ -87,8 +87,11 @@ export function makePrismaMock() {
     proPixPayment: {
       create: vi.fn(),
       findFirst: vi.fn(),
+      findUnique: vi.fn(),
       findMany: vi.fn(),
-      update: vi.fn()
+      update: vi.fn(),
+      updateMany: vi.fn(),
+      delete: vi.fn()
     },
     $transaction: vi.fn()
   };

@@ -7,6 +7,7 @@ import {
 import { getMercadoPago } from "@/lib/mercadopago";
 import { resolvePlanFromPreapproval } from "@/lib/mp-plan";
 import { prisma } from "@/lib/prisma";
+import { grantProPixPeriodFromMp } from "@/lib/pro-pix";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +110,29 @@ export async function POST(request: Request) {
     if (body.type === "subscription_authorized_payment" || body.type === "payment") {
       const payment = new Payment(getMercadoPago());
       const paymentResource = await payment.get({ id: eventId });
+
+      const proPixPaymentId =
+        typeof paymentResource.metadata?.pro_pix_payment_id === "string"
+          ? paymentResource.metadata.pro_pix_payment_id
+          : null;
+
+      if (proPixPaymentId) {
+        if (paymentResource.status === "approved") {
+          await grantProPixPeriodFromMp(proPixPaymentId);
+        }
+        return new Response(null, { status: 200 });
+      }
+
+      if (paymentResource.status === "approved") {
+        const matchedPixPayment = await prisma.proPixPayment.findUnique({
+          where: { mpPaymentId: String(paymentResource.id ?? eventId) },
+          select: { id: true }
+        });
+        if (matchedPixPayment) {
+          await grantProPixPeriodFromMp(matchedPixPayment.id);
+          return new Response(null, { status: 200 });
+        }
+      }
 
       const preapprovalId =
         typeof paymentResource.metadata?.preapproval_id === "string"
