@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const preApprovalGet = vi.fn();
+const paymentGet = vi.fn();
 const validate = vi.fn();
 
 class FakeInvalidWebhookSignatureError extends Error {}
@@ -10,6 +11,10 @@ vi.mock("mercadopago", () => ({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   PreApproval: vi.fn(function (this: any) {
     this.get = preApprovalGet;
+  }),
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  Payment: vi.fn(function (this: any) {
+    this.get = paymentGet;
   }),
   WebhookSignatureValidator: { validate },
   InvalidWebhookSignatureError: FakeInvalidWebhookSignatureError
@@ -136,5 +141,81 @@ describe("POST /api/mercadopago/webhook", () => {
 
     expect(response.status).toBe(200);
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it("payment sem preapproval_id no metadata e ignorado (nao ha o que sincronizar)", async () => {
+    paymentGet.mockResolvedValue({ id: "payment-1", metadata: {}, external_reference: "profile-1" });
+
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(makeRequest({ type: "payment", data: { id: "payment-1" } }));
+
+    expect(response.status).toBe(200);
+    expect(preApprovalGet).not.toHaveBeenCalled();
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it("subscription_authorized_payment com preapproval_id reivindica perfil ainda sem assinatura MP", async () => {
+    paymentGet.mockResolvedValue({
+      id: "payment-1",
+      metadata: { preapproval_id: "preapproval-plan-1" },
+      external_reference: "profile-1"
+    });
+    preApprovalGet.mockResolvedValue({
+      id: "preapproval-plan-1",
+      status: "authorized",
+      external_reference: "profile-1",
+      next_payment_date: "2026-09-03T00:00:00.000Z"
+    });
+    updateMany.mockResolvedValueOnce({ count: 0 });
+    updateMany.mockResolvedValueOnce({ count: 1 });
+
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(
+      makeRequest({ type: "subscription_authorized_payment", data: { id: "payment-1" } })
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMany).toHaveBeenNthCalledWith(1, {
+      where: { mpPreapprovalId: "preapproval-plan-1" },
+      data: {
+        plan: "PRO",
+        subscriptionStatus: "ACTIVE",
+        currentPeriodEnd: new Date("2026-09-03T00:00:00.000Z"),
+        cancelAtPeriodEnd: false
+      }
+    });
+    expect(updateMany).toHaveBeenNthCalledWith(2, {
+      where: { id: "profile-1", mpPreapprovalId: null },
+      data: {
+        mpPreapprovalId: "preapproval-plan-1",
+        plan: "PRO",
+        subscriptionStatus: "ACTIVE",
+        currentPeriodEnd: new Date("2026-09-03T00:00:00.000Z"),
+        cancelAtPeriodEnd: false
+      }
+    });
+  });
+
+  it("nao reivindica de novo quando o perfil ja tem essa mesma preapproval vinculada", async () => {
+    paymentGet.mockResolvedValue({
+      id: "payment-1",
+      metadata: { preapproval_id: "preapproval-plan-1" },
+      external_reference: "profile-1"
+    });
+    preApprovalGet.mockResolvedValue({
+      id: "preapproval-plan-1",
+      status: "authorized",
+      external_reference: "profile-1",
+      next_payment_date: "2026-09-03T00:00:00.000Z"
+    });
+    updateMany.mockResolvedValueOnce({ count: 1 });
+
+    const { POST } = await import("@/app/api/mercadopago/webhook/route");
+    const response = await POST(
+      makeRequest({ type: "subscription_authorized_payment", data: { id: "payment-1" } })
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateMany).toHaveBeenCalledTimes(1);
   });
 });
