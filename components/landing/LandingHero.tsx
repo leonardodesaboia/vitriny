@@ -31,6 +31,15 @@ export function LandingHero() {
       <div className="mx-auto grid max-w-6xl gap-8 px-6 pb-16 pt-10 md:gap-16 md:grid-cols-[1fr_1.2fr] md:items-center md:pb-32 md:pt-28">
         {/* Left */}
         <div>
+          <motion.p
+            custom={0}
+            variants={fadeUp}
+            initial="hidden"
+            animate="show"
+            className="text-sm font-semibold text-leaf"
+          >
+            Vitriny para pequenos negócios
+          </motion.p>
 
           <motion.h1
             custom={1}
@@ -39,10 +48,10 @@ export function LandingHero() {
             animate="show"
             className="mt-5 font-fraunces text-5xl font-bold leading-[1.1] tracking-tight text-ink md:text-6xl"
           >
-            Sua vitrine
+            Sua vitrine online
             <br />
             <span className="relative inline-block">
-              <span className="relative z-10 text-leaf">online.</span>
+              <span className="relative z-10 text-leaf">para vender.</span>
               <motion.span
                 aria-hidden
                 initial={{ scaleX: 0 }}
@@ -62,9 +71,9 @@ export function LandingHero() {
             animate="show"
             className="mt-6 text-base leading-7 text-ink-muted"
           >
-            O Vitriny é a plataforma para você apresentar seus produtos e
-            serviços numa vitrine online, receber pedidos e enviar propostas —
-            tudo em um só painel.
+            O Vitriny é uma plataforma para pequenos negócios criarem uma
+            vitrine online, apresentarem produtos e serviços, receberem pedidos
+            e enviarem propostas para aprovação — tudo em um só painel.
             <br />
             Sem precisar de técnico. Sem complicação.
           </motion.p>
