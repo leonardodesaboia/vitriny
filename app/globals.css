@@ -15,7 +15,7 @@
   --color-amber: 201 125 63;
   --color-amber-soft: 245 230 211;
   --font-brand-body: var(--font-jakarta);
-  --font-brand-display: var(--font-fraunces);
+  --font-brand-display: var(--font-jakarta);
 }
 
 [data-brand-color="FOREST"] {

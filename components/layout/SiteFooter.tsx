@@ -77,7 +77,7 @@ export function SiteFooter() {
           </p>
           <p className="text-xs text-ink-muted/60">
             Pagamentos processados por{" "}
-            <span className="font-semibold text-ink-muted">Stripe</span>
+            <span className="font-semibold text-ink-muted">Mercado Pago</span>
           </p>
         </div>
       </div>
