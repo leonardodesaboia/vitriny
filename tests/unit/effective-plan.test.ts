@@ -20,7 +20,6 @@ describe("resolveEffectivePlan", () => {
     const result = await resolveEffectivePlan({
       id: "profile-1",
       plan: "PRO",
-      stripeSubscriptionId: null,
       mpPreapprovalId: null,
       currentPeriodEnd: future,
       cancelAtPeriodEnd: false
@@ -30,24 +29,7 @@ describe("resolveEffectivePlan", () => {
     expect(db.providerProfile.update).not.toHaveBeenCalled();
   });
 
-  it("mantém PRO quando há assinatura Stripe, mesmo com currentPeriodEnd vencido", async () => {
-    const past = new Date("2020-01-01");
-
-    const { resolveEffectivePlan } = await import("@/lib/effective-plan");
-    const result = await resolveEffectivePlan({
-      id: "profile-1",
-      plan: "PRO",
-      stripeSubscriptionId: "sub_123",
-      mpPreapprovalId: null,
-      currentPeriodEnd: past,
-      cancelAtPeriodEnd: false
-    });
-
-    expect(result).toEqual({ plan: "PRO", currentPeriodEnd: past });
-    expect(db.providerProfile.update).not.toHaveBeenCalled();
-  });
-
-  it("rebaixa pra FREE e persiste quando o Pix manual venceu", async () => {
+  it("rebaixa pra FREE e persiste quando o Pix avulso venceu", async () => {
     db.providerProfile.update.mockResolvedValue({});
     const past = new Date("2020-01-01");
 
@@ -55,7 +37,6 @@ describe("resolveEffectivePlan", () => {
     const result = await resolveEffectivePlan({
       id: "profile-1",
       plan: "PRO",
-      stripeSubscriptionId: null,
       mpPreapprovalId: null,
       currentPeriodEnd: past,
       cancelAtPeriodEnd: false
@@ -76,7 +57,6 @@ describe("resolveEffectivePlan", () => {
     const result = await resolveEffectivePlan({
       id: "profile-1",
       plan: "PRO",
-      stripeSubscriptionId: null,
       mpPreapprovalId: "2c93808",
       currentPeriodEnd: past,
       cancelAtPeriodEnd: true
@@ -102,7 +82,6 @@ describe("resolveEffectivePlan", () => {
     const result = await resolveEffectivePlan({
       id: "profile-1",
       plan: "PRO",
-      stripeSubscriptionId: null,
       mpPreapprovalId: "2c93808",
       currentPeriodEnd: null,
       cancelAtPeriodEnd: true
@@ -130,7 +109,6 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "2c93808",
         currentPeriodEnd: past,
         cancelAtPeriodEnd: false
@@ -142,7 +120,6 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
         currentPeriodEnd: past,
         cancelAtPeriodEnd: false
@@ -154,7 +131,6 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
         currentPeriodEnd: future,
         cancelAtPeriodEnd: false
@@ -166,7 +142,6 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "2c93808",
         currentPeriodEnd: past,
         cancelAtPeriodEnd: true
@@ -178,7 +153,6 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "2c93808",
         currentPeriodEnd: future,
         cancelAtPeriodEnd: true
@@ -190,23 +164,10 @@ describe("isOneTimeProExpired com assinatura MP", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "2c93808",
         currentPeriodEnd: null,
         cancelAtPeriodEnd: true
       })
     ).toBe(true);
-  });
-
-  it("PRO com assinatura Stripe NAO expira via cancelAtPeriodEnd (fora de escopo, webhook Stripe decide)", () => {
-    expect(
-      isOneTimeProExpired({
-        plan: "PRO",
-        stripeSubscriptionId: "sub_123",
-        mpPreapprovalId: null,
-        currentPeriodEnd: past,
-        cancelAtPeriodEnd: true
-      })
-    ).toBe(false);
   });
 });

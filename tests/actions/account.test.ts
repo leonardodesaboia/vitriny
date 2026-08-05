@@ -12,13 +12,6 @@ vi.mock("@/auth", () => ({
   })
 }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
-vi.mock("@/lib/stripe", () => ({
-  stripe: {
-    subscriptions: {
-      cancel: vi.fn()
-    }
-  }
-}));
 vi.mock("mercadopago", () => ({
   PreApproval: vi.fn(function (this: { update: typeof preApprovalUpdate }) {
     this.update = preApprovalUpdate;
@@ -38,13 +31,10 @@ beforeEach(async () => {
   preApprovalUpdate.mockReset();
   preApprovalUpdate.mockResolvedValue({ id: "mp_123", status: "cancelled" });
   const { auth } = await import("@/auth");
-  const { stripe } = await import("@/lib/stripe");
   const prismaModule = await import("@/lib/prisma");
   db = makePrismaMock();
   Object.assign(prismaModule.prisma, db);
   vi.mocked(auth).mockResolvedValue(makeSession() as never);
-  vi.mocked(stripe.subscriptions.cancel).mockReset();
-  vi.mocked(stripe.subscriptions.cancel).mockResolvedValue({} as never);
 
   db.user.findUnique.mockResolvedValue({
     id: "user-1",
@@ -53,7 +43,6 @@ beforeEach(async () => {
     providerProfile: {
       id: "profile-1",
       slug: "bolos-da-maria",
-      stripeSubscriptionId: null,
       mpPreapprovalId: null,
       services: [
         { id: "service-1", imageStorageKey: "services/service-1/foto.jpg" },
@@ -157,54 +146,6 @@ describe("deleteAccount", () => {
     expect(db.service.delete).not.toHaveBeenCalled();
   });
 
-  it("cancela a assinatura Stripe quando existe", async () => {
-    db.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      email: "maria@example.com",
-      deletedAt: null,
-      providerProfile: {
-        id: "profile-1",
-        slug: "bolos-da-maria",
-        stripeSubscriptionId: "sub_123",
-        mpPreapprovalId: null,
-        services: []
-      }
-    });
-
-    const { stripe } = await import("@/lib/stripe");
-    const { deleteAccount } = await import("@/lib/actions/account");
-    await expect(deleteAccount()).rejects.toThrow();
-
-    expect(stripe.subscriptions.cancel).toHaveBeenCalledWith("sub_123");
-  });
-
-  it("aborta com erro se o cancelamento da assinatura falhar", async () => {
-    db.user.findUnique.mockResolvedValue({
-      id: "user-1",
-      email: "maria@example.com",
-      deletedAt: null,
-      providerProfile: {
-        id: "profile-1",
-        slug: "bolos-da-maria",
-        stripeSubscriptionId: "sub_123",
-        mpPreapprovalId: null,
-        services: []
-      }
-    });
-
-    const { stripe } = await import("@/lib/stripe");
-    vi.mocked(stripe.subscriptions.cancel).mockRejectedValue(new Error("stripe down"));
-
-    const { deleteAccount } = await import("@/lib/actions/account");
-    const result = await deleteAccount();
-
-    expect(result).toEqual({
-      error:
-        "Não foi possível cancelar sua assinatura. Tente novamente ou cancele em Assinatura antes de excluir a conta."
-    });
-    expect(db.user.update).not.toHaveBeenCalled();
-  });
-
   it("cancela a assinatura Mercado Pago antes de anonimizar a conta", async () => {
     db.user.findUnique.mockResolvedValue({
       id: "user-1",
@@ -213,7 +154,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "mp_123",
         services: []
       }
@@ -239,7 +179,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "mp_123",
         services: []
       }
@@ -266,7 +205,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "mp_123",
         services: []
       }
@@ -293,7 +231,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
         mpSubscriptionLockedAt: new Date(),
         services: []
@@ -316,7 +253,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: "sub_123",
         mpPreapprovalId: "mp_123",
         mpSubscriptionLockedAt: null,
         services: []
@@ -326,14 +262,12 @@ describe("deleteAccount", () => {
     // conseguirmos pegá-la: updateMany condicional afeta 0 linhas.
     db.providerProfile.updateMany.mockResolvedValue({ count: 0 });
 
-    const { stripe } = await import("@/lib/stripe");
     const { deleteAccount } = await import("@/lib/actions/account");
     const result = await deleteAccount();
 
     expect(result).toEqual({
       error: "Uma operação de assinatura está em andamento. Tente novamente em instantes."
     });
-    expect(stripe.subscriptions.cancel).not.toHaveBeenCalled();
     expect(preApprovalUpdate).not.toHaveBeenCalled();
     expect(db.user.update).not.toHaveBeenCalled();
   });
@@ -346,7 +280,6 @@ describe("deleteAccount", () => {
       providerProfile: {
         id: "profile-1",
         slug: "bolos-da-maria",
-        stripeSubscriptionId: null,
         mpPreapprovalId: "mp_123",
         mpSubscriptionLockedAt: null,
         services: []

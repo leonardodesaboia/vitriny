@@ -107,9 +107,6 @@ model ProviderProfile {
   themePreset  ProviderThemePreset @default(DEFAULT)
   brandColor   ProviderBrandColor @default(FOREST)
   brandFont    ProviderBrandFont  @default(CLASSIC)
-  stripeCustomerId     String?             @unique
-  stripeSubscriptionId String?             @unique
-  stripePriceId        String?
   mpPreapprovalId      String?             @unique
   mpPayerId            String?
   mpSubscriptionLockedAt DateTime?
@@ -150,7 +147,6 @@ model ProPixPayment {
   providerProfileId String
   amount            Decimal   @db.Decimal(10, 2)
   requestedAt       DateTime  @default(now())
-  clientPaidAt      DateTime?
   confirmedAt       DateTime?
   mpPaymentId       String?   @unique
   expiresAt         DateTime?

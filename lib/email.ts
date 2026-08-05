@@ -39,13 +39,6 @@ type QuoteRequestConfirmationEmailInput = {
   profileUrl: string;
 };
 
-type ProPixPaymentClientPaidEmailInput = {
-  to: string;
-  businessName: string;
-  amount: string;
-  dashboardUrl: string;
-};
-
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -275,24 +268,6 @@ export async function sendProposalResponseEmail({
       paragraph(`Olá, ${businessName}.`),
       paragraph(`${customerName} ${responseLabel} a proposta.`),
       emailButton("Ver proposta", proposalUrl)
-    ].join("")
-  });
-}
-
-export async function sendProPixPaymentClientPaidEmail({
-  to,
-  businessName,
-  amount,
-  dashboardUrl
-}: ProPixPaymentClientPaidEmailInput) {
-  await sendAppEmail({
-    to,
-    subject: "Pagamento Pix informado — assinatura PRO",
-    preview: `${businessName} informou pagamento Pix de ${amount} pela assinatura PRO.`,
-    html: [
-      paragraph(`${businessName} informou que pagou ${amount} via Pix pela assinatura PRO.`),
-      paragraph("Confirme o recebimento no seu banco antes de aprovar."),
-      emailButton("Ver pagamentos pendentes", dashboardUrl)
     ].join("")
   });
 }

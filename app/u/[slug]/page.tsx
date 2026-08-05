@@ -52,7 +52,6 @@ const getProfile = cache(async (slug: string) => {
       businessHours: true,
       isPublished: true,
       plan: true,
-      stripeSubscriptionId: true,
       mpPreapprovalId: true,
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true,

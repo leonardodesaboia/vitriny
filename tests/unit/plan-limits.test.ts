@@ -195,43 +195,32 @@ describe("isOneTimeProExpired", () => {
     expect(
       isOneTimeProExpired({
         plan: "FREE",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: new Date("2020-01-01")
+        currentPeriodEnd: new Date("2020-01-01"),
+        cancelAtPeriodEnd: false
       })
     ).toBe(false);
   });
 
-  it("retorna false quando é PRO com assinatura Stripe ativa, mesmo com currentPeriodEnd no passado", () => {
-    expect(
-      isOneTimeProExpired({
-        plan: "PRO",
-        stripeSubscriptionId: "sub_123",
-        mpPreapprovalId: null,
-        currentPeriodEnd: new Date("2020-01-01")
-      })
-    ).toBe(false);
-  });
-
-  it("retorna false quando é PRO via Pix manual mas ainda dentro do período", () => {
+  it("retorna false quando é PRO via Pix avulso mas ainda dentro do período", () => {
     const future = new Date(Date.now() + 1000 * 60 * 60 * 24);
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: future
+        currentPeriodEnd: future,
+        cancelAtPeriodEnd: false
       })
     ).toBe(false);
   });
 
-  it("retorna true quando é PRO via Pix manual e currentPeriodEnd já passou", () => {
+  it("retorna true quando é PRO via Pix avulso e currentPeriodEnd já passou", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: new Date("2020-01-01")
+        currentPeriodEnd: new Date("2020-01-01"),
+        cancelAtPeriodEnd: false
       })
     ).toBe(true);
   });
@@ -240,9 +229,9 @@ describe("isOneTimeProExpired", () => {
     expect(
       isOneTimeProExpired({
         plan: "PRO",
-        stripeSubscriptionId: null,
         mpPreapprovalId: null,
-        currentPeriodEnd: null
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false
       })
     ).toBe(false);
   });

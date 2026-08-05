@@ -24,7 +24,6 @@ type ProfileResult =
         id: string;
         plan: string;
         mpPreapprovalId: string | null;
-        stripeSubscriptionId: string | null;
         cancelAtPeriodEnd: boolean;
       };
     };
@@ -39,15 +38,11 @@ async function loadSubscribableProfile(): Promise<ProfileResult> {
       id: true,
       plan: true,
       mpPreapprovalId: true,
-      stripeSubscriptionId: true,
       cancelAtPeriodEnd: true
     }
   });
 
   if (!profile) return { error: "Dados do negócio não encontrados." };
-  if (profile.plan === "PRO" && profile.stripeSubscriptionId) {
-    return { error: "Você já tem uma assinatura PRO ativa." };
-  }
   // MP com cancelAtPeriodEnd true está no período de graça (já cancelada no
   // MP, esperando o fim do período) — reativar aqui significa criar uma
   // preapproval nova, então essa combinação passa.
