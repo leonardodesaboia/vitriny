@@ -8,8 +8,6 @@ import {
   createMpPixPayment,
   createMpPixSubscription
 } from "@/lib/actions/mp-billing";
-import { reactivateSubscription } from "@/lib/actions/billing";
-import { resolveReactivationMode } from "@/lib/billing-status";
 import { PLAN_NAMES } from "@/lib/plan-limits";
 import { MpSubscriptionModal } from "@/components/billing/MpSubscriptionModal";
 import { MpPixPaymentModal } from "@/components/billing/MpPixPaymentModal";
@@ -32,7 +30,6 @@ type BillingCardProps = {
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
   hasActiveSubscription: boolean;
-  subscriptionGateway: "stripe" | "mp" | null;
   payerEmail: string;
   proAmount: number;
   pixAvailable: boolean;
@@ -45,7 +42,6 @@ export function BillingCard({
   currentPeriodEnd,
   cancelAtPeriodEnd,
   hasActiveSubscription,
-  subscriptionGateway,
   payerEmail,
   proAmount,
   pixAvailable,
@@ -94,21 +90,10 @@ export function BillingCard({
 
   function handleReactivate() {
     setError(null);
-    if (resolveReactivationMode(subscriptionGateway) === "card-modal") {
-      // Preapproval cancelada no MP é terminal — reativar significa criar
-      // uma nova (novo card_token, cobrança imediata), não "descancelar".
-      setCardModalMode("reactivate");
-      setShowCardModal(true);
-      return;
-    }
-    startTransition(async () => {
-      const result = await reactivateSubscription();
-      if ("error" in result) {
-        setError(result.error);
-        return;
-      }
-      router.refresh();
-    });
+    // Preapproval cancelada no MP é terminal — reativar significa criar uma
+    // nova (novo card_token, cobrança imediata), não "descancelar".
+    setCardModalMode("reactivate");
+    setShowCardModal(true);
   }
 
   function handlePayWithPix() {

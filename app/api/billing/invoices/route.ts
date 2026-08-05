@@ -4,7 +4,6 @@ import { Payment } from "mercadopago";
 import { auth } from "@/auth";
 import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 
 export const dynamic = "force-dynamic";
 
@@ -26,25 +25,12 @@ export async function GET() {
 
   const profile = await prisma.providerProfile.findUnique({
     where: { userId: session.user.id },
-    select: { id: true, stripeCustomerId: true }
+    select: { id: true }
   });
 
   if (!profile) {
     return NextResponse.json({ invoices: [] });
   }
-
-  const stripeInvoices: InvoiceItem[] = profile.stripeCustomerId
-    ? (await stripe.invoices.list({ customer: profile.stripeCustomerId, limit: 10 })).data.map(
-        (inv) => ({
-          id: inv.id,
-          created: inv.created,
-          amountPaid: inv.amount_paid,
-          currency: inv.currency,
-          status: inv.status ?? null,
-          hostedUrl: inv.hosted_invoice_url ?? null
-        })
-      )
-    : [];
 
   let mpInvoices: InvoiceItem[] = [];
   try {
@@ -69,7 +55,7 @@ export async function GET() {
     });
   }
 
-  const invoices = [...stripeInvoices, ...mpInvoices].sort((a, b) => b.created - a.created);
+  const invoices = mpInvoices.sort((a, b) => b.created - a.created);
 
   return NextResponse.json({ invoices });
 }

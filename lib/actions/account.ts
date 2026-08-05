@@ -12,7 +12,6 @@ import {
 } from "@/lib/mp-subscription-lock";
 import { getMercadoPago } from "@/lib/mercadopago";
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
 import { deleteFromStorage } from "@/lib/storage";
 import type { ActionResult } from "@/types";
 
@@ -56,7 +55,6 @@ export async function deleteAccount(): Promise<ActionResult> {
         select: {
           id: true,
           slug: true,
-          stripeSubscriptionId: true,
           mpPreapprovalId: true,
           mpSubscriptionLockedAt: true,
           services: {
@@ -93,22 +91,6 @@ export async function deleteAccount(): Promise<ActionResult> {
 
   // Cobrança em primeiro lugar: se o cancelamento falhar, a exclusão aborta —
   // uma conta "excluída" não pode continuar sendo cobrada.
-  if (profile?.stripeSubscriptionId) {
-    try {
-      await stripe.subscriptions.cancel(profile.stripeSubscriptionId);
-    } catch (error) {
-      console.error("Falha ao cancelar assinatura na exclusão de conta.", {
-        error,
-        userId: user.id
-      });
-      await releaseLockQuietly(profile.id);
-      return {
-        error:
-          "Não foi possível cancelar sua assinatura. Tente novamente ou cancele em Assinatura antes de excluir a conta."
-      };
-    }
-  }
-
   if (profile?.mpPreapprovalId) {
     try {
       const preApproval = new PreApproval(getMercadoPago());

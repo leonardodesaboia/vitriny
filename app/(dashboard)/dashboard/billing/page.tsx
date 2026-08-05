@@ -8,12 +8,12 @@ import { BillingCard } from "@/components/billing/BillingCard";
 import { PlanUsageCard } from "@/components/billing/PlanUsageCard";
 import { AsyncInvoiceList } from "@/components/billing/AsyncInvoiceList";
 import { getCurrentMonthRange, getPlanLimits } from "@/lib/plan-limits";
-import { hasActiveRecurringSubscription, resolveSubscriptionGateway } from "@/lib/billing-status";
+import { hasActiveRecurringSubscription } from "@/lib/billing-status";
 
 export default async function BillingPage({
   searchParams
 }: {
-  searchParams: Promise<{ success?: string; canceled?: string; session_id?: string; mp?: string }>;
+  searchParams: Promise<{ success?: string; canceled?: string; mp?: string }>;
 }) {
   const session = await auth();
   if (!session?.user?.id) {
@@ -23,7 +23,6 @@ export default async function BillingPage({
   const params = await searchParams;
   const success = params.success === "1";
   const canceled = params.canceled === "1";
-  const fromCheckoutRedirect = !!params.session_id;
   const mpReturn = params.mp === "return";
 
   const proAmount = Number(process.env.MP_PRO_AMOUNT) || 0;
@@ -46,12 +45,6 @@ export default async function BillingPage({
 
   const payerEmail = profile?.email ?? session.user.email ?? "";
 
-  const subscriptionGateway = profile
-    ? resolveSubscriptionGateway({
-        stripeSubscriptionId: profile.stripeSubscriptionId,
-        mpPreapprovalId: profile.mpPreapprovalId
-      })
-    : null;
   const pixAvailable = Boolean(process.env.MP_PRO_PLAN_INIT_POINT);
   const mpPixAvailable = proAmount > 0;
 
@@ -79,7 +72,7 @@ export default async function BillingPage({
         Gerencie seu plano e visualize o uso atual.
       </p>
 
-      {success || fromCheckoutRedirect ? (
+      {success ? (
         <div className="mt-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
           <p className="text-sm font-semibold text-green-800">
             Assinatura realizada com sucesso! Seu plano será atualizado em instantes.
@@ -128,10 +121,8 @@ export default async function BillingPage({
               cancelAtPeriodEnd={profile.cancelAtPeriodEnd}
               hasActiveSubscription={hasActiveRecurringSubscription({
                 plan,
-                stripeSubscriptionId: profile.stripeSubscriptionId,
                 mpPreapprovalId: profile.mpPreapprovalId
               })}
-              subscriptionGateway={subscriptionGateway}
               payerEmail={payerEmail}
               proAmount={proAmount}
               pixAvailable={pixAvailable}

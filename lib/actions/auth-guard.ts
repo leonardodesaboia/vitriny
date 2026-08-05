@@ -30,7 +30,6 @@ export async function requireProviderProfile() {
       id: true,
       plan: true,
       businessType: true,
-      stripeSubscriptionId: true,
       mpPreapprovalId: true,
       currentPeriodEnd: true,
       cancelAtPeriodEnd: true

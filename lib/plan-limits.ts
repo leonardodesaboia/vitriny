@@ -157,7 +157,6 @@ export function formatUsage(current: number, limit: number | null) {
 
 type OneTimeProProfile = {
   plan: PlanTier;
-  stripeSubscriptionId: string | null;
   mpPreapprovalId: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
@@ -166,10 +165,9 @@ type OneTimeProProfile = {
 // PRO expira sozinho na leitura em dois casos: (1) há uma preapproval MP, mas
 // ela foi marcada para cancelar no fim do período (cancelAtPeriodEnd) e esse
 // fim já passou — a preapproval em si já está cancelada no MP desde o clique
-// em "cancelar", só não limpamos o id local até aqui; (2) não há NENHUMA
-// assinatura recorrente por trás (nem Stripe nem MP) e o período venceu —
-// caso do Pix avulso legado. Assinantes Stripe nunca caem aqui: o webhook
-// Stripe continua sendo a única fonte de verdade para eles.
+// em "cancelar", só não limpamos o id local até aqui; (2) não há assinatura
+// recorrente por trás (Pix avulso do Mercado Pago, que paga 1 mês) e o período
+// venceu.
 //
 // O ramo MP vem ANTES da regra geral "sem currentPeriodEnd não expira" de
 // propósito: tanto `cancelMpSubscription` quanto o webhook gravam
@@ -187,6 +185,5 @@ export function isOneTimeProExpired(profile: OneTimeProProfile): boolean {
   }
 
   if (profile.currentPeriodEnd === null) return false;
-  if (profile.currentPeriodEnd >= new Date()) return false;
-  return profile.stripeSubscriptionId === null;
+  return profile.currentPeriodEnd < new Date();
 }

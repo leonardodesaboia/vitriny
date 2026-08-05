@@ -62,7 +62,9 @@ export function LandingHero() {
             animate="show"
             className="mt-6 text-base leading-7 text-ink-muted"
           >
-            Produtos, serviços, pedidos e propostas — em um só painel.
+            O Vitriny é a plataforma para você apresentar seus produtos e
+            serviços numa vitrine online, receber pedidos e enviar propostas —
+            tudo em um só painel.
             <br />
             Sem precisar de técnico. Sem complicação.
           </motion.p>

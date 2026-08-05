@@ -5,7 +5,6 @@ import type { PlanTier } from "@prisma/client";
 export type EffectivePlanInput = {
   id: string;
   plan: PlanTier;
-  stripeSubscriptionId: string | null;
   mpPreapprovalId: string | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;

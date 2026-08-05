@@ -7,7 +7,6 @@ vi.mock("@/lib/actions/mp-billing", () => ({
   createMpPixPayment: vi.fn(),
   createMpPixSubscription: vi.fn()
 }));
-vi.mock("@/lib/actions/billing", () => ({ reactivateSubscription: vi.fn() }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() })
 }));
@@ -28,23 +27,11 @@ const baseProps = {
   mpPixAvailable: false
 };
 
-describe("BillingCard - reativacao por gateway", () => {
+describe("BillingCard - reativacao", () => {
   it("assinante MP cancelado ve o botao de reativar (reabre o Card Brick)", async () => {
     const { BillingCard } = await import("@/components/billing/BillingCard");
 
-    const html = renderToStaticMarkup(
-      createElement(BillingCard, { ...baseProps, subscriptionGateway: "mp" })
-    );
-
-    expect(html).toContain("Reativar assinatura");
-  });
-
-  it("assinante Stripe cancelado tambem ve o botao de reativar", async () => {
-    const { BillingCard } = await import("@/components/billing/BillingCard");
-
-    const html = renderToStaticMarkup(
-      createElement(BillingCard, { ...baseProps, subscriptionGateway: "stripe" })
-    );
+    const html = renderToStaticMarkup(createElement(BillingCard, baseProps));
 
     expect(html).toContain("Reativar assinatura");
   });
@@ -57,7 +44,6 @@ describe("opcoes de pagamento da assinatura FREE", () => {
     currentPeriodEnd: null,
     cancelAtPeriodEnd: false,
     hasActiveSubscription: false,
-    subscriptionGateway: null,
     payerEmail: "profile@test.com",
     proAmount: 19.9,
     mpPixAvailable: false
