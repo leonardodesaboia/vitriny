@@ -221,7 +221,7 @@ export function QuoteRequestDetails({
 
           {/* WhatsApp messages */}
           {(() => {
-            const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/proposta/${quoteRequest.proposal!.publicToken}`;
+            const proposalUrl = `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/proposta/${quoteRequest.proposal!.publicToken}`;
             const phone = quoteRequest.customerPhone ?? undefined;
             const name = quoteRequest.customerName;
             const proposalStatus = quoteRequest.proposal!.status;

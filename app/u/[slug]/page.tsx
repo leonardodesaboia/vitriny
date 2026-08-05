@@ -93,7 +93,7 @@ export async function generateMetadata({
     city: profile.city,
     state: profile.state,
   });
-  const url = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}`;
+  const url = `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/u/${slug}`;
 
   // Vitrine publicada porém sem conteúdo suficiente renderiza (200) mas não é
   // indexada — evita thin content no índice. Mesma regra do sitemap.

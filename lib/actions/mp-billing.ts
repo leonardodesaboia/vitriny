@@ -104,7 +104,7 @@ export async function createMpCardSubscription(
           transaction_amount: amount,
           currency_id: "BRL"
         },
-        back_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`,
+        back_url: `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/dashboard/billing`,
         status: "authorized"
       }
     });

@@ -46,7 +46,7 @@ export function ServiceItem({
   const formattedPrice = formatPrice(service.basePrice);
   // Link de venda por item: a página de orçamento pré-seleciona via serviceId.
   const shareUrl = slug
-    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${slug}/orcamento?serviceId=${service.id}`
+    ? `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/u/${slug}/orcamento?serviceId=${service.id}`
     : null;
   const saleMode = getServiceSaleMode({
     pricingType: service.pricingType,

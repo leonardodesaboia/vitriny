@@ -130,7 +130,7 @@ export async function createPortalSession(): Promise<
 
   const portalSession = await stripe.billingPortal.sessions.create({
     customer: profile.stripeCustomerId,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
+    return_url: `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/dashboard/billing`
   });
 
   return { url: portalSession.url };
@@ -175,7 +175,7 @@ export async function createCheckoutSession(): Promise<
     mode: "subscription",
     ui_mode: "elements",
     line_items: [{ price: process.env.STRIPE_PRO_PRICE_ID!, quantity: 1 }],
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?session_id={CHECKOUT_SESSION_ID}`
+    return_url: `${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/dashboard/billing?session_id={CHECKOUT_SESSION_ID}`
   });
 
   if (!checkoutSession.client_secret) {

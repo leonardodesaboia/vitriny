@@ -347,7 +347,7 @@ export default async function DashboardPage() {
       {profile?.isPublished && profile.slug ? (
         <PublicLinkCard
           storageScope={session.user.id}
-          url={`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/u/${profile.slug}`}
+          url={`${(process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "")}/u/${profile.slug}`}
         />
       ) : null}
 
