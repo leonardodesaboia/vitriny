@@ -19,7 +19,7 @@ const sections = [
   },
   {
     title: "3. Dados que coletamos",
-    body: "Da conta do negócio: nome, e-mail e senha (armazenada apenas como hash criptográfico). Do perfil público: os dados que o próprio negócio decide exibir, como nome do negócio, descrição, contatos, cidade e chave Pix para recebimento. Dos clientes que enviam pedidos: nome, e-mail e/ou telefone e as informações do pedido. Dados técnicos mínimos: cookies de sessão para manter o login. As estatísticas de acesso das vitrines são coletadas apenas de forma agregada (contagem de visitas por dia), sem identificar o visitante, sem endereço IP e sem perfis individuais.",
+    body: "Da conta do negócio: nome, e-mail e senha (armazenada apenas como hash criptográfico). Ao escolher entrar com Google, recebemos somente o nome, e-mail e foto de perfil fornecidos pela sua conta Google para criar ou autenticar sua conta no Vitriny; não acessamos Gmail, Drive, contatos ou outros dados da sua conta Google. Do perfil público: os dados que o próprio negócio decide exibir, como nome do negócio, descrição, contatos, cidade e chave Pix para recebimento. Dos clientes que enviam pedidos: nome, e-mail e/ou telefone e as informações do pedido. Dados técnicos mínimos: cookies de sessão para manter o login. As estatísticas de acesso das vitrines são coletadas apenas de forma agregada (contagem de visitas por dia), sem identificar o visitante, sem endereço IP e sem perfis individuais.",
   },
   {
     title: "4. Bases legais do tratamento",
@@ -27,7 +27,7 @@ const sections = [
   },
   {
     title: "5. Para que usamos os dados",
-    body: "Para operar a plataforma: exibir a vitrine pública, encaminhar pedidos ao negócio, enviar propostas e notificações transacionais por e-mail (confirmação de cadastro, redefinição de senha, novos pedidos e respostas de propostas), processar a assinatura PRO, garantir a segurança e cumprir obrigações legais. Não vendemos dados pessoais nem os usamos para publicidade de terceiros.",
+    body: "Para operar a plataforma: exibir a vitrine pública, encaminhar pedidos ao negócio, enviar propostas e notificações transacionais por e-mail (confirmação de cadastro, redefinição de senha, novos pedidos e respostas de propostas), processar a assinatura PRO, garantir a segurança e cumprir obrigações legais. Os dados recebidos no login com Google são usados exclusivamente para criar ou autenticar sua conta no Vitriny. Não vendemos dados pessoais nem os usamos para publicidade de terceiros.",
   },
   {
     title: "6. Pagamentos",

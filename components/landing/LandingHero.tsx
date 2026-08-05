@@ -48,7 +48,7 @@ export function LandingHero() {
             animate="show"
             className="mt-5 font-fraunces text-5xl font-bold leading-[1.1] tracking-tight text-ink md:text-6xl"
           >
-            Sua vitrine online
+            Vitriny: sua vitrine online
             <br />
             <span className="relative inline-block">
               <span className="relative z-10 text-leaf">para vender.</span>
@@ -77,6 +77,11 @@ export function LandingHero() {
             <br />
             Sem precisar de técnico. Sem complicação.
           </motion.p>
+
+          <p className="mt-4 max-w-xl text-sm leading-6 text-ink-muted">
+            Você pode criar ou acessar sua conta com Google. Usamos somente seu
+            nome, e-mail e foto de perfil para autenticar sua conta no Vitriny.
+          </p>
 
           <motion.div
             custom={3}
